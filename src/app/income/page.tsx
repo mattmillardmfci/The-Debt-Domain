@@ -1,8 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { TrendingUp, AlertCircle, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { TrendingUp, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { detectIncomePatterns, getIncome } from "@/lib/firestoreService";
 
@@ -106,15 +105,7 @@ export default function IncomePage() {
 
 	if (isLoading) {
 		return (
-			<div className="space-y-8">
-				<div className="flex items-center gap-3">
-					<Link
-						href="/dashboard"
-						className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
-						<ArrowLeft className="w-5 h-5" />
-						Back
-					</Link>
-				</div>
+			<div className="space-y-6">
 				<div className="text-center">
 					<p className="text-gray-600 dark:text-gray-400">Loading income sources...</p>
 				</div>
@@ -123,26 +114,13 @@ export default function IncomePage() {
 	}
 
 	return (
-		<div className="space-y-8">
+		<div className="space-y-6">
 			{/* Header */}
 			<div>
-				<div className="flex items-center gap-3 mb-4">
-					<Link
-						href="/dashboard"
-						className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
-						<ArrowLeft className="w-5 h-5" />
-						Back to Dashboard
-					</Link>
-				</div>
-				<div className="flex items-center gap-3">
-					<TrendingUp className="w-8 h-8 text-green-600" />
-					<div>
-						<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Monthly Income</h1>
-						<p className="text-gray-600 dark:text-gray-400 mt-1">
-							All income sources and how they contribute to your monthly earnings
-						</p>
-					</div>
-				</div>
+				<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Monthly Income</h1>
+				<p className="text-gray-600 dark:text-gray-400 mt-2">
+					All income sources and how they contribute to your monthly earnings
+				</p>
 			</div>
 
 			{/* Total Summary */}

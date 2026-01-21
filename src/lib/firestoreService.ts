@@ -539,22 +539,24 @@ export async function detectIncomePatterns(userId: string): Promise<IncomePatter
 							// Could be either semi-monthly or biweekly
 							// Analyze the day-of-month pattern to distinguish
 							const dayOfMonths = dates.map((d) => d.getDate());
-							
+
 							// For semi-monthly, we expect typically 2 distinct day-of-month values
 							// (e.g., around 1st and 15th, or 15th and 30th)
 							const uniqueDays = new Set(dayOfMonths);
-							
+
 							// Count how many months have approximately 2 paychecks
 							const monthlyPaychecks = new Map<string, number>();
 							dates.forEach((d) => {
 								const monthKey = `${d.getFullYear()}-${d.getMonth()}`;
 								monthlyPaychecks.set(monthKey, (monthlyPaychecks.get(monthKey) || 0) + 1);
 							});
-							
+
 							// If most months have 2 paychecks and there are 2 distinct days, it's likely semi-monthly
-							const monthsWithTwoPaychecks = Array.from(monthlyPaychecks.values()).filter((count) => count === 2).length;
+							const monthsWithTwoPaychecks = Array.from(monthlyPaychecks.values()).filter(
+								(count) => count === 2,
+							).length;
 							const totalMonths = monthlyPaychecks.size;
-							
+
 							if (uniqueDays.size === 2 && monthsWithTwoPaychecks >= totalMonths * 0.7) {
 								// Likely semi-monthly (twice per month, on consistent days)
 								estimatedFrequency = "semi-monthly";

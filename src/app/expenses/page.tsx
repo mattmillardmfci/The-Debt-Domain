@@ -1,8 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { TrendingDown, AlertCircle, ArrowLeft, Edit2, Check, X } from "lucide-react";
-import Link from "next/link";
+import { TrendingDown, AlertCircle, Edit2, Check, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
 	detectRecurringDebts,
@@ -152,15 +151,7 @@ export default function ExpensesPage() {
 
 	if (isLoading) {
 		return (
-			<div className="space-y-8">
-				<div className="flex items-center gap-3">
-					<Link
-						href="/dashboard"
-						className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
-						<ArrowLeft className="w-5 h-5" />
-						Back
-					</Link>
-				</div>
+			<div className="space-y-6">
 				<div className="text-center">
 					<p className="text-gray-600 dark:text-gray-400">Loading expenses...</p>
 				</div>
@@ -169,24 +160,11 @@ export default function ExpensesPage() {
 	}
 
 	return (
-		<div className="space-y-8">
+		<div className="space-y-6">
 			{/* Header */}
 			<div>
-				<div className="flex items-center gap-3 mb-4">
-					<Link
-						href="/dashboard"
-						className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
-						<ArrowLeft className="w-5 h-5" />
-						Back to Dashboard
-					</Link>
-				</div>
-				<div className="flex items-center gap-3">
-					<TrendingDown className="w-8 h-8 text-red-600" />
-					<div>
-						<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Monthly Expenses</h1>
-						<p className="text-gray-600 dark:text-gray-400 mt-1">Recurring expenses that impact your monthly budget</p>
-					</div>
-				</div>
+				<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Monthly Expenses</h1>
+				<p className="text-gray-600 dark:text-gray-400 mt-2">Recurring expenses that impact your monthly budget</p>
 			</div>
 
 			{/* Total Summary */}
