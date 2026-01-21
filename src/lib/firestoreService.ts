@@ -18,6 +18,7 @@ import {
 	writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { auth } from "./firebase";
 import { Transaction, Debt, Budget, CustomCategory, Income } from "@/types";
 
 /**
@@ -905,6 +906,26 @@ export async function deleteAllUserData(userId: string) {
 		await Promise.all(allDeletePromises);
 	} catch (error) {
 		console.error("Error deleting all user data:", error);
+		throw error;
+	}
+}
+
+/**
+ * Delete the entire user profile including auth account and all Firestore data
+ * This allows the user to completely recreate their profile with the same email
+ */
+export async function deleteUserProfile(userId: string) {
+	try {
+		// First delete all Firestore data
+		await deleteAllUserData(userId);
+
+		// Then delete the authentication account
+		const currentUser = auth.currentUser;
+		if (currentUser && currentUser.uid === userId) {
+			await currentUser.delete();
+		}
+	} catch (error) {
+		console.error("Error deleting user profile:", error);
 		throw error;
 	}
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { deleteAllTransactions, deleteAllUserData } from "@/lib/firestoreService";
+import { deleteAllTransactions, deleteAllUserData, deleteUserProfile } from "@/lib/firestoreService";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Trash2, AlertCircle, Check } from "lucide-react";
@@ -14,6 +14,8 @@ export default function ProfilePage() {
 	const [isSaving, setIsSaving] = useState(false);
 	const [showDeleteTransactions, setShowDeleteTransactions] = useState(false);
 	const [showDeleteAllData, setShowDeleteAllData] = useState(false);
+	const [showDeleteProfile, setShowDeleteProfile] = useState(false);
+	const [deleteProfileConfirmation, setDeleteProfileConfirmation] = useState("");
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [successMessage, setSuccessMessage] = useState("");
 
@@ -65,6 +67,25 @@ export default function ProfilePage() {
 		} catch (error) {
 			console.error("Error deleting all data:", error);
 			alert("Failed to delete all data");
+		} finally {
+			setIsDeleting(false);
+		}
+	};
+
+	const handleDeleteProfile = async () => {
+		if (!user?.uid) return;
+
+		setIsDeleting(true);
+		try {
+			await deleteUserProfile(user.uid);
+			setShowDeleteProfile(false);
+			// Wait a moment for the auth state to update, then redirect
+			setTimeout(() => {
+				router.push("/login");
+			}, 1000);
+		} catch (error) {
+			console.error("Error deleting profile:", error);
+			alert("Failed to delete profile. You may need to reauthenticate and try again.");
 		} finally {
 			setIsDeleting(false);
 		}
@@ -162,6 +183,28 @@ export default function ProfilePage() {
 						</div>
 					</div>
 				</div>
+
+				{/* Delete Profile */}
+				<div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-600 dark:border-red-500 rounded-lg p-6">
+					<div className="flex items-start gap-4">
+						<AlertCircle className="w-6 h-6 text-red-700 dark:text-red-500 flex-shrink-0 mt-1" />
+						<div className="flex-1">
+							<h3 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-1">
+								⚠️ Delete Your Profile Permanently
+							</h3>
+							<p className="text-sm text-red-800 dark:text-red-200 mb-4">
+								This will <strong>permanently delete your entire account</strong>, including all data and your login. You will
+								be able to create a new account with this email address afterward.
+							</p>
+							<button
+								onClick={() => setShowDeleteProfile(true)}
+								className="flex items-center gap-2 px-4 py-2 bg-red-700 hover:bg-red-800 text-white font-bold rounded-lg transition-colors">
+								<Trash2 className="w-4 h-4" />
+								Delete Profile Permanently
+							</button>
+						</div>
+					</div>
+				</div>
 			</div>
 
 			{/* Delete Transactions Confirmation Modal */}
@@ -220,6 +263,68 @@ export default function ProfilePage() {
 								disabled={isDeleting}
 								className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-medium rounded-lg transition-colors">
 								{isDeleting ? "Deleting..." : "Delete All"}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Delete Profile Confirmation Modal */}
+			{showDeleteProfile && (
+				<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-md mx-4 border-2 border-red-600 dark:border-red-500">
+						<div className="flex items-center gap-3 mb-4">
+							<AlertCircle className="w-7 h-7 text-red-700 dark:text-red-500" />
+							<h3 className="text-lg font-bold text-gray-900 dark:text-white">Delete Profile Permanently?</h3>
+						</div>
+
+						<div className="space-y-4 mb-6">
+							<div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded p-3">
+								<p className="text-sm text-red-900 dark:text-red-100 font-semibold mb-2">This will:</p>
+								<ul className="text-sm text-red-800 dark:text-red-200 space-y-1 ml-4 list-disc">
+									<li>Delete your entire account permanently</li>
+									<li>Remove all your data from the database</li>
+									<li>Allow you to create a new account with this email later</li>
+									<li>This action <strong>cannot be undone</strong></li>
+								</ul>
+							</div>
+
+							<div>
+								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+									To confirm, type your email address:
+								</label>
+								<input
+									type="text"
+									value={deleteProfileConfirmation}
+									onChange={(e) => setDeleteProfileConfirmation(e.target.value)}
+									placeholder={user?.email}
+									className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600"
+								/>
+								<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+									You must type your email exactly to confirm deletion
+								</p>
+							</div>
+						</div>
+
+						<div className="flex gap-3">
+							<button
+								onClick={() => {
+									setShowDeleteProfile(false);
+									setDeleteProfileConfirmation("");
+								}}
+								disabled={isDeleting}
+								className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white font-medium rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50">
+								Cancel
+							</button>
+							<button
+								onClick={handleDeleteProfile}
+								disabled={
+									isDeleting ||
+									deleteProfileConfirmation !== user?.email ||
+									!deleteProfileConfirmation.trim()
+								}
+								className="flex-1 px-4 py-2 bg-red-700 hover:bg-red-800 disabled:bg-gray-400 text-white font-bold rounded-lg transition-colors disabled:cursor-not-allowed">
+								{isDeleting ? "Deleting..." : "Delete Profile"}
 							</button>
 						</div>
 					</div>
