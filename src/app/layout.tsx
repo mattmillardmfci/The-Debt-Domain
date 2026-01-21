@@ -16,6 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
 	title: "TheDebtDomain",
 	description: "Professional financial audit and advice platform",
+	viewport: "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover",
 };
 
 export default function RootLayout({
@@ -24,8 +25,8 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en">
-			<body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+		<html lang="en" className="h-full w-full overflow-x-hidden">
+			<body className={`${geistSans.variable} ${geistMono.variable} antialiased h-full w-full overflow-x-hidden`}>
 				<AuthProvider>{children}</AuthProvider>
 			</body>
 		</html>

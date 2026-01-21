@@ -257,31 +257,33 @@ export default function TransactionsPage() {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex justify-between items-center">
+			<div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
 				<div>
-					<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Transactions</h1>
-					<p className="text-gray-600 dark:text-gray-400 mt-2">
+					<h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Transactions</h1>
+					<p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2">
 						Showing {transactions.length} {hasMore ? `of many` : `transactions`}
 					</p>
 				</div>
-				<div className="flex gap-3">
+				<div className="flex gap-2 flex-wrap sm:flex-nowrap sm:gap-3">
 					<button
 						onClick={() => setAddTransactionModal(true)}
-						className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors">
-						<Plus className="w-5 h-5" />
-						Add Custom
+						className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors text-sm min-h-11">
+						<Plus className="w-4 h-4" />
+						<span className="hidden sm:inline">Add Custom</span>
+						<span className="sm:hidden">Add</span>
 					</button>
 					<Link
 						href="/transactions/upload"
-						className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-						<Plus className="w-5 h-5" />
-						Upload More
+						className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors text-sm min-h-11">
+						<Plus className="w-4 h-4" />
+						<span className="hidden sm:inline">Upload More</span>
+						<span className="sm:hidden">Upload</span>
 					</Link>
 				</div>
 			</div>
 
-			{/* Transaction Table */}
-			<div className="overflow-x-auto bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+			{/* Transaction Table - Desktop */}
+			<div className="hidden sm:block overflow-x-auto bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
 				<table className="w-full">
 					<thead className="bg-gray-50 dark:bg-slate-700 border-b border-gray-200 dark:border-slate-600">
 						<tr>
@@ -363,7 +365,7 @@ export default function TransactionsPage() {
 								<td className="px-6 py-4 text-sm text-right">
 									<button
 										onClick={() => handleDeleteTransaction(t.id)}
-										className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors">
+										className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors min-h-10 min-w-10 flex items-center justify-center">
 										<Trash2 className="w-4 h-4" />
 									</button>
 								</td>
@@ -373,13 +375,92 @@ export default function TransactionsPage() {
 				</table>
 			</div>
 
+			{/* Transaction Cards - Mobile */}
+			<div className="sm:hidden space-y-3">
+				{transactions.map((t) => (
+					<div
+						key={t.id}
+						className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
+						<div className="space-y-3">
+							{/* Header with date and amount */}
+							<div className="flex justify-between items-start">
+								<span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+									{t.date instanceof Date ? t.date.toLocaleDateString() : new Date(t.date as any).toLocaleDateString()}
+								</span>
+								<span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+									${((t.amount || 0) / 100).toFixed(2)}
+								</span>
+							</div>
+
+							{/* Description */}
+							<div>
+								<p className="text-sm text-gray-700 dark:text-gray-300 break-words">{t.description}</p>
+								<button
+									onClick={() => openRenameModal(t.description || "Unknown")}
+									className="mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+									<Edit3 className="w-3 h-3" />
+									Rename all
+								</button>
+							</div>
+
+							{/* Category and Action */}
+							<div className="flex gap-2 flex-wrap items-center justify-between pt-2 border-t border-gray-200 dark:border-slate-700">
+								<div className="flex-1">
+									{editingId === t.id ? (
+										<div className="flex gap-2 flex-wrap">
+											<select
+												value={newCategory}
+												onChange={(e) => setNewCategory(e.target.value)}
+												className="px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-xs flex-1 min-w-28">
+												<option value="">Select category...</option>
+												{allCategories.map((cat) => (
+													<option key={cat} value={cat}>
+														{cat}
+													</option>
+												))}
+											</select>
+											<button
+												onClick={() => handleSaveCategory(t.id)}
+												disabled={saving}
+												className="px-2 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-xs rounded">
+												Save
+											</button>
+											<button
+												onClick={() => setEditingId(null)}
+												className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded">
+												Cancel
+											</button>
+										</div>
+									) : (
+										<button
+											onClick={() => {
+												setEditingId(t.id);
+												setNewCategory(t.category || "Other");
+											}}
+											className="w-full px-3 py-2 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded text-xs font-medium flex items-center justify-center gap-1 min-h-10">
+											<Edit2 className="w-3 h-3" />
+											{t.category || "Other"}
+										</button>
+									)}
+								</div>
+								<button
+									onClick={() => handleDeleteTransaction(t.id)}
+									className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors min-h-10 min-w-10 flex items-center justify-center">
+									<Trash2 className="w-4 h-4" />
+								</button>
+							</div>
+						</div>
+					</div>
+				))}
+			</div>
+
 			{/* Load More Button */}
 			{hasMore && (
 				<div className="flex justify-center">
 					<button
 						onClick={handleLoadMore}
 						disabled={loadingMore}
-						className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors">
+						className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors min-h-11">
 						{loadingMore ? "Loading more..." : "Load More Transactions"}
 					</button>
 				</div>
@@ -440,11 +521,11 @@ export default function TransactionsPage() {
 								{renameModal.count !== 1 ? "s" : ""} with this name.
 							</div>
 
-							<div className="flex gap-3 justify-end mt-6">
+							<div className="flex gap-3 justify-end mt-6 flex-col-reverse sm:flex-row">
 								<button
 									onClick={() => setRenameModal({ isOpen: false, oldDescription: "", newDescription: "", count: 0 })}
 									disabled={renaming}
-									className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 font-medium transition-colors disabled:opacity-50">
+									className="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 font-medium transition-colors disabled:opacity-50 min-h-11">
 									Cancel
 								</button>
 								<button
@@ -454,7 +535,7 @@ export default function TransactionsPage() {
 										!renameModal.newDescription.trim() ||
 										renameModal.newDescription === renameModal.oldDescription
 									}
-									className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-md transition-colors">
+									className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-md transition-colors min-h-11">
 									{renaming ? "Renaming..." : "Rename All"}
 								</button>
 							</div>
@@ -551,17 +632,17 @@ export default function TransactionsPage() {
 								This transaction will be marked as categorized and will be included in your financial calculations.
 							</div>
 
-							<div className="flex gap-3 justify-end mt-6">
+							<div className="flex gap-3 justify-end mt-6 flex-col-reverse sm:flex-row">
 								<button
 									onClick={() => setAddTransactionModal(false)}
 									disabled={savingTransaction}
-									className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 font-medium transition-colors disabled:opacity-50">
+									className="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 font-medium transition-colors disabled:opacity-50 min-h-11">
 									Cancel
 								</button>
 								<button
 									onClick={handleAddTransaction}
 									disabled={savingTransaction || !newTransaction.description.trim() || !newTransaction.amount}
-									className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-medium rounded-md transition-colors">
+									className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-medium rounded-md transition-colors min-h-11">
 									{savingTransaction ? "Creating..." : "Create Transaction"}
 								</button>
 							</div>
