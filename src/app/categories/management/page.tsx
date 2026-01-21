@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Transaction, TransactionCategory } from "@/types";
-import { getTransactions, updateTransaction } from "@/lib/firestoreService";
+import { getTransactions, updateTransaction, getCustomCategories } from "@/lib/firestoreService";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChevronDown, Save } from "lucide-react";
 
@@ -36,8 +36,9 @@ export default function CategoryManagementPage() {
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [selectedCategory, setSelectedCategory] = useState<string>("");
 	const [saving, setSaving] = useState(false);
+	const [allCategories, setAllCategories] = useState<string[]>(COMMON_CATEGORIES);
 
-	// Load and group transactions by category
+	// Load and group transactions by category, and load custom categories
 	useEffect(() => {
 		if (!user?.uid) {
 			setLoading(false);
@@ -46,6 +47,12 @@ export default function CategoryManagementPage() {
 
 		const loadAndGroupTransactions = async () => {
 			try {
+				// Load custom categories
+				const customCats = await getCustomCategories(user.uid);
+				const customCategoryNames = customCats.map((c) => c.name || "").filter((n) => n);
+				const merged = Array.from(new Set([...COMMON_CATEGORIES, ...customCategoryNames]));
+				setAllCategories(merged);
+
 				const allTransactions = await getTransactions(user.uid);
 
 				// Group by category
@@ -130,6 +137,11 @@ export default function CategoryManagementPage() {
 			setEditingId(null);
 		} catch (err) {
 			console.error("Failed to update transaction:", err);
+			console.error("Error details:", {
+				transactionId,
+				newCategory,
+				message: err instanceof Error ? err.message : String(err),
+			});
 			alert("Failed to update category. Please try again.");
 		} finally {
 			setSaving(false);
@@ -209,7 +221,7 @@ export default function CategoryManagementPage() {
 												onChange={(e) => setSelectedCategory(e.target.value)}
 												className="px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm">
 												<option value="">Select category...</option>
-												{COMMON_CATEGORIES.map((cat) => (
+											{allCategories.map((cat) => (
 													<option key={cat} value={cat}>
 														{cat}
 													</option>

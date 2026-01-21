@@ -205,11 +205,18 @@ export async function deleteTransaction(userId: string, transactionId: string) {
 export async function updateTransaction(userId: string, transactionId: string, updates: Partial<Transaction>) {
 	try {
 		const ref = doc(db, "users", userId, "transactions", transactionId);
-		const data = {
-			...updates,
-			date: updates.date instanceof Date ? Timestamp.fromDate(updates.date) : updates.date,
-			updatedAt: Timestamp.now(),
-		};
+		const data: any = {};
+		
+		// Only update the fields that are being changed
+		for (const [key, value] of Object.entries(updates)) {
+			if (key === "date") {
+				// Skip date field - it's handled specially
+				continue;
+			}
+			data[key] = value;
+		}
+		
+		data.updatedAt = Timestamp.now();
 		await updateDoc(ref, data);
 	} catch (error) {
 		console.error("Error updating transaction:", error);
