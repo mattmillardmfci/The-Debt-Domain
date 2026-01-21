@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "FinanceAdvisor",
+	title: "TheDebtDomain",
 	description: "Professional financial audit and advice platform",
 };
 

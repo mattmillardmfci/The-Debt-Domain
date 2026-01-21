@@ -61,7 +61,7 @@ export default function LoginPage() {
 				<div className="text-center mb-8">
 					<div className="flex items-center justify-center gap-2 mb-4">
 						<LogIn className="w-8 h-8 text-blue-500" />
-						<h1 className="text-3xl font-bold text-white">FinanceAdvisor</h1>
+						<h1 className="text-3xl font-bold text-white">TheDebtDomain</h1>
 					</div>
 					<p className="text-gray-400">{isSignUp ? "Create your account" : "Welcome back"}</p>
 				</div>

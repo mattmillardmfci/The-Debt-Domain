@@ -4,9 +4,31 @@ import Link from "next/link";
 import { Plus, Trash2, Edit2, Edit3, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Transaction, TransactionCategory } from "@/types";
-import { getTransactionsPaginated, deleteTransaction, updateTransaction, bulkRenameTransactionDescription } from "@/lib/firestoreService";
+import {
+	getTransactionsPaginated,
+	deleteTransaction,
+	updateTransaction,
+	bulkRenameTransactionDescription,
+	getCustomCategories,
+} from "@/lib/firestoreService";
 import { useAuth } from "@/contexts/AuthContext";
 import { QueryDocumentSnapshot } from "firebase/firestore";
+
+const COMMON_CATEGORIES = [
+	"Groceries",
+	"Restaurants",
+	"Gas/Fuel",
+	"Utilities",
+	"Entertainment",
+	"Shopping",
+	"Healthcare",
+	"Transportation",
+	"Housing",
+	"Insurance",
+	"Salary",
+	"Transfer",
+	"Other",
+];
 
 export default function TransactionsPage() {
 	const { user } = useAuth();
@@ -19,13 +41,19 @@ export default function TransactionsPage() {
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [newCategory, setNewCategory] = useState("");
 	const [saving, setSaving] = useState(false);
-	const [renameModal, setRenameModal] = useState<{ isOpen: boolean; oldDescription: string; newDescription: string; count: number }>({
+	const [renameModal, setRenameModal] = useState<{
+		isOpen: boolean;
+		oldDescription: string;
+		newDescription: string;
+		count: number;
+	}>({
 		isOpen: false,
 		oldDescription: "",
 		newDescription: "",
 		count: 0,
 	});
 	const [renaming, setRenaming] = useState(false);
+	const [allCategories, setAllCategories] = useState<string[]>(COMMON_CATEGORIES);
 
 	// Initial load - get first page of transactions (50 most recent)
 	useEffect(() => {
@@ -36,6 +64,12 @@ export default function TransactionsPage() {
 
 		const loadTransactions = async () => {
 			try {
+				// Load custom categories and merge with common categories
+				const customCats = await getCustomCategories(user.uid);
+				const customCategoryNames = customCats.map((c) => c.name || "").filter((n) => n);
+				const merged = Array.from(new Set([...COMMON_CATEGORIES, ...customCategoryNames]));
+				setAllCategories(merged);
+
 				const result = await getTransactionsPaginated(user.uid, 50);
 				setTransactions(result.transactions);
 				setLastDoc(result.lastDoc);
@@ -229,19 +263,12 @@ export default function TransactionsPage() {
 												value={newCategory}
 												onChange={(e) => setNewCategory(e.target.value)}
 												className="px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-xs">
-												<option value="Groceries">Groceries</option>
-												<option value="Restaurants">Restaurants</option>
-												<option value="Gas/Fuel">Gas/Fuel</option>
-												<option value="Utilities">Utilities</option>
-												<option value="Entertainment">Entertainment</option>
-												<option value="Shopping">Shopping</option>
-												<option value="Healthcare">Healthcare</option>
-												<option value="Transportation">Transportation</option>
-												<option value="Housing">Housing</option>
-												<option value="Insurance">Insurance</option>
-												<option value="Salary">Salary</option>
-												<option value="Transfer">Transfer</option>
-												<option value="Other">Other</option>
+											<option value="">Select category...</option>
+											{allCategories.map((cat) => (
+												<option key={cat} value={cat}>
+													{cat}
+												</option>
+											))}
 											</select>
 											<button
 												onClick={() => handleSaveCategory(t.id)}
@@ -316,7 +343,9 @@ export default function TransactionsPage() {
 
 						<div className="space-y-4">
 							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Current Description</label>
+								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+									Current Description
+								</label>
 								<div className="p-3 bg-gray-100 dark:bg-slate-700 rounded border border-gray-300 dark:border-slate-600 text-gray-900 dark:text-gray-100">
 									{renameModal.oldDescription}
 								</div>
@@ -326,7 +355,9 @@ export default function TransactionsPage() {
 							</div>
 
 							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">New Description</label>
+								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+									New Description
+								</label>
 								<input
 									type="text"
 									value={renameModal.newDescription}
@@ -342,7 +373,8 @@ export default function TransactionsPage() {
 							</div>
 
 							<div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-3 text-sm text-blue-800 dark:text-blue-300">
-								Renaming will update the description for all {renameModal.count} transaction{renameModal.count !== 1 ? "s" : ""} with this name.
+								Renaming will update the description for all {renameModal.count} transaction
+								{renameModal.count !== 1 ? "s" : ""} with this name.
 							</div>
 
 							<div className="flex gap-3 justify-end mt-6">
@@ -354,7 +386,11 @@ export default function TransactionsPage() {
 								</button>
 								<button
 									onClick={handleRenameTransaction}
-									disabled={renaming || !renameModal.newDescription.trim() || renameModal.newDescription === renameModal.oldDescription}
+									disabled={
+										renaming ||
+										!renameModal.newDescription.trim() ||
+										renameModal.newDescription === renameModal.oldDescription
+									}
 									className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-md transition-colors">
 									{renaming ? "Renaming..." : "Rename All"}
 								</button>

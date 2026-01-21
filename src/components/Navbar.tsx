@@ -29,7 +29,7 @@ export function Navbar() {
 				<div className="flex justify-between items-center h-16">
 					{/* Logo/Brand */}
 					<div className="flex-shrink-0">
-						<h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">FinanceAdvisor</h1>
+						<h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">TheDebtDomain</h1>
 					</div>
 
 					{/* Nav Items */}

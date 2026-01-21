@@ -5,7 +5,14 @@ import { Debt } from "@/types";
 import { Plus, Trash2, Edit2, TrendingDown } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getDebts, saveDebt, deleteDebt, updateDebt, detectRecurringDebts, RecurringDebtPattern } from "@/lib/firestoreService";
+import {
+	getDebts,
+	saveDebt,
+	deleteDebt,
+	updateDebt,
+	detectRecurringDebts,
+	RecurringDebtPattern,
+} from "@/lib/firestoreService";
 
 export default function DebtsPage() {
 	const { user } = useAuth();
@@ -31,10 +38,7 @@ export default function DebtsPage() {
 
 		const loadDebts = async () => {
 			try {
-				const [debtsData, recurringData] = await Promise.all([
-					getDebts(user.uid),
-					detectRecurringDebts(user.uid),
-				]);
+				const [debtsData, recurringData] = await Promise.all([getDebts(user.uid), detectRecurringDebts(user.uid)]);
 				setDebts(debtsData);
 				setRecurringDebts(recurringData);
 			} catch (err) {
@@ -466,12 +470,15 @@ export default function DebtsPage() {
 						<h2 className="text-2xl font-bold text-gray-900 dark:text-white">Auto-Detected Recurring Debts</h2>
 					</div>
 					<p className="text-gray-600 dark:text-gray-400 mb-4">
-						We found the following recurring payments in your transaction history. Would you like to add them as tracked debts?
+						We found the following recurring payments in your transaction history. Would you like to add them as tracked
+						debts?
 					</p>
 
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 						{recurringDebts.map((pattern) => (
-							<div key={pattern.description} className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
+							<div
+								key={pattern.description}
+								className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
 								<div className="mb-4">
 									<h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm line-clamp-2">
 										{pattern.description}
@@ -487,11 +494,15 @@ export default function DebtsPage() {
 										</div>
 										<div className="flex justify-between">
 											<span>Avg Amount:</span>
-											<span className="font-medium text-gray-900 dark:text-white">${Math.abs(pattern.avgAmount).toFixed(2)}</span>
+											<span className="font-medium text-gray-900 dark:text-white">
+												${Math.abs(pattern.avgAmount).toFixed(2)}
+											</span>
 										</div>
 										<div className="flex justify-between">
 											<span>Last Payment:</span>
-											<span className="font-medium text-gray-900 dark:text-white">{pattern.lastOccurrence.toLocaleDateString()}</span>
+											<span className="font-medium text-gray-900 dark:text-white">
+												{pattern.lastOccurrence.toLocaleDateString()}
+											</span>
 										</div>
 									</div>
 								</div>
