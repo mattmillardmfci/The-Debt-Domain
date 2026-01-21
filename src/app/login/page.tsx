@@ -105,15 +105,22 @@ export default function LoginPage() {
 					</button>
 				</form>
 
-				{/* Toggle Auth Mode */}
-				<div className="text-center mb-6 text-sm text-gray-400">
-					{isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-					<button
-						type="button"
-						onClick={() => setIsSignUp(!isSignUp)}
-						className="text-blue-400 hover:text-blue-300 font-medium">
-						{isSignUp ? "Sign In" : "Sign Up"}
-					</button>
+				{/* Forgot Password & Toggle Auth Mode */}
+				<div className="flex items-center justify-between mb-6 text-sm text-gray-400">
+					<div>
+						{isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+						<button
+							type="button"
+							onClick={() => setIsSignUp(!isSignUp)}
+							className="text-blue-400 hover:text-blue-300 font-medium">
+							{isSignUp ? "Sign In" : "Sign Up"}
+						</button>
+					</div>
+					{!isSignUp && (
+						<Link href="/forgot-password" className="text-blue-400 hover:text-blue-300 font-medium">
+							Forgot password?
+						</Link>
+					)}
 				</div>
 
 				{/* Divider */}

@@ -263,12 +263,12 @@ export default function TransactionsPage() {
 												value={newCategory}
 												onChange={(e) => setNewCategory(e.target.value)}
 												className="px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-xs">
-											<option value="">Select category...</option>
-											{allCategories.map((cat) => (
-												<option key={cat} value={cat}>
-													{cat}
-												</option>
-											))}
+												<option value="">Select category...</option>
+												{allCategories.map((cat) => (
+													<option key={cat} value={cat}>
+														{cat}
+													</option>
+												))}
 											</select>
 											<button
 												onClick={() => handleSaveCategory(t.id)}
