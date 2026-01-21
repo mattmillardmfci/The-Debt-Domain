@@ -537,25 +537,30 @@ export async function detectIncomePatterns(userId: string): Promise<IncomePatter
 						// Semi-monthly: typically occurs on specific days like 1st and 15th, or 15th and 30th
 						if (avgGap >= 12 && avgGap <= 18) {
 							// Could be either semi-monthly or biweekly
-							// Analyze day-of-month pattern
+							// Analyze the day-of-month pattern to distinguish
 							const dayOfMonths = dates.map((d) => d.getDate());
-							const monthDiffs: number[] = [];
-
-							// Check if there's a pattern of ~2 occurrences per month
-							for (let i = 1; i < dates.length; i++) {
-								const monthDiff =
-									(dates[i].getFullYear() - dates[i - 1].getFullYear()) * 12 +
-									(dates[i].getMonth() - dates[i - 1].getMonth());
-								monthDiffs.push(monthDiff);
-							}
-
-							// If most gaps are less than 1 month, it's likely semi-monthly
-							const semiMonthlyCount = monthDiffs.filter((m) => m <= 0.5).length;
-							if (semiMonthlyCount > monthDiffs.length * 0.6) {
-								// Likely semi-monthly (twice per month)
+							
+							// For semi-monthly, we expect typically 2 distinct day-of-month values
+							// (e.g., around 1st and 15th, or 15th and 30th)
+							const uniqueDays = new Set(dayOfMonths);
+							
+							// Count how many months have approximately 2 paychecks
+							const monthlyPaychecks = new Map<string, number>();
+							dates.forEach((d) => {
+								const monthKey = `${d.getFullYear()}-${d.getMonth()}`;
+								monthlyPaychecks.set(monthKey, (monthlyPaychecks.get(monthKey) || 0) + 1);
+							});
+							
+							// If most months have 2 paychecks and there are 2 distinct days, it's likely semi-monthly
+							const monthsWithTwoPaychecks = Array.from(monthlyPaychecks.values()).filter((count) => count === 2).length;
+							const totalMonths = monthlyPaychecks.size;
+							
+							if (uniqueDays.size === 2 && monthsWithTwoPaychecks >= totalMonths * 0.7) {
+								// Likely semi-monthly (twice per month, on consistent days)
 								estimatedFrequency = "semi-monthly";
 								monthlyAmount = avgAmount * 2;
 							} else {
+								// Biweekly (every 14 days, regardless of month boundaries)
 								estimatedFrequency = "biweekly";
 								monthlyAmount = avgAmount * (26 / 12);
 							}
