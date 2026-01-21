@@ -330,6 +330,7 @@ export async function getDebts(userId: string): Promise<(Partial<Debt> & { id: s
  */
 export interface RecurringDebtPattern {
 	description: string;
+	category?: string;
 	count: number;
 	avgAmount: number;
 	totalAmount: number;
@@ -364,6 +365,12 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 				const avgAmount = amounts.length > 0 ? totalAmount / amounts.length / 100 : 0;
 				const totalAmountDollars = totalAmount / 100;
 
+				// Get the most recent category for this recurring transaction
+				const mostRecentTransaction = transactions.sort(
+					(a, b) => (b.date instanceof Date ? b.date.getTime() : 0) - (a.date instanceof Date ? a.date.getTime() : 0),
+				)[0];
+				const category = mostRecentTransaction?.category || "Other";
+
 				// Get last occurrence date
 				const lastOccurrence = transactions
 					.map((t) => (t.date instanceof Date ? t.date : new Date(t.date || 0)))
@@ -394,6 +401,7 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 
 				patterns.push({
 					description,
+					category,
 					count: transactions.length,
 					avgAmount: Math.round(avgAmount * 100) / 100,
 					totalAmount: Math.round(totalAmountDollars * 100) / 100,

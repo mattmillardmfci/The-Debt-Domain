@@ -495,6 +495,12 @@ export default function DebtsPage() {
 									</h3>
 									<div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
 										<div className="flex justify-between">
+											{" "}
+											<span>Category:</span>
+											<span className="font-medium text-gray-900 dark:text-white">{pattern.category}</span>
+										</div>
+										<div className="flex justify-between">
+											{" "}
 											<span>Frequency:</span>
 											<span className="font-medium text-gray-900 dark:text-white">{pattern.count}x</span>
 										</div>
