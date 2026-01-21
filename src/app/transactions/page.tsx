@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Plus, Trash2, Edit2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Transaction } from "@/types";
+import { Transaction, TransactionCategory } from "@/types";
 import { getTransactionsPaginated, deleteTransaction, updateTransaction } from "@/lib/firestoreService";
 import { useAuth } from "@/contexts/AuthContext";
 import { QueryDocumentSnapshot } from "firebase/firestore";
@@ -83,9 +83,9 @@ export default function TransactionsPage() {
 
 		setSaving(true);
 		try {
-			await updateTransaction(user.uid, transactionId, { category: newCategory });
+			await updateTransaction(user.uid, transactionId, { category: newCategory as TransactionCategory });
 			setTransactions(
-				transactions.map((t) => (t.id === transactionId ? { ...t, category: newCategory } : t))
+				transactions.map((t) => (t.id === transactionId ? { ...t, category: newCategory as TransactionCategory } : t)),
 			);
 			setEditingId(null);
 		} catch (err) {
@@ -218,7 +218,6 @@ export default function TransactionsPage() {
 											{t.category || "Other"}
 										</button>
 									)}
-								</td>
 								</td>
 								<td className="px-6 py-4 text-sm text-right font-medium text-gray-900 dark:text-gray-100">
 									${((t.amount || 0) / 100).toFixed(2)}

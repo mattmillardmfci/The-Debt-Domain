@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Budget, TransactionCategory } from "@/types";
-import { Plus, Trash2, Edit2 } from "lucide-react";
+import { Budget, Transaction, TransactionCategory } from "@/types";
+import { Plus, Trash2, TrendingUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getBudgets, saveBudget, deleteBudget, updateBudget } from "@/lib/firestoreService";
+import { saveBudget, deleteBudget, getTransactions } from "@/lib/firestoreService";
 
 const CATEGORIES: TransactionCategory[] = [
 	"Groceries",
@@ -17,106 +17,138 @@ const CATEGORIES: TransactionCategory[] = [
 	"Transportation",
 	"Healthcare",
 	"Subscriptions",
+	"Other",
 ];
+
+interface CategoryBudget {
+	category: TransactionCategory;
+	limit: number;
+}
+
+interface SpendingData {
+	currentMonth: number;
+	lastMonth: number;
+	average: number;
+}
 
 export default function BudgetsPage() {
 	const { user } = useAuth();
-	const [budgets, setBudgets] = useState<(Partial<Budget> & { id: string })[]>([]);
+	const [categoryBudgets, setCategoryBudgets] = useState<CategoryBudget[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [transactions, setTransactions] = useState<(Partial<Transaction> & { id: string })[]>([]);
 	const [showForm, setShowForm] = useState(false);
-	const [editingId, setEditingId] = useState<string | null>(null);
-	const [formData, setFormData] = useState<Partial<Budget>>({
-		month: new Date().toISOString().slice(0, 7),
-		totalBudget: 0,
-		categories: [],
-	});
+	const [selectedCategory, setSelectedCategory] = useState<TransactionCategory>("Groceries");
+	const [budgetAmount, setBudgetAmount] = useState("");
+	const [spendingData, setSpendingData] = useState<Record<TransactionCategory, SpendingData>>(
+		{} as Record<TransactionCategory, SpendingData>,
+	);
 
-	// Load budgets from Firestore
+	// Load budgets and transactions
 	useEffect(() => {
 		if (!user?.uid) {
 			setLoading(false);
 			return;
 		}
 
-		const loadBudgets = async () => {
+		const loadData = async () => {
 			try {
-				const data = await getBudgets(user.uid);
-				setBudgets(data);
+				// Load transactions to calculate spending
+				const txns = await getTransactions(user.uid);
+				setTransactions(txns);
+
+				// Calculate spending by category and month
+				calculateSpending(txns);
 			} catch (err) {
-				console.error("Failed to load budgets:", err);
+				console.error("Failed to load data:", err);
 			} finally {
 				setLoading(false);
 			}
 		};
 
-		loadBudgets();
+		loadData();
 	}, [user?.uid]);
 
-	const handleSaveBudget = async () => {
-		if (!formData.month || !formData.totalBudget) {
-			alert("Please fill in all required fields");
-			return;
-		}
+	const calculateSpending = (txns: (Partial<Transaction> & { id: string })[]) => {
+		const now = new Date();
+		const currentMonth = now.getMonth();
+		const currentYear = now.getFullYear();
+		const lastMonthDate = new Date(currentYear, currentMonth - 1);
 
-		if (!user?.uid) {
-			alert("You must be logged in");
-			return;
-		}
+		const spending: Record<TransactionCategory, SpendingData> = {} as Record<TransactionCategory, SpendingData>;
 
-		try {
-			if (editingId) {
-				await updateBudget(user.uid, editingId, formData);
-				setBudgets(budgets.map((b) => (b.id === editingId ? { ...b, ...formData } : b)));
-				setEditingId(null);
-			} else {
-				const docId = await saveBudget(user.uid, formData);
-				setBudgets([...budgets, { ...formData, id: docId }]);
-			}
+		CATEGORIES.forEach((cat) => {
+			const catTransactions = txns.filter((t) => t.category === cat);
 
-			setFormData({
-				month: new Date().toISOString().slice(0, 7),
-				totalBudget: 0,
-				categories: [],
+			// Current month
+			const currentMonthTxns = catTransactions.filter((t) => {
+				const date = t.date instanceof Date ? t.date : new Date(t.date as any);
+				return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
 			});
-			setShowForm(false);
-		} catch (err) {
-			console.error("Failed to save budget:", err);
-			alert("Failed to save budget. Please try again.");
-		}
-	};
+			const currentMonthTotal = currentMonthTxns.reduce((sum, t) => sum + (t.amount || 0), 0);
 
-	const handleDeleteBudget = async (id: string) => {
-		if (!user?.uid) return;
+			// Last month
+			const lastMonthTxns = catTransactions.filter((t) => {
+				const date = t.date instanceof Date ? t.date : new Date(t.date as any);
+				return date.getMonth() === lastMonthDate.getMonth() && date.getFullYear() === lastMonthDate.getFullYear();
+			});
+			const lastMonthTotal = lastMonthTxns.reduce((sum, t) => sum + (t.amount || 0), 0);
 
-		if (!confirm("Delete this budget?")) return;
+			// Average over all months
+			const months = new Set<string>();
+			catTransactions.forEach((t) => {
+				const date = t.date instanceof Date ? t.date : new Date(t.date as any);
+				months.add(`${date.getFullYear()}-${date.getMonth()}`);
+			});
+			const averageTotal = catTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+			const average = months.size > 0 ? averageTotal / months.size : 0;
 
-		try {
-			await deleteBudget(user.uid, id);
-			setBudgets(budgets.filter((b) => b.id !== id));
-		} catch (err) {
-			console.error("Failed to delete budget:", err);
-			alert("Failed to delete budget.");
-		}
-	};
-
-	const handleEditBudget = (budget: Partial<Budget> & { id: string }) => {
-		setEditingId(budget.id);
-		setFormData({
-			month: budget.month,
-			totalBudget: budget.totalBudget,
-			categories: budget.categories,
+			spending[cat] = {
+				currentMonth: currentMonthTotal,
+				lastMonth: lastMonthTotal,
+				average: Math.round(average),
+			};
 		});
-		setShowForm(true);
+
+		setSpendingData(spending);
 	};
 
-	const handleCancelEdit = () => {
-		setEditingId(null);
-		setFormData({
-			month: new Date().toISOString().slice(0, 7),
-			totalBudget: 0,
-			categories: [],
-		});
+	const handleAddBudget = async () => {
+		if (!budgetAmount || !user?.uid) {
+			alert("Please enter a budget amount");
+			return;
+		}
+
+		const existing = categoryBudgets.find((b) => b.category === selectedCategory);
+		if (existing) {
+			// Update existing
+			const updated = categoryBudgets.map((b) =>
+				b.category === selectedCategory ? { ...b, limit: parseFloat(budgetAmount) * 100 } : b,
+			);
+			setCategoryBudgets(updated);
+		} else {
+			// Add new
+			setCategoryBudgets([...categoryBudgets, { category: selectedCategory, limit: parseFloat(budgetAmount) * 100 }]);
+		}
+
+		setBudgetAmount("");
 		setShowForm(false);
+	};
+
+	const handleDeleteBudget = (category: TransactionCategory) => {
+		if (!confirm(`Remove budget for ${category}?`)) return;
+		setCategoryBudgets(categoryBudgets.filter((b) => b.category !== category));
+	};
+
+	const getProgressColor = (percentage: number): string => {
+		if (percentage >= 100) return "text-red-600 dark:text-red-400";
+		if (percentage >= 80) return "text-yellow-600 dark:text-yellow-400";
+		return "text-green-600 dark:text-green-400";
+	};
+
+	const getProgressBarColor = (percentage: number): string => {
+		if (percentage >= 100) return "bg-red-600";
+		if (percentage >= 80) return "bg-yellow-600";
+		return "bg-green-600";
 	};
 
 	if (loading) {
@@ -131,59 +163,62 @@ export default function BudgetsPage() {
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
 				<div>
-					<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Budgets</h1>
-					<p className="text-gray-600 dark:text-gray-400 mt-2">Create and manage your monthly budgets</p>
+					<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Category Budgets</h1>
+					<p className="text-gray-600 dark:text-gray-400 mt-2">
+						Set spending limits by category and track your progress
+					</p>
 				</div>
 				{!showForm && (
 					<button
 						onClick={() => setShowForm(true)}
 						className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
 						<Plus className="w-5 h-5" />
-						New Budget
+						Add Budget
 					</button>
 				)}
 			</div>
 
-			{/* Budget Form */}
+			{/* Add Budget Form */}
 			{showForm && (
 				<div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6">
-					<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-						{editingId ? "Edit Budget" : "Create Budget"}
-					</h2>
-
+					<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Set Budget for Category</h2>
 					<div className="space-y-4">
 						<div>
-							<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Month *</label>
-							<input
-								type="month"
-								value={formData.month || ""}
-								onChange={(e) => setFormData({ ...formData, month: e.target.value })}
-								className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-							/>
+							<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
+							<select
+								value={selectedCategory}
+								onChange={(e) => setSelectedCategory(e.target.value as TransactionCategory)}
+								className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500">
+								{CATEGORIES.map((cat) => (
+									<option key={cat} value={cat}>
+										{cat}
+										{categoryBudgets.find((b) => b.category === cat) ? " (has budget)" : ""}
+									</option>
+								))}
+							</select>
 						</div>
-
 						<div>
 							<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-								Total Budget ($) *
+								Monthly Budget ($)
 							</label>
 							<input
 								type="number"
 								step="0.01"
 								min="0"
-								value={formData.totalBudget || ""}
-								onChange={(e) => setFormData({ ...formData, totalBudget: parseFloat(e.target.value) || 0 })}
+								placeholder="300.00"
+								value={budgetAmount}
+								onChange={(e) => setBudgetAmount(e.target.value)}
 								className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
 							/>
 						</div>
-
 						<div className="flex gap-3">
 							<button
-								onClick={handleSaveBudget}
+								onClick={handleAddBudget}
 								className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-								{editingId ? "Update Budget" : "Create Budget"}
+								Save Budget
 							</button>
 							<button
-								onClick={handleCancelEdit}
+								onClick={() => setShowForm(false)}
 								className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
 								Cancel
 							</button>
@@ -192,40 +227,100 @@ export default function BudgetsPage() {
 				</div>
 			)}
 
-			{/* Budgets List */}
-			{budgets.length === 0 ? (
+			{/* Budgets Grid */}
+			{categoryBudgets.length === 0 ? (
 				<div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-8 text-center">
-					<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Budgets Yet</h2>
-					<p className="text-gray-600 dark:text-gray-400">Create a budget to track spending by category</p>
+					<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Category Budgets Yet</h2>
+					<p className="text-gray-600 dark:text-gray-400 mb-4">
+						Create budgets to track and manage your spending by category
+					</p>
 				</div>
 			) : (
-				<div className="grid grid-cols-1 gap-6">
-					{budgets.map((budget) => (
-						<div
-							key={budget.id}
-							className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6">
-							<div className="flex items-center justify-between mb-4">
-								<div>
-									<h3 className="text-lg font-semibold text-gray-900 dark:text-white">{budget.month}</h3>
-									<p className="text-sm text-gray-600 dark:text-gray-400">
-										Total Budget: ${budget.totalBudget?.toFixed(2)}
-									</p>
-								</div>
-								<div className="flex gap-2">
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+					{categoryBudgets.map((budget) => {
+						const spending = spendingData[budget.category] || { currentMonth: 0, lastMonth: 0, average: 0 };
+						const percentage = Math.round((spending.currentMonth / (budget.limit * 100)) * 100);
+						const isOverBudget = spending.currentMonth > budget.limit * 100;
+						const monthDiff = spending.currentMonth - spending.lastMonth;
+						const avgDiff = spending.currentMonth - spending.average;
+
+						return (
+							<div
+								key={budget.category}
+								className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6">
+								<div className="flex items-center justify-between mb-4">
+									<div>
+										<h3 className="text-lg font-semibold text-gray-900 dark:text-white">{budget.category}</h3>
+										<p className="text-sm text-gray-600 dark:text-gray-400">
+											Budget: ${(budget.limit / 100).toFixed(2)}/month
+										</p>
+									</div>
 									<button
-										onClick={() => handleEditBudget(budget)}
-										className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors">
-										<Edit2 className="w-4 h-4" />
-									</button>
-									<button
-										onClick={() => handleDeleteBudget(budget.id)}
+										onClick={() => handleDeleteBudget(budget.category)}
 										className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors">
 										<Trash2 className="w-4 h-4" />
 									</button>
 								</div>
+
+								{/* Progress Bar */}
+								<div className="mb-4">
+									<div className="flex justify-between items-center mb-2">
+										<span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+											Current Month: ${(spending.currentMonth / 100).toFixed(2)}
+										</span>
+										<span className={`text-sm font-bold ${getProgressColor(percentage)}`}>{percentage}%</span>
+									</div>
+									<div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+										<div
+											className={`h-full transition-all ${getProgressBarColor(percentage)}`}
+											style={{ width: `${Math.min(percentage, 100)}%` }}
+										/>
+									</div>
+									{isOverBudget && (
+										<div className="mt-2 flex items-center gap-2 text-red-600 dark:text-red-400">
+											<TrendingUp className="w-4 h-4" />
+											<span className="text-sm font-semibold">
+												Over budget by ${((spending.currentMonth - budget.limit * 100) / 100).toFixed(2)}
+											</span>
+										</div>
+									)}
+								</div>
+
+								{/* Spending Comparisons */}
+								<div className="space-y-2 text-sm">
+									<div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-slate-700/50 rounded">
+										<span className="text-gray-600 dark:text-gray-400">Last Month</span>
+										<div className="flex items-center gap-2">
+											<span className="font-medium text-gray-900 dark:text-white">
+												${(spending.lastMonth / 100).toFixed(2)}
+											</span>
+											<span
+												className={`text-xs font-semibold ${
+													monthDiff < 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+												}`}>
+												{monthDiff < 0 ? "↓" : "↑"} ${Math.abs(monthDiff / 100).toFixed(2)}
+											</span>
+										</div>
+									</div>
+
+									<div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-slate-700/50 rounded">
+										<span className="text-gray-600 dark:text-gray-400">Monthly Average</span>
+										<div className="flex items-center gap-2">
+											<span className="font-medium text-gray-900 dark:text-white">
+												${(spending.average / 100).toFixed(2)}
+											</span>
+											<span
+												className={`text-xs font-semibold ${
+													avgDiff < 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+												}`}>
+												{avgDiff < 0 ? "↓" : "↑"} ${Math.abs(avgDiff / 100).toFixed(2)}
+											</span>
+										</div>
+									</div>
+								</div>
 							</div>
-						</div>
-					))}
+						);
+					})}
 				</div>
 			)}
 		</div>

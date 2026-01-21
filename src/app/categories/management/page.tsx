@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Transaction } from "@/types";
+import { Transaction, TransactionCategory } from "@/types";
 import { getTransactions, updateTransaction } from "@/lib/firestoreService";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChevronDown, Save } from "lucide-react";
@@ -86,7 +86,7 @@ export default function CategoryManagementPage() {
 
 		setSaving(true);
 		try {
-			await updateTransaction(user.uid, transactionId, { category: newCategory });
+			await updateTransaction(user.uid, transactionId, { category: newCategory as TransactionCategory });
 
 			// Update local state
 			setCategoryGroups((prev) =>

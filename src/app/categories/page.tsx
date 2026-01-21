@@ -135,16 +135,15 @@ export default function CategoriesPage() {
 					Manage Transaction Categories
 				</Link>
 			</div>
-				{!showForm && (
-					<button
-						onClick={() => setShowForm(true)}
-						className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-						<Plus className="w-5 h-5" />
-						New Category
-					</button>
-				)}
-			</div>
 
+			{!showForm && (
+				<button
+					onClick={() => setShowForm(true)}
+					className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+					<Plus className="w-5 h-5" />
+					New Category
+				</button>
+			)}
 			{/* Category Form */}
 			{showForm && (
 				<div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6">
