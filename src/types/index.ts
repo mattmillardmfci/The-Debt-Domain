@@ -24,6 +24,7 @@ export type TransactionCategory =
 	| "Subscriptions"
 	| "Transfer"
 	| "Salary"
+	| "Debts"
 	| "Investment"
 	| "Other";
 

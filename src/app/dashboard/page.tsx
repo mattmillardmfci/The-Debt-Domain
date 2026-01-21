@@ -4,7 +4,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { TrendingDown, TrendingUp, AlertCircle, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { getTransactions, getDebts, getIncome, detectIncomePatterns, detectRecurringDebts } from "@/lib/firestoreService";
+import {
+	getTransactions,
+	getDebts,
+	getIncome,
+	detectIncomePatterns,
+	detectRecurringDebts,
+} from "@/lib/firestoreService";
 
 interface DashboardMetrics {
 	monthlyIncome: number;
@@ -66,48 +72,48 @@ export default function DashboardPage() {
 					monthlyExpensesAbsolute += monthlyImpact;
 				});
 
-			// Calculate monthly income from income entries + detected income patterns
-			let monthlyIncome = 0;
+				// Calculate monthly income from income entries + detected income patterns
+				let monthlyIncome = 0;
 
-			// From manual income entries
-			incomeEntries.forEach((income) => {
-				const amount = income.amount || 0;
-				if (income.frequency === "monthly") {
-					monthlyIncome += amount;
-				} else if (income.frequency === "yearly") {
-					monthlyIncome += amount / 12;
-				} else if (income.frequency === "biweekly") {
-					monthlyIncome += (amount * 26) / 12;
-				} else if (income.frequency === "semi-monthly") {
-					monthlyIncome += amount * 2;
-				} else if (income.frequency === "weekly") {
-					monthlyIncome += (amount * 52) / 12;
-				}
-			});
+				// From manual income entries
+				incomeEntries.forEach((income) => {
+					const amount = income.amount || 0;
+					if (income.frequency === "monthly") {
+						monthlyIncome += amount;
+					} else if (income.frequency === "yearly") {
+						monthlyIncome += amount / 12;
+					} else if (income.frequency === "biweekly") {
+						monthlyIncome += (amount * 26) / 12;
+					} else if (income.frequency === "semi-monthly") {
+						monthlyIncome += amount * 2;
+					} else if (income.frequency === "weekly") {
+						monthlyIncome += (amount * 52) / 12;
+					}
+				});
 
-			// From detected recurring income patterns
-			incomePatterns.forEach((pattern) => {
-				monthlyIncome += pattern.monthlyAmount; // Already in dollars
-			});
-			const savingsRate =
-				monthlyIncome > 0 ? Math.round(((monthlyIncome - monthlyExpensesAbsolute) / monthlyIncome) * 100) : 0;
+				// From detected recurring income patterns
+				incomePatterns.forEach((pattern) => {
+					monthlyIncome += pattern.monthlyAmount; // Already in dollars
+				});
+				const savingsRate =
+					monthlyIncome > 0 ? Math.round(((monthlyIncome - monthlyExpensesAbsolute) / monthlyIncome) * 100) : 0;
 
-			setMetrics({
-				monthlyIncome: Math.round(monthlyIncome * 100) / 100,
-				monthlyExpenses: Math.round(monthlyExpensesAbsolute * 100) / 100,
-				savingsRate: savingsRate,
-				totalDebt: Math.round(totalDebt / 100),
-				budgetUsage: 0, // TODO: Integrate with budgets
-			});
+				setMetrics({
+					monthlyIncome: Math.round(monthlyIncome * 100) / 100,
+					monthlyExpenses: Math.round(monthlyExpensesAbsolute * 100) / 100,
+					savingsRate: savingsRate,
+					totalDebt: Math.round(totalDebt / 100),
+					budgetUsage: 0, // TODO: Integrate with budgets
+				});
 
-			setHasData(transactions.length > 0 || debts.length > 0 || incomeEntries.length > 0);
-		} catch (err) {
-			console.error("Failed to load metrics:", err);
-			setHasData(false);
-		}
-	};
+				setHasData(transactions.length > 0 || debts.length > 0 || incomeEntries.length > 0);
+			} catch (err) {
+				console.error("Failed to load metrics:", err);
+				setHasData(false);
+			}
+		};
 
-	loadMetrics();
+		loadMetrics();
 	}, [user?.uid]);
 
 	return (

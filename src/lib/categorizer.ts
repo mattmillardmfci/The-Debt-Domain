@@ -12,10 +12,15 @@ const VENDOR_DATABASE: Record<string, TransactionCategory> = {
 	kroger: "Groceries",
 	hyvee: "Groceries",
 	walmart: "Groceries",
+	"wal-mart": "Groceries",
+	"wm supercenter": "Groceries",
+	samsclub: "Groceries",
+	"sam's club": "Groceries",
 	target: "Groceries",
 	costco: "Groceries",
 	publix: "Groceries",
 	instacart: "Groceries",
+	walgreens: "Healthcare",
 
 	// Gas/Fuel
 	shell: "Gas/Fuel",
@@ -29,6 +34,12 @@ const VENDOR_DATABASE: Record<string, TransactionCategory> = {
 	"76": "Gas/Fuel",
 	sinclair: "Gas/Fuel",
 	citgo: "Gas/Fuel",
+	"phillips 66": "Gas/Fuel",
+	phillips: "Gas/Fuel",
+	rocket: "Gas/Fuel",
+	caseys: "Gas/Fuel",
+	"casey's": "Gas/Fuel",
+	"break time": "Gas/Fuel",
 
 	// Restaurants
 	mcdonalds: "Restaurants",
@@ -97,15 +108,11 @@ const VENDOR_DATABASE: Record<string, TransactionCategory> = {
 	united: "Transportation",
 	american: "Transportation",
 
-	// Healthcare
-	hospital: "Healthcare",
-	clinic: "Healthcare",
-	pharmacy: "Healthcare",
-	cvs: "Healthcare",
-	walgreens: "Healthcare",
-	doctor: "Healthcare",
-	dentist: "Healthcare",
-	medical: "Healthcare",
+	// Debts (credit card, loan, line of credit payments)
+	discover: "Debts",
+	"e-payment": "Debts",
+	"credit card": "Debts",
+	"loan payment": "Debts",
 
 	// Shopping
 	amazon: "Shopping",
@@ -130,7 +137,8 @@ const CATEGORY_KEYWORDS: Record<TransactionCategory, string[]> = {
 	Healthcare: ["health", "medical", "healthcare", "prescription", "hospital", "clinic", "wellness"],
 	Subscriptions: ["subscription", "monthly", "recurring", "membership", "premium"],
 	Transfer: ["transfer", "deposit", "withdrawal"],
-	Salary: ["payroll", "salary", "income", "wage", "payment"],
+	Debts: ["e-payment", "credit card", "loan payment", "ach payment"],
+	Salary: ["payroll", "salary", "income", "wage"],
 	Investment: ["investment", "brokerage", "stock", "mutual fund"],
 	Other: [],
 };
@@ -138,8 +146,34 @@ const CATEGORY_KEYWORDS: Record<TransactionCategory, string[]> = {
 /**
  * Auto-categorize a transaction based on merchant and description
  */
-export function autoCategorizeTransaction(description: string, merchant?: string): TransactionCategory {
+export function autoCategorizeTransaction(description: string, merchant?: string, amount?: number): TransactionCategory {
 	const searchText = `${description} ${merchant || ""}`.toLowerCase();
+
+	// Debts/Payments: Check for credit card payments and ACH transfers FIRST
+	// These should be categorized as Debts, not Salary or Transfer
+	if (amount && amount < 0) {
+		if (
+			searchText.includes("ach") ||
+			searchText.includes("e-payment") ||
+			searchText.includes("credit card") ||
+			(searchText.includes("discover") && searchText.includes("payment")) ||
+			searchText.includes("loan payment")
+		) {
+			return "Debts";
+		}
+	}
+
+	// Salary: Only for POSITIVE amounts (income)
+	// PayPal transfers and other transfers should NOT be Salary
+	if (amount && amount > 0) {
+		if (
+			searchText.includes("payroll") ||
+			searchText.includes("salary") ||
+			(searchText.includes("income") && !searchText.includes("paypal"))
+		) {
+			return "Salary";
+		}
+	}
 
 	// Check vendor database first (most reliable)
 	if (merchant) {
@@ -158,8 +192,9 @@ export function autoCategorizeTransaction(description: string, merchant?: string
 		}
 	}
 
-	// Check keywords for each category
+	// Check keywords for each category (except Salary which we handled above)
 	for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+		if (category === "Salary") continue; // Skip salary keywords to use amount-based logic above
 		for (const keyword of keywords) {
 			if (searchText.includes(keyword)) {
 				return category as TransactionCategory;

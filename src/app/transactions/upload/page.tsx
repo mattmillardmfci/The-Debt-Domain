@@ -63,7 +63,7 @@ export default function TransactionUploadPage() {
 			// Auto-categorize transactions
 			const categorized = parsed.map((t) => ({
 				...t,
-				category: autoCategorizeTransaction(t.description || "", t.merchant),
+				category: autoCategorizeTransaction(t.description || "", t.merchant, t.amount),
 				confidence: getCategorizationConfidence(t.description || "", t.merchant, t.category || "Other"),
 			}));
 
