@@ -133,6 +133,10 @@ export default function DebtsPage() {
 		try {
 			await deleteDebt(user.uid, id);
 			setDebts(debts.filter((d) => d.id !== id));
+			
+			// Reload recurring debts to show any that were hidden by this debt
+			const recurringData = await detectRecurringDebts(user.uid);
+			setRecurringDebts(recurringData);
 		} catch (err) {
 			console.error("Failed to delete debt:", err);
 			alert("Failed to delete debt. Please try again.");
@@ -485,7 +489,9 @@ export default function DebtsPage() {
 					</p>
 
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-						{recurringDebts.map((pattern) => (
+					{recurringDebts
+						.filter((pattern) => !debts.some((d) => d.name === pattern.description))
+						.map((pattern) => (
 							<div
 								key={pattern.description}
 								className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">

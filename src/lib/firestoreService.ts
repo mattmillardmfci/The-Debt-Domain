@@ -425,7 +425,7 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 					// Filter out expenses that haven't occurred in the last 4 months
 					const now = new Date();
 					const fourMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 4, now.getDate());
-					
+
 					if (lastOccurrence >= fourMonthsAgo) {
 						patterns.push({
 							description,
