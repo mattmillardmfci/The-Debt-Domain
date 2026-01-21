@@ -221,7 +221,7 @@ export default function CategoryManagementPage() {
 												onChange={(e) => setSelectedCategory(e.target.value)}
 												className="px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm">
 												<option value="">Select category...</option>
-											{allCategories.map((cat) => (
+												{allCategories.map((cat) => (
 													<option key={cat} value={cat}>
 														{cat}
 													</option>
