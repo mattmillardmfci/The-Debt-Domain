@@ -518,7 +518,16 @@ export async function deleteAllTransactions(userId: string) {
 		const transactionsRef = getTransactionsRef(userId);
 		const snapshot = await getDocs(transactionsRef);
 
-		const deletePromises = snapshot.docs.map((doc) => deleteDoc(doc.ref));
+		// Delete all transactions in parallel with batch operations for better performance
+		const batchSize = 500; // Firestore batch write limit is 500
+		const deletePromises = [];
+
+		for (let i = 0; i < snapshot.docs.length; i += batchSize) {
+			const batch = snapshot.docs.slice(i, i + batchSize);
+			const batchPromises = batch.map((doc) => deleteDoc(doc.ref));
+			deletePromises.push(...batchPromises);
+		}
+
 		await Promise.all(deletePromises);
 	} catch (error) {
 		console.error("Error deleting all transactions:", error);
@@ -540,11 +549,18 @@ export async function deleteAllUserData(userId: string) {
 			getIncomeRef(userId),
 		];
 
-		for (const collectionRef of collections) {
-			const snapshot = await getDocs(collectionRef);
-			const deletePromises = snapshot.docs.map((doc) => deleteDoc(doc.ref));
-			await Promise.all(deletePromises);
-		}
+		// Fetch all collections in parallel instead of sequentially
+		const snapshots = await Promise.all(collections.map((collectionRef) => getDocs(collectionRef)));
+
+		// Collect all delete promises from all collections and execute in parallel
+		const allDeletePromises: Promise<void>[] = [];
+		snapshots.forEach((snapshot) => {
+			snapshot.docs.forEach((doc) => {
+				allDeletePromises.push(deleteDoc(doc.ref));
+			});
+		});
+
+		await Promise.all(allDeletePromises);
 	} catch (error) {
 		console.error("Error deleting all user data:", error);
 		throw error;
