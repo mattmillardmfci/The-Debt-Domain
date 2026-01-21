@@ -64,10 +64,7 @@ export default function ExpensesPage() {
 				// Show expenses that occur at least biweekly or more frequently
 				const filteredExpenses = recurringExpenses.filter((exp) => {
 					return (
-						exp.frequency === "weekly" ||
-						exp.frequency === "biweekly" ||
-						exp.frequency === "monthly" ||
-						(exp.count >= 3) // Or at least 3 occurrences
+						exp.frequency === "weekly" || exp.frequency === "biweekly" || exp.frequency === "monthly" || exp.count >= 3 // Or at least 3 occurrences
 					);
 				});
 
@@ -132,9 +129,7 @@ export default function ExpensesPage() {
 					<TrendingDown className="w-8 h-8 text-red-600" />
 					<div>
 						<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Monthly Expenses</h1>
-						<p className="text-gray-600 dark:text-gray-400 mt-1">
-							Recurring expenses that impact your monthly budget
-						</p>
+						<p className="text-gray-600 dark:text-gray-400 mt-1">Recurring expenses that impact your monthly budget</p>
 					</div>
 				</div>
 			</div>
@@ -187,7 +182,9 @@ export default function ExpensesPage() {
 							</thead>
 							<tbody className="divide-y divide-gray-200 dark:divide-slate-700">
 								{expenses.map((expense) => (
-									<tr key={expense.description} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+									<tr
+										key={expense.description}
+										className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
 										<td className="px-6 py-4">
 											<p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
 												{expense.description}
@@ -253,14 +250,15 @@ export default function ExpensesPage() {
 						<strong>Recurring Detection:</strong> Expenses appearing 2+ times in your transaction history are analyzed
 					</li>
 					<li>
-						<strong>Frequency Analysis:</strong> Time gaps between occurrences determine if it's weekly, biweekly, monthly, etc.
+						<strong>Frequency Analysis:</strong> Time gaps between occurrences determine if it's weekly, biweekly,
+						monthly, etc.
 					</li>
 					<li>
 						<strong>Monthly Impact:</strong> Recurring amounts are converted to a monthly equivalent for budget planning
 					</li>
 					<li>
-						<strong>One-Time Excluded:</strong> Truly random or annual expenses (like car sales tax) are filtered out to show your
-						predictable monthly costs
+						<strong>One-Time Excluded:</strong> Truly random or annual expenses (like car sales tax) are filtered out to
+						show your predictable monthly costs
 					</li>
 				</ul>
 			</div>
