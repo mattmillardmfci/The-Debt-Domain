@@ -2,7 +2,7 @@
 
 // Force deployment to Vercel
 import { useAuth } from "@/contexts/AuthContext";
-import { TrendingUp, AlertCircle, Plus } from "lucide-react";
+import { TrendingUp, TrendingDown, AlertCircle, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import {
@@ -157,6 +157,32 @@ export default function DashboardPage() {
 				<>
 					{/* Metrics Grid */}
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+						{/* Monthly Income */}
+						<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
+							<div className="flex items-center justify-between">
+								<div>
+									<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Income</p>
+									<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+										${metrics.monthlyIncome.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+									</p>
+								</div>
+								<TrendingUp className="w-8 h-8 text-green-600" />
+							</div>
+						</div>
+
+						{/* Monthly Expenses */}
+						<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
+							<div className="flex items-center justify-between">
+								<div>
+									<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Expenses</p>
+									<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+										${metrics.monthlyExpenses.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+									</p>
+								</div>
+								<TrendingDown className="w-8 h-8 text-red-600" />
+							</div>
+						</div>
+
 						{/* Total Debt */}
 						<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
 							<div className="flex items-center justify-between">

@@ -240,7 +240,9 @@ export default function IncomePage() {
 					{/* Mobile Cards */}
 					<div className="sm:hidden space-y-3">
 						{income.map((source) => (
-							<div key={source.description} className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
+							<div
+								key={source.description}
+								className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
 								<div className="space-y-3">
 									{/* Source name and type */}
 									<div>
@@ -269,21 +271,15 @@ export default function IncomePage() {
 									<div className="grid grid-cols-2 gap-3 text-xs">
 										<div>
 											<p className="text-gray-600 dark:text-gray-400">Per Occurrence</p>
-											<p className="font-medium text-gray-900 dark:text-white">
-												{formatCurrency(source.amount)}
-											</p>
+											<p className="font-medium text-gray-900 dark:text-white">{formatCurrency(source.amount)}</p>
 										</div>
 										<div>
 											<p className="text-gray-600 dark:text-gray-400">Frequency</p>
-											<p className="font-medium text-gray-900 dark:text-white capitalize">
-												{source.frequency}
-											</p>
+											<p className="font-medium text-gray-900 dark:text-white capitalize">{source.frequency}</p>
 										</div>
 										<div>
 											<p className="text-gray-600 dark:text-gray-400">Count</p>
-											<p className="font-medium text-gray-900 dark:text-white">
-												{source.count}x
-											</p>
+											<p className="font-medium text-gray-900 dark:text-white">{source.count}x</p>
 										</div>
 										<div>
 											<p className="text-gray-600 dark:text-gray-400">Last Occurrence</p>
@@ -318,7 +314,8 @@ export default function IncomePage() {
 						<strong>Manual Entries:</strong> Income sources you manually add in the profile section
 					</li>
 					<li>
-						<strong>Frequency Analysis:</strong> Time gaps between deposits determine if it's weekly, biweekly, semi-monthly, or monthly
+						<strong>Frequency Analysis:</strong> Time gaps between deposits determine if it's weekly, biweekly,
+						semi-monthly, or monthly
 					</li>
 					<li>
 						<strong>Semi-Monthly Detection:</strong> Identifies payroll on specific days of the month (e.g., 1st & 15th)

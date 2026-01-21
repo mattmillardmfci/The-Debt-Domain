@@ -214,7 +214,9 @@ export default function ExpensesPage() {
 					{/* Mobile Cards */}
 					<div className="sm:hidden space-y-3">
 						{expenses.map((expense) => (
-							<div key={expense.description} className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
+							<div
+								key={expense.description}
+								className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
 								<div className="space-y-3">
 									{/* Description and category */}
 									<div>
@@ -238,21 +240,15 @@ export default function ExpensesPage() {
 									<div className="grid grid-cols-2 gap-3 text-xs">
 										<div>
 											<p className="text-gray-600 dark:text-gray-400">Per Occurrence</p>
-											<p className="font-medium text-gray-900 dark:text-white">
-												{formatCurrency(expense.amount)}
-											</p>
+											<p className="font-medium text-gray-900 dark:text-white">{formatCurrency(expense.amount)}</p>
 										</div>
 										<div>
 											<p className="text-gray-600 dark:text-gray-400">Frequency</p>
-											<p className="font-medium text-gray-900 dark:text-white capitalize">
-												{expense.frequency}
-											</p>
+											<p className="font-medium text-gray-900 dark:text-white capitalize">{expense.frequency}</p>
 										</div>
 										<div>
 											<p className="text-gray-600 dark:text-gray-400">Count</p>
-											<p className="font-medium text-gray-900 dark:text-white">
-												{expense.count}x
-											</p>
+											<p className="font-medium text-gray-900 dark:text-white">{expense.count}x</p>
 										</div>
 										<div>
 											<p className="text-gray-600 dark:text-gray-400">Last Occurrence</p>
@@ -284,7 +280,8 @@ export default function ExpensesPage() {
 						<strong>Detection:</strong> Recurring transactions appearing 2+ times are analyzed for patterns
 					</li>
 					<li>
-						<strong>Frequency Analysis:</strong> Time gaps between transactions determine if it's weekly, biweekly, monthly, or other
+						<strong>Frequency Analysis:</strong> Time gaps between transactions determine if it's weekly, biweekly,
+						monthly, or other
 					</li>
 					<li>
 						<strong>Category Assignment:</strong> Transactions are categorized based on keywords and merchant names
