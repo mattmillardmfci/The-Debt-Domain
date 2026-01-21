@@ -146,7 +146,11 @@ const CATEGORY_KEYWORDS: Record<TransactionCategory, string[]> = {
 /**
  * Auto-categorize a transaction based on merchant and description
  */
-export function autoCategorizeTransaction(description: string, merchant?: string, amount?: number): TransactionCategory {
+export function autoCategorizeTransaction(
+	description: string,
+	merchant?: string,
+	amount?: number,
+): TransactionCategory {
 	const searchText = `${description} ${merchant || ""}`.toLowerCase();
 
 	// Debts/Payments: Check for credit card payments and ACH transfers FIRST

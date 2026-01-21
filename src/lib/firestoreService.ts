@@ -561,7 +561,7 @@ export async function detectIncomePatterns(userId: string): Promise<IncomePatter
 								// Likely semi-monthly (twice per month, on consistent days)
 								estimatedFrequency = "semi-monthly";
 								monthlyAmount = avgAmount * 2;
-							} else {
+						} else if (avgGap >= 12 && avgGap <= 16) {
 								// Biweekly (every 14 days, regardless of month boundaries)
 								estimatedFrequency = "biweekly";
 								monthlyAmount = avgAmount * (26 / 12);
@@ -569,7 +569,7 @@ export async function detectIncomePatterns(userId: string): Promise<IncomePatter
 						} else if (avgGap < 10) {
 							estimatedFrequency = "weekly";
 							monthlyAmount = avgAmount * (52 / 12);
-						} else if (avgGap < 40) {
+					} else if (avgGap >= 25 && avgGap < 40) {
 							estimatedFrequency = "monthly";
 							monthlyAmount = avgAmount;
 						} else if (avgGap < 100) {
