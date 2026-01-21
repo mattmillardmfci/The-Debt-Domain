@@ -2,16 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { Debt } from "@/types";
-import { Plus, Trash2, Calculator } from "lucide-react";
+import { Plus, Trash2, Edit2 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getDebts, saveDebt, deleteDebt } from "@/lib/firestoreService";
+import { getDebts, saveDebt, deleteDebt, updateDebt } from "@/lib/firestoreService";
 
 export default function DebtsPage() {
 	const { user } = useAuth();
 	const [debts, setDebts] = useState<(Partial<Debt> & { id: string })[]>([]);
 	const [showForm, setShowForm] = useState(false);
 	const [loading, setLoading] = useState(true);
+	const [editingId, setEditingId] = useState<string | null>(null);
 	const [formData, setFormData] = useState<Partial<Debt>>({
 		type: "credit-card",
 		balance: 0,
@@ -53,21 +54,42 @@ export default function DebtsPage() {
 		}
 
 		try {
-			const newDebt: Partial<Debt> = {
-				name: formData.name,
-				balance: Math.round((formData.balance as number) * 100),
-				interestRate: formData.interestRate || 0,
-				minimumPayment: Math.round((formData.minimumPayment || 0) * 100),
-				monthlyPayment: Math.round((formData.monthlyPayment || formData.minimumPayment || 0) * 100),
-				creditor: formData.creditor,
-				type: formData.type || "credit-card",
-			};
+			if (editingId) {
+				// Update existing debt
+				const updates: Partial<Debt> = {
+					name: formData.name,
+					balance: Math.round((formData.balance as number) * 100),
+					interestRate: formData.interestRate || 0,
+					minimumPayment: Math.round((formData.minimumPayment || 0) * 100),
+					monthlyPayment: Math.round((formData.monthlyPayment || formData.minimumPayment || 0) * 100),
+					creditor: formData.creditor,
+					type: formData.type || "credit-card",
+				};
 
-			// Save to Firestore
-			const docId = await saveDebt(user.uid, newDebt);
+				await updateDebt(user.uid, editingId, updates);
 
-			// Add to local state with ID
-			setDebts([...debts, { ...newDebt, id: docId }]);
+				// Update local state
+				setDebts(debts.map((d) => (d.id === editingId ? { ...d, ...updates } : d)));
+				setEditingId(null);
+			} else {
+				// Create new debt
+				const newDebt: Partial<Debt> = {
+					name: formData.name,
+					balance: Math.round((formData.balance as number) * 100),
+					interestRate: formData.interestRate || 0,
+					minimumPayment: Math.round((formData.minimumPayment || 0) * 100),
+					monthlyPayment: Math.round((formData.monthlyPayment || formData.minimumPayment || 0) * 100),
+					creditor: formData.creditor,
+					type: formData.type || "credit-card",
+				};
+
+				// Save to Firestore
+				const docId = await saveDebt(user.uid, newDebt);
+
+				// Add to local state with ID
+				setDebts([...debts, { ...newDebt, id: docId }]);
+			}
+
 			setFormData({
 				type: "credit-card",
 				balance: 0,
@@ -98,9 +120,36 @@ export default function DebtsPage() {
 		}
 	};
 
+	const handleEditDebt = (debt: Partial<Debt> & { id: string }) => {
+		setEditingId(debt.id);
+		setFormData({
+			name: debt.name,
+			balance: (debt.balance || 0) / 100,
+			interestRate: debt.interestRate,
+			minimumPayment: (debt.minimumPayment || 0) / 100,
+			monthlyPayment: (debt.monthlyPayment || 0) / 100,
+			creditor: debt.creditor,
+			type: debt.type,
+		});
+		setShowForm(true);
+	};
+
+	const handleCancelEdit = () => {
+		setEditingId(null);
+		setFormData({
+			type: "credit-card",
+			balance: 0,
+			interestRate: 0,
+			minimumPayment: 0,
+			monthlyPayment: 0,
+		});
+		setShowForm(false);
+	};
+
 	const totalDebt = debts.reduce((sum, d) => sum + (d.balance || 0), 0);
 	const totalMinimumPayment = debts.reduce((sum, d) => sum + (d.minimumPayment || 0), 0);
-	const avgInterestRate = debts.length > 0 ? debts.reduce((sum, d) => sum + (d.interestRate || 0), 0) / debts.length : 0;
+	const avgInterestRate =
+		debts.length > 0 ? debts.reduce((sum, d) => sum + (d.interestRate || 0), 0) / debts.length : 0;
 
 	return (
 		<div className="space-y-6">
@@ -132,7 +181,6 @@ export default function DebtsPage() {
 							<Link
 								href="/payoff-plan"
 								className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
-								<Calculator className="w-5 h-5" />
 								Create Plan
 							</Link>
 						)}
@@ -143,7 +191,9 @@ export default function DebtsPage() {
 			{/* Add Debt Form */}
 			{showForm ? (
 				<div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6">
-					<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Add New Debt</h2>
+					<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+						{editingId ? "Edit Debt" : "Add New Debt"}
+					</h2>
 
 					<div className="space-y-4">
 						<div>
@@ -279,10 +329,10 @@ export default function DebtsPage() {
 							<button
 								onClick={handleAddDebt}
 								className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-								Add Debt
+								{editingId ? "Update Debt" : "Add Debt"}
 							</button>
 							<button
-								onClick={() => setShowForm(false)}
+								onClick={handleCancelEdit}
 								className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
 								Cancel
 							</button>
@@ -321,39 +371,44 @@ export default function DebtsPage() {
 										Current Payment
 									</th>
 									<th className="px-6 py-3 text-right text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">
-										Action
+										Actions
 									</th>
 								</tr>
 							</thead>
 							<tbody className="divide-y divide-gray-200 dark:divide-slate-700">
 								{debts.map((debt) => (
-								<tr key={debt.id} className="hover:bg-gray-50 dark:hover:bg-slate-700">
-									<td className="px-6 py-4">
-										<div>
-											<p className="font-medium text-gray-900 dark:text-white">{debt.name}</p>
-											<p className="text-xs text-gray-600 dark:text-gray-400">{debt.creditor || debt.type}</p>
-										</div>
-									</td>
-									<td className="px-6 py-4 text-right text-gray-900 dark:text-white">
-										${((debt.balance || 0) / 100).toFixed(2)}
-									</td>
-									<td className="px-6 py-4 text-right text-gray-900 dark:text-white">
-										{(debt.interestRate || 0).toFixed(2)}%
-									</td>
-									<td className="px-6 py-4 text-right text-gray-900 dark:text-white">
-										${((debt.minimumPayment || 0) / 100).toFixed(2)}
-									</td>
-									<td className="px-6 py-4 text-right text-gray-900 dark:text-white">
-										${((debt.monthlyPayment || 0) / 100).toFixed(2)}
-									</td>
-									<td className="px-6 py-4 text-right">
-										<button
-											onClick={() => handleDeleteDebt(debt.id)}
-											className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors">
-											<Trash2 className="w-4 h-4" />
-										</button>
-									</td>
-								</tr>
+									<tr key={debt.id} className="hover:bg-gray-50 dark:hover:bg-slate-700">
+										<td className="px-6 py-4">
+											<div>
+												<p className="font-medium text-gray-900 dark:text-white">{debt.name}</p>
+												<p className="text-xs text-gray-600 dark:text-gray-400">{debt.creditor || debt.type}</p>
+											</div>
+										</td>
+										<td className="px-6 py-4 text-right text-gray-900 dark:text-white">
+											${((debt.balance || 0) / 100).toFixed(2)}
+										</td>
+										<td className="px-6 py-4 text-right text-gray-900 dark:text-white">
+											{(debt.interestRate || 0).toFixed(2)}%
+										</td>
+										<td className="px-6 py-4 text-right text-gray-900 dark:text-white">
+											${((debt.minimumPayment || 0) / 100).toFixed(2)}
+										</td>
+										<td className="px-6 py-4 text-right text-gray-900 dark:text-white">
+											${((debt.monthlyPayment || 0) / 100).toFixed(2)}
+										</td>
+										<td className="px-6 py-4 text-right space-x-2">
+											<button
+												onClick={() => handleEditDebt(debt)}
+												className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors inline-block">
+												<Edit2 className="w-4 h-4" />
+											</button>
+											<button
+												onClick={() => handleDeleteDebt(debt.id)}
+												className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors inline-block">
+												<Trash2 className="w-4 h-4" />
+											</button>
+										</td>
+									</tr>
 								))}
 							</tbody>
 						</table>

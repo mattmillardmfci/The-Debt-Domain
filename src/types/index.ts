@@ -154,3 +154,26 @@ export interface DashboardSummary {
 	transactionCount: number;
 	accountHealth: "excellent" | "good" | "fair" | "poor";
 }
+
+export interface CustomCategory {
+	id: string;
+	userId: string;
+	name: string;
+	color: string;
+	icon?: string;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+export interface Income {
+	id: string;
+	userId: string;
+	description: string;
+	amount: number; // in cents
+	frequency: "once" | "weekly" | "biweekly" | "monthly" | "yearly";
+	source: string;
+	startDate: Date;
+	endDate?: Date;
+	createdAt: Date;
+	updatedAt: Date;
+}

@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { TrendingDown, TrendingUp, Wallet, AlertCircle, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { getTransactions, getDebts } from "@/lib/firestoreService";
+import { getTransactions, getDebts, getIncome } from "@/lib/firestoreService";
 
 interface DashboardMetrics {
 	netWorth: number;
@@ -36,7 +36,11 @@ export default function DashboardPage() {
 		// Fetch data from Firestore and calculate metrics
 		const loadMetrics = async () => {
 			try {
-				const [transactions, debts] = await Promise.all([getTransactions(user.uid), getDebts(user.uid)]);
+				const [transactions, debts, incomeEntries] = await Promise.all([
+					getTransactions(user.uid),
+					getDebts(user.uid),
+					getIncome(user.uid),
+				]);
 
 				// Calculate total debt
 				const totalDebt = debts.reduce((sum, d) => sum + (d.balance || 0), 0);
@@ -53,19 +57,39 @@ export default function DashboardPage() {
 					})
 					.reduce((sum, t) => sum + (t.amount || 0), 0);
 
+				// Calculate monthly income
+				let monthlyIncome = 0;
+				incomeEntries.forEach((income) => {
+					const amount = income.amount || 0;
+					if (income.frequency === "monthly") {
+						monthlyIncome += amount;
+					} else if (income.frequency === "yearly") {
+						monthlyIncome += amount / 12;
+					} else if (income.frequency === "biweekly") {
+						monthlyIncome += (amount * 26) / 12;
+					} else if (income.frequency === "weekly") {
+						monthlyIncome += (amount * 52) / 12;
+					}
+					// 'once' frequency is not included in monthly income
+				});
+
+				// Calculate savings rate
+				const savingsRate =
+					monthlyIncome > 0 ? Math.round(((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100) : 0;
+
 				// Calculate net worth (assuming no asset data, so just inverse of debt)
 				const netWorth = -totalDebt;
 
 				setMetrics({
 					netWorth: Math.round(netWorth / 100),
-					monthlyIncome: 0, // TODO: Add income tracking
+					monthlyIncome: Math.round(monthlyIncome / 100),
 					monthlyExpenses: Math.round(monthlyExpenses / 100),
-					savingsRate: 0, // TODO: Calculate from income/expenses
+					savingsRate: savingsRate,
 					totalDebt: Math.round(totalDebt / 100),
 					budgetUsage: 0, // TODO: Integrate with budgets
 				});
 
-				setHasData(transactions.length > 0 || debts.length > 0);
+				setHasData(transactions.length > 0 || debts.length > 0 || incomeEntries.length > 0);
 			} catch (err) {
 				console.error("Failed to load metrics:", err);
 				setHasData(false);
@@ -103,7 +127,7 @@ export default function DashboardPage() {
 			) : (
 				<>
 					{/* Metrics Grid */}
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
 						{/* Net Worth */}
 						<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
 							<div className="flex items-center justify-between">
@@ -153,6 +177,17 @@ export default function DashboardPage() {
 									</p>
 								</div>
 								<AlertCircle className="w-8 h-8 text-orange-600" />
+							</div>
+						</div>
+
+						{/* Savings Rate */}
+						<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
+							<div className="flex items-center justify-between">
+								<div>
+									<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Savings Rate</p>
+									<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{metrics.savingsRate}%</p>
+								</div>
+								<TrendingUp className="w-8 h-8 text-emerald-600" />
 							</div>
 						</div>
 					</div>
