@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 					email: fbUser.email || "",
 					displayName: fbUser.displayName || undefined,
 					photoURL: fbUser.photoURL || undefined,
-				createdAt: new Date(),
+					createdAt: new Date(),
 					updatedAt: new Date(),
 				});
 			} else {

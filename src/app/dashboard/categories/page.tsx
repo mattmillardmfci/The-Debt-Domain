@@ -1,25 +1,17 @@
-'use client';
+"use client";
 
 export default function CategoriesPage() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Category Management
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Manage transaction categories and vendor overrides
-        </p>
-      </div>
+	return (
+		<div className="space-y-6">
+			<div>
+				<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Category Management</h1>
+				<p className="text-gray-600 dark:text-gray-400 mt-2">Manage transaction categories and vendor overrides</p>
+			</div>
 
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-8 text-center">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-          Category Management Coming Soon
-        </h2>
-        <p className="text-gray-600 dark:text-gray-400">
-          This feature is currently in development
-        </p>
-      </div>
-    </div>
-  );
+			<div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-8 text-center">
+				<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Category Management Coming Soon</h2>
+				<p className="text-gray-600 dark:text-gray-400">This feature is currently in development</p>
+			</div>
+		</div>
+	);
 }
