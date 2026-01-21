@@ -69,27 +69,27 @@ export default function DashboardPage() {
 					.reduce((sum, t) => sum + (t.amount || 0), 0);
 				const monthlyExpensesAbsolute = Math.abs(monthlyExpenses);
 
-			// Calculate monthly income from income entries + detected income patterns
-			let monthlyIncome = 0;
-			
-			// From manual income entries
-			incomeEntries.forEach((income) => {
-				const amount = income.amount || 0;
-				if (income.frequency === "monthly") {
-					monthlyIncome += amount;
-				} else if (income.frequency === "yearly") {
-					monthlyIncome += amount / 12;
-				} else if (income.frequency === "biweekly") {
-					monthlyIncome += (amount * 26) / 12;
-				} else if (income.frequency === "weekly") {
-					monthlyIncome += (amount * 52) / 12;
-				}
-			});
+				// Calculate monthly income from income entries + detected income patterns
+				let monthlyIncome = 0;
 
-			// From detected recurring income patterns
-			incomePatterns.forEach((pattern) => {
-				monthlyIncome += pattern.monthlyAmount * 100; // Convert dollars to cents
-			});
+				// From manual income entries
+				incomeEntries.forEach((income) => {
+					const amount = income.amount || 0;
+					if (income.frequency === "monthly") {
+						monthlyIncome += amount;
+					} else if (income.frequency === "yearly") {
+						monthlyIncome += amount / 12;
+					} else if (income.frequency === "biweekly") {
+						monthlyIncome += (amount * 26) / 12;
+					} else if (income.frequency === "weekly") {
+						monthlyIncome += (amount * 52) / 12;
+					}
+				});
+
+				// From detected recurring income patterns
+				incomePatterns.forEach((pattern) => {
+					monthlyIncome += pattern.monthlyAmount * 100; // Convert dollars to cents
+				});
 				const savingsRate =
 					monthlyIncome > 0 ? Math.round(((monthlyIncome - monthlyExpensesAbsolute) / monthlyIncome) * 100) : 0;
 
@@ -154,18 +154,17 @@ export default function DashboardPage() {
 						</div>
 
 						{/* Monthly Expenses */}
-						<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
-							<div className="flex items-center justify-between">
-								<div>
-									<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Expenses</p>
-									<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-										${metrics.monthlyExpenses.toLocaleString()}
-									</p>
-								</div>
-								<TrendingDown className="w-8 h-8 text-red-600" />
+					<Link href="/expenses" className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg transition-shadow cursor-pointer">
+						<div className="flex items-center justify-between">
+							<div>
+								<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Expenses</p>
+								<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+									${metrics.monthlyExpenses.toLocaleString()}
+								</p>
 							</div>
+							<TrendingDown className="w-8 h-8 text-red-600" />
 						</div>
-
+					</Link>
 						{/* Total Debt */}
 						<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
 							<div className="flex items-center justify-between">
