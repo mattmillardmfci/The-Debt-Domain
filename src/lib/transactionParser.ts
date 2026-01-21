@@ -3,17 +3,21 @@ import Papa from "papaparse";
 
 /**
  * Parse CSV bank statement files
- * Supports common formats: date, description, amount
+ * Supports common formats including: date, type, description, check #, amount, balance
  */
 export async function parseCSV(file: File): Promise<Partial<Transaction>[]> {
 	return new Promise((resolve, reject) => {
 		Papa.parse(file, {
-			header: false,
+			header: true,
 			skipEmptyLines: true,
 			complete: (results) => {
 				try {
-					const transactions = results.data as any[];
-					const parsed = transactions.filter((row) => row.length >= 3).map((row) => parseCSVRow(row));
+					const rows = results.data as Record<string, string>[];
+					
+					// Parse rows and filter out the header row and empty rows
+					const parsed = rows
+						.filter((row) => row.Date && Object.keys(row).length > 0)
+						.map((row) => parseCSVRow(row));
 
 					// Filter out invalid transactions
 					const validTransactions = parsed.filter((t) => t.date && t.amount !== undefined);
@@ -29,21 +33,33 @@ export async function parseCSV(file: File): Promise<Partial<Transaction>[]> {
 
 /**
  * Parse a single CSV row to a transaction
- * Handles various date formats and amount formats
+ * Handles bank statement format: Date, Type, Description, Check #, Amount, Balance
  */
-function parseCSVRow(row: any[]): Partial<Transaction> {
-	const [dateStr, descriptionStr, amountStr, ...rest] = row;
+function parseCSVRow(row: Record<string, string>): Partial<Transaction> {
+	const dateStr = row.Date?.trim();
+	const type = row.Type?.trim();
+	const descriptionStr = row.Description?.trim();
+	const checkNum = row["Check #"]?.trim();
+	const amountStr = row.Amount?.trim();
 
-	// Try to parse date (common formats: MM/DD/YYYY, YYYY-MM-DD, DD/MM/YYYY)
+	// Try to parse date (MM/DD/YYYY format)
 	const date = parseDate(dateStr);
 	if (!date) {
 		throw new Error(`Invalid date format: ${dateStr}`);
 	}
 
-	// Description is typically the merchant/category info
-	const description = descriptionStr?.trim() || "Unknown";
+	// Build description from type and description
+	let description = descriptionStr || "Unknown";
+	if (type && type !== "Deposits") {
+		// Only prepend type for non-deposit transactions for clarity
+		if (type === "Checks" && checkNum) {
+			description = `Check #${checkNum}: ${description}`;
+		} else if (type !== "Debit Card" && type !== "Account Transfers") {
+			description = `${type}: ${description}`;
+		}
+	}
 
-	// Amount - handle negative amounts and various formats
+	// Amount - handle negative amounts
 	let amount: number | undefined;
 	const cleanAmount = amountStr?.toString().replace(/[^\d.-]/g, "");
 	if (cleanAmount) {
