@@ -360,7 +360,9 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 			if (transactions.length >= 2) {
 				const amounts = transactions.map((t) => t.amount || 0).filter((a) => a !== 0);
 				const totalAmount = amounts.reduce((a, b) => a + b, 0);
-				const avgAmount = amounts.length > 0 ? totalAmount / amounts.length : 0;
+				// Convert from cents to dollars by dividing by 100
+				const avgAmount = amounts.length > 0 ? (totalAmount / amounts.length) / 100 : 0;
+				const totalAmountDollars = totalAmount / 100;
 
 				// Get last occurrence date
 				const lastOccurrence = transactions
@@ -394,7 +396,7 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 					description,
 					count: transactions.length,
 					avgAmount: Math.round(avgAmount * 100) / 100,
-					totalAmount: Math.round(totalAmount * 100) / 100,
+					totalAmount: Math.round(totalAmountDollars * 100) / 100,
 					lastOccurrence,
 					estimatedFrequency,
 				});
