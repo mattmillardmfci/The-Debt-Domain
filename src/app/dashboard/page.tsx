@@ -2,7 +2,7 @@
 
 // Force deployment to Vercel
 import { useAuth } from "@/contexts/AuthContext";
-import { TrendingDown, TrendingUp, AlertCircle, Plus } from "lucide-react";
+import { TrendingUp, AlertCircle, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import {
@@ -157,35 +157,6 @@ export default function DashboardPage() {
 				<>
 					{/* Metrics Grid */}
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-						{/* Monthly Income */}
-						<Link
-							href="/income"
-							className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg transition-shadow cursor-pointer">
-							<div className="flex items-center justify-between">
-								<div>
-									<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Income</p>
-									<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-										${metrics.monthlyIncome.toLocaleString()}
-									</p>
-								</div>
-								<TrendingUp className="w-8 h-8 text-green-600" />
-							</div>
-						</Link>
-
-						{/* Monthly Expenses */}
-						<Link
-							href="/expenses"
-							className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg transition-shadow cursor-pointer">
-							<div className="flex items-center justify-between">
-								<div>
-									<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Expenses</p>
-									<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-										${metrics.monthlyExpenses.toLocaleString()}
-									</p>
-								</div>
-								<TrendingDown className="w-8 h-8 text-red-600" />
-							</div>
-						</Link>
 						{/* Total Debt */}
 						<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
 							<div className="flex items-center justify-between">
