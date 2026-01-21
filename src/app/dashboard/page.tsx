@@ -106,7 +106,7 @@ export default function DashboardPage() {
 					budgetUsage: 0, // TODO: Integrate with budgets
 				});
 
-				setHasData(transactions.length > 0 || debts.length > 0 || incomeEntries.length > 0);
+				setHasData(transactions.length > 0);
 			} catch (err) {
 				console.error("Failed to load metrics:", err);
 				setHasData(false);

@@ -10,6 +10,7 @@ import {
 	updateTransaction,
 	bulkRenameTransactionDescription,
 	getCustomCategories,
+	saveTransaction,
 } from "@/lib/firestoreService";
 import { useAuth } from "@/contexts/AuthContext";
 import { QueryDocumentSnapshot } from "firebase/firestore";
@@ -54,6 +55,14 @@ export default function TransactionsPage() {
 	});
 	const [renaming, setRenaming] = useState(false);
 	const [allCategories, setAllCategories] = useState<string[]>(COMMON_CATEGORIES);
+	const [addTransactionModal, setAddTransactionModal] = useState(false);
+	const [newTransaction, setNewTransaction] = useState({
+		date: new Date().toISOString().split("T")[0],
+		description: "",
+		amount: "",
+		category: "Other" as TransactionCategory,
+	});
+	const [savingTransaction, setSavingTransaction] = useState(false);
 
 	// Initial load - get first page of transactions (50 most recent)
 	useEffect(() => {
@@ -168,6 +177,52 @@ export default function TransactionsPage() {
 		}
 	};
 
+	const handleAddTransaction = async () => {
+		if (!user?.uid || !newTransaction.description.trim() || !newTransaction.amount) {
+			alert("Please fill in all fields");
+			return;
+		}
+
+		setSavingTransaction(true);
+		try {
+			const amountInCents = Math.round(parseFloat(newTransaction.amount) * 100);
+			const transactionDate = new Date(newTransaction.date);
+
+			const transaction: Partial<Transaction> = {
+				userId: user.uid,
+				date: transactionDate,
+				description: newTransaction.description.trim(),
+				amount: amountInCents,
+				category: newTransaction.category,
+				categoryConfirmed: true,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			};
+
+			await saveTransaction(user.uid, transaction);
+
+			// Reset form and close modal
+			setNewTransaction({
+				date: new Date().toISOString().split("T")[0],
+				description: "",
+				amount: "",
+				category: "Other" as TransactionCategory,
+			});
+			setAddTransactionModal(false);
+
+			// Reload transactions
+			const result = await getTransactionsPaginated(user.uid, 50);
+			setTransactions(result.transactions);
+			setLastDoc(result.lastDoc);
+			setHasMore(result.hasMore);
+		} catch (err) {
+			console.error("Failed to save transaction:", err);
+			alert("Failed to save transaction. Please try again.");
+		} finally {
+			setSavingTransaction(false);
+		}
+	};
+
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center min-h-screen">
@@ -209,12 +264,20 @@ export default function TransactionsPage() {
 						Showing {transactions.length} {hasMore ? `of many` : `transactions`}
 					</p>
 				</div>
-				<Link
-					href="/transactions/upload"
-					className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-					<Plus className="w-5 h-5" />
-					Upload More
-				</Link>
+				<div className="flex gap-3">
+					<button
+						onClick={() => setAddTransactionModal(true)}
+						className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors">
+						<Plus className="w-5 h-5" />
+						Add Custom
+					</button>
+					<Link
+						href="/transactions/upload"
+						className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+						<Plus className="w-5 h-5" />
+						Upload More
+					</Link>
+				</div>
 			</div>
 
 			{/* Transaction Table */}
@@ -393,6 +456,121 @@ export default function TransactionsPage() {
 									}
 									className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-md transition-colors">
 									{renaming ? "Renaming..." : "Rename All"}
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Add Custom Transaction Modal */}
+			{addTransactionModal && (
+				<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg max-w-md w-full p-6">
+						<div className="flex items-center justify-between mb-4">
+							<h2 className="text-xl font-bold text-gray-900 dark:text-white">Add Custom Transaction</h2>
+							<button
+								onClick={() => setAddTransactionModal(false)}
+								className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+								<X className="w-5 h-5" />
+							</button>
+						</div>
+
+						<div className="space-y-4">
+							<div>
+								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+									Date
+								</label>
+								<input
+									type="date"
+									value={newTransaction.date}
+									onChange={(e) =>
+										setNewTransaction({
+											...newTransaction,
+											date: e.target.value,
+										})
+									}
+									className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+								/>
+							</div>
+
+							<div>
+								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+									Description
+								</label>
+								<input
+									type="text"
+									value={newTransaction.description}
+									onChange={(e) =>
+										setNewTransaction({
+											...newTransaction,
+											description: e.target.value,
+										})
+									}
+									className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+									placeholder="e.g., Daycare - Weekly"
+								/>
+							</div>
+
+							<div>
+								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+									Amount
+								</label>
+								<div className="relative">
+									<span className="absolute left-3 top-2 text-gray-500 dark:text-gray-400">$</span>
+									<input
+										type="number"
+										step="0.01"
+										value={newTransaction.amount}
+										onChange={(e) =>
+											setNewTransaction({
+												...newTransaction,
+												amount: e.target.value,
+											})
+										}
+										className="w-full px-3 py-2 pl-7 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+										placeholder="0.00"
+									/>
+								</div>
+							</div>
+
+							<div>
+								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+									Category
+								</label>
+								<select
+									value={newTransaction.category}
+									onChange={(e) =>
+										setNewTransaction({
+											...newTransaction,
+											category: e.target.value as TransactionCategory,
+										})
+									}
+									className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+									{allCategories.map((cat) => (
+										<option key={cat} value={cat}>
+											{cat}
+										</option>
+									))}
+								</select>
+							</div>
+
+							<div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded p-3 text-sm text-emerald-800 dark:text-emerald-300">
+								This transaction will be marked as categorized and will be included in your financial calculations.
+							</div>
+
+							<div className="flex gap-3 justify-end mt-6">
+								<button
+									onClick={() => setAddTransactionModal(false)}
+									disabled={savingTransaction}
+									className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 font-medium transition-colors disabled:opacity-50">
+									Cancel
+								</button>
+								<button
+									onClick={handleAddTransaction}
+									disabled={savingTransaction || !newTransaction.description.trim() || !newTransaction.amount}
+									className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-medium rounded-md transition-colors">
+									{savingTransaction ? "Creating..." : "Create Transaction"}
 								</button>
 							</div>
 						</div>
