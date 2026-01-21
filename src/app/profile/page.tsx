@@ -90,9 +90,7 @@ export default function ProfilePage() {
 			<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
 				<div className="space-y-4">
 					<div>
-						<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-							Full Name
-						</label>
+						<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
 						<input
 							type="text"
 							value={displayName}
@@ -103,9 +101,7 @@ export default function ProfilePage() {
 					</div>
 
 					<div>
-						<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-							Email
-						</label>
+						<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
 						<input
 							type="email"
 							value={user?.email || ""}
@@ -133,9 +129,7 @@ export default function ProfilePage() {
 					<div className="flex items-start gap-4">
 						<AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-1" />
 						<div className="flex-1">
-							<h3 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-1">
-								Delete All Transactions
-							</h3>
+							<h3 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-1">Delete All Transactions</h3>
 							<p className="text-sm text-red-800 dark:text-red-200 mb-4">
 								This will permanently delete all your transaction records. This action cannot be undone.
 							</p>
@@ -154,11 +148,10 @@ export default function ProfilePage() {
 					<div className="flex items-start gap-4">
 						<AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-1" />
 						<div className="flex-1">
-							<h3 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-1">
-								Delete All Personal Data
-							</h3>
+							<h3 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-1">Delete All Personal Data</h3>
 							<p className="text-sm text-red-800 dark:text-red-200 mb-4">
-								This will permanently erase ALL your data including transactions, debts, budgets, categories, and income entries. This action is irreversible.
+								This will permanently erase ALL your data including transactions, debts, budgets, categories, and income
+								entries. This action is irreversible.
 							</p>
 							<button
 								onClick={() => setShowDeleteAllData(true)}
@@ -177,9 +170,7 @@ export default function ProfilePage() {
 					<div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-sm mx-4 border border-gray-200 dark:border-slate-700">
 						<div className="flex items-center gap-3 mb-4">
 							<AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
-							<h3 className="text-lg font-bold text-gray-900 dark:text-white">
-								Delete All Transactions?
-							</h3>
+							<h3 className="text-lg font-bold text-gray-900 dark:text-white">Delete All Transactions?</h3>
 						</div>
 						<p className="text-gray-600 dark:text-gray-400 mb-6">
 							Are you sure you want to delete all transactions? This action cannot be undone.
@@ -207,13 +198,9 @@ export default function ProfilePage() {
 					<div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-sm mx-4 border border-gray-200 dark:border-slate-700">
 						<div className="flex items-center gap-3 mb-4">
 							<AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
-							<h3 className="text-lg font-bold text-gray-900 dark:text-white">
-								Delete All Personal Data?
-							</h3>
+							<h3 className="text-lg font-bold text-gray-900 dark:text-white">Delete All Personal Data?</h3>
 						</div>
-						<p className="text-gray-600 dark:text-gray-400 mb-2">
-							This will permanently delete:
-						</p>
+						<p className="text-gray-600 dark:text-gray-400 mb-2">This will permanently delete:</p>
 						<ul className="text-sm text-gray-600 dark:text-gray-400 mb-6 ml-5 list-disc space-y-1">
 							<li>All transactions</li>
 							<li>All debts</li>
@@ -221,9 +208,7 @@ export default function ProfilePage() {
 							<li>All categories</li>
 							<li>All income entries</li>
 						</ul>
-						<p className="text-sm font-semibold text-red-600 dark:text-red-400 mb-6">
-							This action cannot be undone.
-						</p>
+						<p className="text-sm font-semibold text-red-600 dark:text-red-400 mb-6">This action cannot be undone.</p>
 						<div className="flex gap-3">
 							<button
 								onClick={() => setShowDeleteAllData(false)}

@@ -56,13 +56,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	const updateDisplayName = async (displayName: string) => {
 		try {
 			if (!firebaseUser) throw new Error("No user logged in");
-			
+
 			await updateProfile(firebaseUser, { displayName });
-			
+
 			// Update local state
-			setUser((prevUser) =>
-				prevUser ? { ...prevUser, displayName } : null
-			);
+			setUser((prevUser) => (prevUser ? { ...prevUser, displayName } : null));
 		} catch (error) {
 			console.error("Error updating display name:", error);
 			throw error;

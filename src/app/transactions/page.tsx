@@ -4,25 +4,33 @@ import Link from "next/link";
 import { Plus, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Transaction } from "@/types";
-import { getTransactions, deleteTransaction } from "@/lib/firestoreService";
+import { getTransactionsPaginated, deleteTransaction } from "@/lib/firestoreService";
 import { useAuth } from "@/contexts/AuthContext";
+import { QueryDocumentSnapshot } from "firebase/firestore";
 
 export default function TransactionsPage() {
 	const { user } = useAuth();
 	const [transactions, setTransactions] = useState<(Partial<Transaction> & { id: string })[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [loadingMore, setLoadingMore] = useState(false);
+	const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
+	const [hasMore, setHasMore] = useState(false);
+	const [totalCount, setTotalCount] = useState(0);
 
+	// Initial load - get first page of transactions (50 most recent)
 	useEffect(() => {
 		if (!user?.uid) {
 			setLoading(false);
 			return;
 		}
 
-		// Load transactions from Firestore
 		const loadTransactions = async () => {
 			try {
-				const data = await getTransactions(user.uid);
-				setTransactions(data);
+				const result = await getTransactionsPaginated(user.uid, 50);
+				setTransactions(result.transactions);
+				setLastDoc(result.lastDoc);
+				setHasMore(result.hasMore);
+				setTotalCount(result.transactions.length);
 			} catch (err) {
 				console.error("Failed to load transactions:", err);
 			} finally {
@@ -32,6 +40,24 @@ export default function TransactionsPage() {
 
 		loadTransactions();
 	}, [user?.uid]);
+
+	// Load more transactions
+	const handleLoadMore = async () => {
+		if (!user?.uid || !lastDoc || loadingMore) return;
+
+		setLoadingMore(true);
+		try {
+			const result = await getTransactionsPaginated(user.uid, 50, lastDoc);
+			setTransactions((prev) => [...prev, ...result.transactions]);
+			setLastDoc(result.lastDoc);
+			setHasMore(result.hasMore);
+			setTotalCount((prev) => prev + result.transactions.length);
+		} catch (err) {
+			console.error("Failed to load more transactions:", err);
+		} finally {
+			setLoadingMore(false);
+		}
+	};
 
 	const handleDeleteTransaction = async (transactionId: string) => {
 		if (!user?.uid) return;
@@ -86,7 +112,9 @@ export default function TransactionsPage() {
 			<div className="flex justify-between items-center">
 				<div>
 					<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Transactions</h1>
-					<p className="text-gray-600 dark:text-gray-400 mt-2">{transactions.length} transactions found</p>
+					<p className="text-gray-600 dark:text-gray-400 mt-2">
+						Showing {transactions.length} {hasMore ? `of many` : `transactions`}
+					</p>
 				</div>
 				<Link
 					href="/transactions/upload"
@@ -119,7 +147,7 @@ export default function TransactionsPage() {
 						</tr>
 					</thead>
 					<tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-						{transactions.slice(0, 50).map((t) => (
+						{transactions.map((t) => (
 							<tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-slate-700">
 								<td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
 									{t.date instanceof Date ? t.date.toLocaleDateString() : new Date(t.date as any).toLocaleDateString()}
@@ -146,8 +174,22 @@ export default function TransactionsPage() {
 				</table>
 			</div>
 
-			{transactions.length > 20 && (
-				<p className="text-sm text-gray-600 dark:text-gray-400">Showing 20 of {transactions.length} transactions</p>
+			{/* Load More Button */}
+			{hasMore && (
+				<div className="flex justify-center">
+					<button
+						onClick={handleLoadMore}
+						disabled={loadingMore}
+						className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors">
+						{loadingMore ? "Loading more..." : "Load More Transactions"}
+					</button>
+				</div>
+			)}
+
+			{!hasMore && transactions.length > 0 && (
+				<p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+					You've loaded all {transactions.length} transactions
+				</p>
 			)}
 		</div>
 	);

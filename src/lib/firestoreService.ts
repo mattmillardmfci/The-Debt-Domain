@@ -11,6 +11,10 @@ import {
 	updateDoc,
 	Timestamp,
 	QueryConstraint,
+	orderBy,
+	limit,
+	QueryDocumentSnapshot,
+	startAfter,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { Transaction, Debt, Budget, CustomCategory, Income } from "@/types";
@@ -118,6 +122,67 @@ export async function getTransactions(userId: string): Promise<(Partial<Transact
 	} catch (error) {
 		console.error("Error fetching transactions:", error);
 		return [];
+	}
+}
+
+/**
+ * Get paginated transactions - optimized for fast loading
+ * Default loads 50 most recent transactions
+ */
+export async function getTransactionsPaginated(
+	userId: string,
+	pageSize: number = 50,
+	lastDoc?: QueryDocumentSnapshot,
+): Promise<{
+	transactions: (Partial<Transaction> & { id: string })[];
+	lastDoc: QueryDocumentSnapshot | null;
+	hasMore: boolean;
+}> {
+	try {
+		const ref = getTransactionsRef(userId);
+
+		// Build query: order by date descending, limit to pageSize + 1 to check if there are more
+		let q = query(ref, orderBy("date", "desc"), limit(pageSize + 1));
+
+		// If we have a last document, start after it for pagination
+		if (lastDoc) {
+			q = query(ref, orderBy("date", "desc"), startAfter(lastDoc), limit(pageSize + 1));
+		}
+
+		const snapshot = await getDocs(q);
+		const transactions: (Partial<Transaction> & { id: string })[] = [];
+		let newLastDoc: QueryDocumentSnapshot | null = null;
+		let hasMore = false;
+
+		for (let i = 0; i < snapshot.docs.length; i++) {
+			const doc = snapshot.docs[i];
+			// Don't include the extra doc we fetched to check for more
+			if (i < pageSize) {
+				const data = doc.data();
+				transactions.push({
+					...data,
+					id: doc.id,
+					date: data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date),
+				} as Partial<Transaction> & { id: string });
+				newLastDoc = doc;
+			} else {
+				// There's more data beyond this page
+				hasMore = true;
+			}
+		}
+
+		return {
+			transactions,
+			lastDoc: newLastDoc,
+			hasMore,
+		};
+	} catch (error) {
+		console.error("Error fetching paginated transactions:", error);
+		return {
+			transactions: [],
+			lastDoc: null,
+			hasMore: false,
+		};
 	}
 }
 
