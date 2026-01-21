@@ -495,7 +495,7 @@ export async function detectIncomePatterns(userId: string): Promise<IncomePatter
 					.map((t) => (t.date instanceof Date ? t.date : new Date(t.date || 0)))
 					.sort((a, b) => b.getTime() - a.getTime())[0];
 
-				// Estimate frequency based on date gaps
+				// Estimate frequency based on date gaps and day-of-month patterns
 				let estimatedFrequency = "monthly";
 				let monthlyAmount = avgAmount;
 
@@ -512,12 +512,35 @@ export async function detectIncomePatterns(userId: string): Promise<IncomePatter
 
 					if (gaps.length > 0) {
 						const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
-						if (avgGap < 10) {
+						
+						// Check if this is semi-monthly (twice a month) vs biweekly
+						// Semi-monthly: typically occurs on specific days like 1st and 15th, or 15th and 30th
+						if (avgGap >= 12 && avgGap <= 18) {
+							// Could be either semi-monthly or biweekly
+							// Analyze day-of-month pattern
+							const dayOfMonths = dates.map(d => d.getDate());
+							const monthDiffs: number[] = [];
+							
+							// Check if there's a pattern of ~2 occurrences per month
+							for (let i = 1; i < dates.length; i++) {
+								const monthDiff = (dates[i].getFullYear() - dates[i-1].getFullYear()) * 12 + 
+									(dates[i].getMonth() - dates[i-1].getMonth());
+								monthDiffs.push(monthDiff);
+							}
+							
+							// If most gaps are less than 1 month, it's likely semi-monthly
+							const semiMonthlyCount = monthDiffs.filter(m => m <= 0.5).length;
+							if (semiMonthlyCount > monthDiffs.length * 0.6) {
+								// Likely semi-monthly (twice per month)
+								estimatedFrequency = "semi-monthly";
+								monthlyAmount = avgAmount * 2;
+							} else {
+								estimatedFrequency = "biweekly";
+								monthlyAmount = avgAmount * (26 / 12);
+							}
+						} else if (avgGap < 10) {
 							estimatedFrequency = "weekly";
 							monthlyAmount = avgAmount * (52 / 12);
-						} else if (avgGap < 20) {
-							estimatedFrequency = "biweekly";
-							monthlyAmount = avgAmount * (26 / 12);
 						} else if (avgGap < 40) {
 							estimatedFrequency = "monthly";
 							monthlyAmount = avgAmount;

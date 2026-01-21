@@ -59,6 +59,8 @@ export default function IncomePage() {
 						monthlyAmount = monthlyAmount * (26 / 12);
 					} else if (entry.frequency === "weekly") {
 						monthlyAmount = monthlyAmount * (52 / 12);
+					} else if (entry.frequency === "semi-monthly") {
+						monthlyAmount = monthlyAmount * 2;
 					}
 					// monthly frequency stays the same, once frequency is not included
 

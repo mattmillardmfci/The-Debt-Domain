@@ -81,6 +81,8 @@ export default function DashboardPage() {
 						monthlyIncome += amount / 12;
 					} else if (income.frequency === "biweekly") {
 						monthlyIncome += (amount * 26) / 12;
+					} else if (income.frequency === "semi-monthly") {
+						monthlyIncome += amount * 2;
 					} else if (income.frequency === "weekly") {
 						monthlyIncome += (amount * 52) / 12;
 					}

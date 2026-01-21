@@ -170,7 +170,7 @@ export interface Income {
 	userId: string;
 	description: string;
 	amount: number; // in cents
-	frequency: "once" | "weekly" | "biweekly" | "monthly" | "yearly";
+	frequency: "once" | "weekly" | "biweekly" | "semi-monthly" | "monthly" | "yearly";
 	source: string;
 	startDate: Date;
 	endDate?: Date;
