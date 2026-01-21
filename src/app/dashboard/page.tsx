@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { TrendingDown, TrendingUp, AlertCircle, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { getTransactions, getDebts, getIncome, detectIncomePatterns } from "@/lib/firestoreService";
+import { getTransactions, getDebts, getIncome, detectIncomePatterns, detectRecurringDebts } from "@/lib/firestoreService";
 
 interface DashboardMetrics {
 	monthlyIncome: number;
@@ -34,83 +34,80 @@ export default function DashboardPage() {
 		// Fetch data from Firestore and calculate metrics
 		const loadMetrics = async () => {
 			try {
-				const [transactions, debts, incomeEntries, incomePatterns] = await Promise.all([
+				const [transactions, debts, incomeEntries, incomePatterns, recurringDebts] = await Promise.all([
 					getTransactions(user.uid),
 					getDebts(user.uid),
 					getIncome(user.uid),
 					detectIncomePatterns(user.uid),
+					detectRecurringDebts(user.uid),
 				]);
 
 				// Calculate total debt
 				const totalDebt = debts.reduce((sum, d) => sum + (d.balance || 0), 0);
 
-				// Calculate monthly expenses from transactions (current month)
-				const now = new Date();
-				const currentMonth = now.getMonth();
-				const currentYear = now.getFullYear();
+				// Calculate monthly expenses from recurring debt patterns (same as expenses page)
+				let monthlyExpensesAbsolute = 0;
+				recurringDebts.forEach((debt) => {
+					let monthlyImpact = debt.avgAmount;
 
-				const monthlyExpenses = transactions
-					.filter((t) => {
-						const transDate = t.date instanceof Date ? t.date : new Date(t.date as any);
-						const isExpense = t.amount && t.amount < 0;
-						const isSalaryTransaction =
-							t.category === "Salary" ||
-							(t.description &&
-								(t.description.toLowerCase().includes("salary") ||
-									t.description.toLowerCase().includes("paycheck") ||
-									t.description.toLowerCase().includes("payroll")));
-						return (
-							transDate.getMonth() === currentMonth &&
-							transDate.getFullYear() === currentYear &&
-							isExpense &&
-							!isSalaryTransaction
-						);
-					})
-					.reduce((sum, t) => sum + (t.amount || 0), 0);
-				const monthlyExpensesAbsolute = Math.abs(monthlyExpenses);
-
-				// Calculate monthly income from income entries + detected income patterns
-				let monthlyIncome = 0;
-
-				// From manual income entries
-				incomeEntries.forEach((income) => {
-					const amount = income.amount || 0;
-					if (income.frequency === "monthly") {
-						monthlyIncome += amount;
-					} else if (income.frequency === "yearly") {
-						monthlyIncome += amount / 12;
-					} else if (income.frequency === "biweekly") {
-						monthlyIncome += (amount * 26) / 12;
-					} else if (income.frequency === "semi-monthly") {
-						monthlyIncome += amount * 2;
-					} else if (income.frequency === "weekly") {
-						monthlyIncome += (amount * 52) / 12;
+					// Calculate monthly impact based on frequency
+					if (debt.estimatedFrequency === "weekly") {
+						monthlyImpact = debt.avgAmount * (52 / 12);
+					} else if (debt.estimatedFrequency === "biweekly") {
+						monthlyImpact = debt.avgAmount * (26 / 12);
+					} else if (debt.estimatedFrequency === "monthly") {
+						monthlyImpact = debt.avgAmount;
+					} else if (debt.estimatedFrequency === "quarterly") {
+						monthlyImpact = debt.avgAmount / 3;
+					} else if (debt.estimatedFrequency === "annual") {
+						monthlyImpact = debt.avgAmount / 12;
 					}
+
+					monthlyExpensesAbsolute += monthlyImpact;
 				});
 
-				// From detected recurring income patterns
-				incomePatterns.forEach((pattern) => {
-					monthlyIncome += pattern.monthlyAmount * 100; // Convert dollars to cents
-				});
-				const savingsRate =
-					monthlyIncome > 0 ? Math.round(((monthlyIncome - monthlyExpensesAbsolute) / monthlyIncome) * 100) : 0;
+			// Calculate monthly income from income entries + detected income patterns
+			let monthlyIncome = 0;
 
-				setMetrics({
-					monthlyIncome: Math.round(monthlyIncome / 100),
-					monthlyExpenses: Math.round(monthlyExpensesAbsolute / 100),
-					savingsRate: savingsRate,
-					totalDebt: Math.round(totalDebt / 100),
-					budgetUsage: 0, // TODO: Integrate with budgets
-				});
+			// From manual income entries
+			incomeEntries.forEach((income) => {
+				const amount = income.amount || 0;
+				if (income.frequency === "monthly") {
+					monthlyIncome += amount;
+				} else if (income.frequency === "yearly") {
+					monthlyIncome += amount / 12;
+				} else if (income.frequency === "biweekly") {
+					monthlyIncome += (amount * 26) / 12;
+				} else if (income.frequency === "semi-monthly") {
+					monthlyIncome += amount * 2;
+				} else if (income.frequency === "weekly") {
+					monthlyIncome += (amount * 52) / 12;
+				}
+			});
 
-				setHasData(transactions.length > 0 || debts.length > 0 || incomeEntries.length > 0);
-			} catch (err) {
-				console.error("Failed to load metrics:", err);
-				setHasData(false);
-			}
-		};
+			// From detected recurring income patterns
+			incomePatterns.forEach((pattern) => {
+				monthlyIncome += pattern.monthlyAmount; // Already in dollars
+			});
+			const savingsRate =
+				monthlyIncome > 0 ? Math.round(((monthlyIncome - monthlyExpensesAbsolute) / monthlyIncome) * 100) : 0;
 
-		loadMetrics();
+			setMetrics({
+				monthlyIncome: Math.round(monthlyIncome * 100) / 100,
+				monthlyExpenses: Math.round(monthlyExpensesAbsolute * 100) / 100,
+				savingsRate: savingsRate,
+				totalDebt: Math.round(totalDebt / 100),
+				budgetUsage: 0, // TODO: Integrate with budgets
+			});
+
+			setHasData(transactions.length > 0 || debts.length > 0 || incomeEntries.length > 0);
+		} catch (err) {
+			console.error("Failed to load metrics:", err);
+			setHasData(false);
+		}
+	};
+
+	loadMetrics();
 	}, [user?.uid]);
 
 	return (

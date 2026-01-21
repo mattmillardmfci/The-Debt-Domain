@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { TrendingDown, AlertCircle, Edit2, Check, X } from "lucide-react";
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import {
 	detectRecurringDebts,
@@ -161,10 +162,17 @@ export default function ExpensesPage() {
 
 	return (
 		<div className="space-y-6">
-			{/* Header */}
-			<div>
-				<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Monthly Expenses</h1>
-				<p className="text-gray-600 dark:text-gray-400 mt-2">Recurring expenses that impact your monthly budget</p>
+			{/* Navigation */}
+			<div className="flex justify-between items-center">
+				<div>
+					<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Monthly Expenses</h1>
+					<p className="text-gray-600 dark:text-gray-400 mt-2">Recurring expenses that impact your monthly budget</p>
+				</div>
+				<Link
+					href="/dashboard"
+					className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium">
+					← Back to Dashboard
+				</Link>
 			</div>
 
 			{/* Total Summary */}
