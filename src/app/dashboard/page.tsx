@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { TrendingDown, TrendingUp, AlertCircle, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { getTransactions, getDebts, getIncome } from "@/lib/firestoreService";
+import { getTransactions, getDebts, getIncome, detectIncomePatterns } from "@/lib/firestoreService";
 
 interface DashboardMetrics {
 	monthlyIncome: number;
@@ -34,10 +34,11 @@ export default function DashboardPage() {
 		// Fetch data from Firestore and calculate metrics
 		const loadMetrics = async () => {
 			try {
-				const [transactions, debts, incomeEntries] = await Promise.all([
+				const [transactions, debts, incomeEntries, incomePatterns] = await Promise.all([
 					getTransactions(user.uid),
 					getDebts(user.uid),
 					getIncome(user.uid),
+					detectIncomePatterns(user.uid),
 				]);
 
 				// Calculate total debt
@@ -51,25 +52,27 @@ export default function DashboardPage() {
 				const monthlyExpenses = transactions
 					.filter((t) => {
 						const transDate = t.date instanceof Date ? t.date : new Date(t.date as any);
-					const isExpense = t.amount && t.amount < 0;
-					const isSalaryTransaction =
-						t.category === "Salary" ||
-						(t.description &&
-							(t.description.toLowerCase().includes("salary") ||
-								t.description.toLowerCase().includes("paycheck") ||
-								t.description.toLowerCase().includes("payroll")));
-					return (
-						transDate.getMonth() === currentMonth &&
-						transDate.getFullYear() === currentYear &&
-						isExpense &&
-						!isSalaryTransaction
-					);
-				})
-				.reduce((sum, t) => sum + (t.amount || 0), 0);
-			const monthlyExpensesAbsolute = Math.abs(monthlyExpenses);
+						const isExpense = t.amount && t.amount < 0;
+						const isSalaryTransaction =
+							t.category === "Salary" ||
+							(t.description &&
+								(t.description.toLowerCase().includes("salary") ||
+									t.description.toLowerCase().includes("paycheck") ||
+									t.description.toLowerCase().includes("payroll")));
+						return (
+							transDate.getMonth() === currentMonth &&
+							transDate.getFullYear() === currentYear &&
+							isExpense &&
+							!isSalaryTransaction
+						);
+					})
+					.reduce((sum, t) => sum + (t.amount || 0), 0);
+				const monthlyExpensesAbsolute = Math.abs(monthlyExpenses);
 
-			// Calculate monthly income from income entries + salary transactions
+			// Calculate monthly income from income entries + detected income patterns
 			let monthlyIncome = 0;
+			
+			// From manual income entries
 			incomeEntries.forEach((income) => {
 				const amount = income.amount || 0;
 				if (income.frequency === "monthly") {
@@ -81,47 +84,32 @@ export default function DashboardPage() {
 				} else if (income.frequency === "weekly") {
 					monthlyIncome += (amount * 52) / 12;
 				}
-				// 'once' frequency is not included in monthly income
 			});
 
-			// Also add salary transactions from current month
-			const salarySaleProceedsIncome = transactions
-				.filter((t) => {
-					const transDate = t.date instanceof Date ? t.date : new Date(t.date as any);
-					const isSalaryCategory =
-						t.category === "Salary" ||
-						(t.description &&
-							(t.description.toLowerCase().includes("salary") ||
-								t.description.toLowerCase().includes("income") ||
-								t.description.toLowerCase().includes("paycheck") ||
-								t.description.toLowerCase().includes("payroll")));
-					return transDate.getMonth() === currentMonth && transDate.getFullYear() === currentYear && isSalaryCategory;
-				})
-				.reduce((sum, t) => sum + (t.amount || 0), 0);
+			// From detected recurring income patterns
+			incomePatterns.forEach((pattern) => {
+				monthlyIncome += pattern.monthlyAmount * 100; // Convert dollars to cents
+			});
+				const savingsRate =
+					monthlyIncome > 0 ? Math.round(((monthlyIncome - monthlyExpensesAbsolute) / monthlyIncome) * 100) : 0;
 
-			monthlyIncome += salarySaleProceedsIncome;
+				setMetrics({
+					monthlyIncome: Math.round(monthlyIncome / 100),
+					monthlyExpenses: Math.round(monthlyExpensesAbsolute / 100),
+					savingsRate: savingsRate,
+					totalDebt: Math.round(totalDebt / 100),
+					budgetUsage: 0, // TODO: Integrate with budgets
+				});
 
-			// Calculate savings rate
-			const savingsRate =
-				monthlyIncome > 0 ? Math.round(((monthlyIncome - monthlyExpensesAbsolute) / monthlyIncome) * 100) : 0;
+				setHasData(transactions.length > 0 || debts.length > 0 || incomeEntries.length > 0);
+			} catch (err) {
+				console.error("Failed to load metrics:", err);
+				setHasData(false);
+			}
+		};
 
-			setMetrics({
-				monthlyIncome: Math.round(monthlyIncome / 100),
-				monthlyExpenses: Math.round(monthlyExpensesAbsolute / 100),
-				savingsRate: savingsRate,
-				totalDebt: Math.round(totalDebt / 100),
-			budgetUsage: 0, // TODO: Integrate with budgets
-		});
-
-		setHasData(transactions.length > 0 || debts.length > 0 || incomeEntries.length > 0);
-	} catch (err) {
-		console.error("Failed to load metrics:", err);
-		setHasData(false);
-	}
-};
-
-loadMetrics();
-}, [user?.uid]);
+		loadMetrics();
+	}, [user?.uid]);
 
 	return (
 		<div className="space-y-8">

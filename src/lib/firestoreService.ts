@@ -420,6 +420,113 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 }
 
 /**
+ * Detect recurring income sources from transaction history
+ * Analyzes salary/income transactions to estimate monthly income based on patterns
+ */
+export interface IncomePattern {
+	description: string;
+	amount: number; // Average per paycheck in dollars
+	frequency: string; // weekly, biweekly, monthly
+	monthlyAmount: number; // Calculated monthly income
+	count: number;
+	lastOccurrence: Date;
+}
+
+export async function detectIncomePatterns(userId: string): Promise<IncomePattern[]> {
+	try {
+		const transactions = await getAllTransactions(userId);
+
+		// Filter for positive amounts (income) that match salary-like descriptions
+		const salaryTransactions = transactions.filter((t) => {
+			const isIncome = t.amount !== undefined && t.amount > 0;
+			const isSalaryCategory =
+				t.category === "Salary" ||
+				(t.description &&
+					(t.description.toLowerCase().includes("salary") ||
+						t.description.toLowerCase().includes("paycheck") ||
+						t.description.toLowerCase().includes("payroll") ||
+						t.description.toLowerCase().includes("income")));
+			return isIncome && isSalaryCategory;
+		});
+
+		// Group by description to find patterns
+		const grouped = new Map<string, Partial<Transaction>[]>();
+		salaryTransactions.forEach((t) => {
+			const desc = t.description || "Unknown";
+			if (!grouped.has(desc)) {
+				grouped.set(desc, []);
+			}
+			grouped.get(desc)!.push(t);
+		});
+
+		// Find recurring income patterns (2+ occurrences)
+		const patterns: IncomePattern[] = [];
+		grouped.forEach((transactions, description) => {
+			if (transactions.length >= 2) {
+				const amounts = transactions.map((t) => t.amount || 0).filter((a) => a !== 0);
+				const avgAmount = amounts.length > 0 ? amounts.reduce((a, b) => a + b, 0) / amounts.length / 100 : 0; // Convert cents to dollars
+
+				// Get last occurrence date
+				const lastOccurrence = transactions
+					.map((t) => (t.date instanceof Date ? t.date : new Date(t.date || 0)))
+					.sort((a, b) => b.getTime() - a.getTime())[0];
+
+				// Estimate frequency based on date gaps
+				let estimatedFrequency = "monthly";
+				let monthlyAmount = avgAmount;
+
+				if (transactions.length >= 3) {
+					const dates = transactions
+						.map((t) => (t.date instanceof Date ? t.date : new Date(t.date || 0)))
+						.sort((a, b) => a.getTime() - b.getTime());
+
+					const gaps: number[] = [];
+					for (let i = 1; i < dates.length; i++) {
+						const diffDays = Math.round((dates[i].getTime() - dates[i - 1].getTime()) / (1000 * 60 * 60 * 24));
+						gaps.push(diffDays);
+					}
+
+					if (gaps.length > 0) {
+						const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+						if (avgGap < 10) {
+							estimatedFrequency = "weekly";
+							monthlyAmount = avgAmount * (52 / 12);
+						} else if (avgGap < 20) {
+							estimatedFrequency = "biweekly";
+							monthlyAmount = avgAmount * (26 / 12);
+						} else if (avgGap < 40) {
+							estimatedFrequency = "monthly";
+							monthlyAmount = avgAmount;
+						} else if (avgGap < 100) {
+							estimatedFrequency = "quarterly";
+							monthlyAmount = avgAmount / 3;
+						} else {
+							estimatedFrequency = "annual";
+							monthlyAmount = avgAmount / 12;
+						}
+					}
+				}
+
+				patterns.push({
+					description,
+					amount: avgAmount,
+					frequency: estimatedFrequency,
+					monthlyAmount,
+					count: transactions.length,
+					lastOccurrence,
+				});
+			}
+		});
+
+		// Sort by most recent first
+		return patterns.sort((a, b) => b.lastOccurrence.getTime() - a.lastOccurrence.getTime());
+	} catch (error) {
+		console.error("Error detecting income patterns:", error);
+		return [];
+	}
+}
+
+/**
  * Delete a debt
  */
 export async function deleteDebt(userId: string, debtId: string) {
