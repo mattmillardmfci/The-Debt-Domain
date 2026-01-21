@@ -1,0 +1,14 @@
+import { AppLayout } from "@/components/AppLayout";
+
+export const metadata = {
+	title: "Monthly Expenses | Debt Domain",
+	description: "View and manage your recurring monthly expenses",
+};
+
+export default function ExpensesLayout({ children }: { children: React.ReactNode }) {
+	return (
+		<AppLayout>
+			<div className="w-full px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">{children}</div>
+		</AppLayout>
+	);
+}
