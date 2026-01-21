@@ -133,7 +133,7 @@ export default function DebtsPage() {
 		try {
 			await deleteDebt(user.uid, id);
 			setDebts(debts.filter((d) => d.id !== id));
-			
+
 			// Reload recurring debts to show any that were hidden by this debt
 			const recurringData = await detectRecurringDebts(user.uid);
 			setRecurringDebts(recurringData);
@@ -489,53 +489,53 @@ export default function DebtsPage() {
 					</p>
 
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-					{recurringDebts
-						.filter((pattern) => !debts.some((d) => d.name === pattern.description))
-						.map((pattern) => (
-							<div
-								key={pattern.description}
-								className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
-								<div className="mb-4">
-									<h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm line-clamp-2">
-										{pattern.description}
-									</h3>
-									<div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-										<div className="flex justify-between">
-											{" "}
-											<span>Category:</span>
-											<span className="font-medium text-gray-900 dark:text-white">{pattern.category}</span>
-										</div>
-										<div className="flex justify-between">
-											{" "}
-											<span>Frequency:</span>
-											<span className="font-medium text-gray-900 dark:text-white">{pattern.count}x</span>
-										</div>
-										<div className="flex justify-between">
-											<span>Interval:</span>
-											<span className="font-medium text-gray-900 dark:text-white">{pattern.estimatedFrequency}</span>
-										</div>
-										<div className="flex justify-between">
-											<span>Avg Amount:</span>
-											<span className="font-medium text-gray-900 dark:text-white">
-												{formatCurrency(pattern.avgAmount)}
-											</span>
-										</div>
-										<div className="flex justify-between">
-											<span>Last Payment:</span>
-											<span className="font-medium text-gray-900 dark:text-white">
-												{pattern.lastOccurrence.toLocaleDateString()}
-											</span>
+						{recurringDebts
+							.filter((pattern) => !debts.some((d) => d.name === pattern.description))
+							.map((pattern) => (
+								<div
+									key={pattern.description}
+									className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
+									<div className="mb-4">
+										<h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm line-clamp-2">
+											{pattern.description}
+										</h3>
+										<div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+											<div className="flex justify-between">
+												{" "}
+												<span>Category:</span>
+												<span className="font-medium text-gray-900 dark:text-white">{pattern.category}</span>
+											</div>
+											<div className="flex justify-between">
+												{" "}
+												<span>Frequency:</span>
+												<span className="font-medium text-gray-900 dark:text-white">{pattern.count}x</span>
+											</div>
+											<div className="flex justify-between">
+												<span>Interval:</span>
+												<span className="font-medium text-gray-900 dark:text-white">{pattern.estimatedFrequency}</span>
+											</div>
+											<div className="flex justify-between">
+												<span>Avg Amount:</span>
+												<span className="font-medium text-gray-900 dark:text-white">
+													{formatCurrency(pattern.avgAmount)}
+												</span>
+											</div>
+											<div className="flex justify-between">
+												<span>Last Payment:</span>
+												<span className="font-medium text-gray-900 dark:text-white">
+													{pattern.lastOccurrence.toLocaleDateString()}
+												</span>
+											</div>
 										</div>
 									</div>
-								</div>
 
-								<button
-									onClick={() => handleCreateDebtFromRecurring(pattern)}
-									className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg transition-colors">
-									Create as Debt
-								</button>
-							</div>
-						))}
+									<button
+										onClick={() => handleCreateDebtFromRecurring(pattern)}
+										className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg transition-colors">
+										Create as Debt
+									</button>
+								</div>
+							))}
 					</div>
 				</div>
 			)}

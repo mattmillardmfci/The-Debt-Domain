@@ -345,19 +345,31 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 		// Filter for negative amounts (expenses/payments)
 		const negativeTransactions = transactions.filter((t) => t.amount !== undefined && t.amount < 0);
 
-		// Group by description
+		// Normalize description: extract the meaningful part (first 3-4 words usually identify the merchant)
+		const normalizeDescription = (desc: string): string => {
+			if (!desc) return "Unknown";
+			// Remove extra spaces and convert to uppercase for comparison
+			const cleaned = desc.trim().toUpperCase();
+			// Extract first few meaningful words (usually merchant name)
+			const words = cleaned.split(/\s+/);
+			// Take first 3-4 words which usually identify the merchant
+			return words.slice(0, 4).join(" ");
+		};
+
+		// Group by normalized description
 		const grouped = new Map<string, Partial<Transaction>[]>();
 		negativeTransactions.forEach((t) => {
-			const desc = t.description || "Unknown";
-			if (!grouped.has(desc)) {
-				grouped.set(desc, []);
+			const originalDesc = t.description || "Unknown";
+			const normalizedDesc = normalizeDescription(originalDesc);
+			if (!grouped.has(normalizedDesc)) {
+				grouped.set(normalizedDesc, []);
 			}
-			grouped.get(desc)!.push(t);
+			grouped.get(normalizedDesc)!.push(t);
 		});
 
 		// Filter for recurring (2+ occurrences) and calculate stats
 		const patterns: RecurringDebtPattern[] = [];
-		grouped.forEach((transactions, description) => {
+		grouped.forEach((transactions, normalizedDescription) => {
 			if (transactions.length >= 2) {
 				const amounts = transactions.map((t) => t.amount || 0).filter((a) => a !== 0);
 				const totalAmount = amounts.reduce((a, b) => a + b, 0);
@@ -390,6 +402,8 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 					(a, b) => (b.date instanceof Date ? b.date.getTime() : 0) - (a.date instanceof Date ? a.date.getTime() : 0),
 				)[0];
 				const category = mostRecentTransaction?.category || "Other";
+				// Use the most recent (original) description for display
+				const description = mostRecentTransaction?.description || normalizedDescription;
 
 				// Get last occurrence date
 				const lastOccurrence = transactions
