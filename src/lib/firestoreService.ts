@@ -365,6 +365,26 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 				const avgAmount = amounts.length > 0 ? totalAmount / amounts.length / 100 : 0;
 				const totalAmountDollars = totalAmount / 100;
 
+				// Validate that amounts are reasonably consistent
+				// Calculate coefficient of variation (standard deviation / mean)
+				const mean = Math.abs(avgAmount);
+				if (mean > 0) {
+					const variance =
+						amounts.reduce((sum, amount) => {
+							const absDollars = Math.abs(amount / 100);
+							return sum + Math.pow(absDollars - mean, 2);
+						}, 0) / amounts.length;
+					const stdDev = Math.sqrt(variance);
+					const coefficientOfVariation = stdDev / mean;
+
+					// If variation is too high (>30%), it's likely not a true recurring charge
+					// Examples: random pharmacy purchases, one-time charges
+					if (coefficientOfVariation > 0.3) {
+						// Skip this pattern - amounts are too inconsistent
+						return;
+					}
+				}
+
 				// Get the most recent category for this recurring transaction
 				const mostRecentTransaction = transactions.sort(
 					(a, b) => (b.date instanceof Date ? b.date.getTime() : 0) - (a.date instanceof Date ? a.date.getTime() : 0),
@@ -399,15 +419,19 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 					}
 				}
 
-				patterns.push({
-					description,
-					category,
-					count: transactions.length,
-					avgAmount: Math.round(avgAmount * 100) / 100,
-					totalAmount: Math.round(totalAmountDollars * 100) / 100,
-					lastOccurrence,
-					estimatedFrequency,
-				});
+				// Only include patterns that are at least biweekly or more frequent
+				// (exclude quarterly/annual as they're not true "monthly expenses")
+				if (estimatedFrequency === "weekly" || estimatedFrequency === "biweekly" || estimatedFrequency === "monthly") {
+					patterns.push({
+						description,
+						category,
+						count: transactions.length,
+						avgAmount: Math.round(avgAmount * 100) / 100,
+						totalAmount: Math.round(totalAmountDollars * 100) / 100,
+						lastOccurrence,
+						estimatedFrequency,
+					});
+				}
 			}
 		});
 

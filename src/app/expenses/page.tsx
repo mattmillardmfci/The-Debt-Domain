@@ -1,10 +1,15 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { TrendingDown, AlertCircle, ArrowLeft } from "lucide-react";
+import { TrendingDown, AlertCircle, ArrowLeft, Edit2, Check, X } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { detectRecurringDebts } from "@/lib/firestoreService";
+import {
+	detectRecurringDebts,
+	getCustomCategories,
+	updateTransaction,
+	getAllTransactions,
+} from "@/lib/firestoreService";
 
 interface RecurringExpense {
 	description: string;
@@ -14,6 +19,7 @@ interface RecurringExpense {
 	frequency: string;
 	count: number;
 	lastOccurrence: Date;
+	transactionIds?: string[];
 }
 
 export default function ExpensesPage() {
@@ -21,6 +27,10 @@ export default function ExpensesPage() {
 	const [expenses, setExpenses] = useState<RecurringExpense[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [totalMonthlyExpenses, setTotalMonthlyExpenses] = useState(0);
+	const [categories, setCategories] = useState<string[]>([]);
+	const [editingDescription, setEditingDescription] = useState<string | null>(null);
+	const [editingCategory, setEditingCategory] = useState<string>("");
+	const [isSaving, setIsSaving] = useState(false);
 
 	useEffect(() => {
 		if (!user?.uid) {
@@ -31,6 +41,13 @@ export default function ExpensesPage() {
 		const loadExpenses = async () => {
 			try {
 				const recurringDebts = await detectRecurringDebts(user.uid);
+				const customCategoriesData = await getCustomCategories(user.uid);
+				// Extract just the category names
+				const categoryNames = customCategoriesData.map((cat) => cat.name || cat.id).filter(Boolean);
+				setCategories(categoryNames);
+
+				// Get all transactions to map IDs for editing
+				const allTransactions = await getAllTransactions(user.uid);
 
 				// Convert recurring debts to monthly expense impacts
 				const recurringExpenses: RecurringExpense[] = recurringDebts.map((debt) => {
@@ -49,6 +66,12 @@ export default function ExpensesPage() {
 						monthlyImpact = debt.avgAmount / 12;
 					}
 
+					// Find transaction IDs matching this description
+					const transactionIds = allTransactions
+						.filter((t) => t.description === debt.description && t.amount! < 0)
+						.map((t) => t.id!)
+						.filter((id) => id);
+
 					return {
 						description: debt.description,
 						category: debt.category || "Other",
@@ -57,6 +80,7 @@ export default function ExpensesPage() {
 						frequency: debt.estimatedFrequency || "unknown",
 						count: debt.count,
 						lastOccurrence: debt.lastOccurrence,
+						transactionIds,
 					};
 				});
 
@@ -93,6 +117,37 @@ export default function ExpensesPage() {
 			minimumFractionDigits: 2,
 			maximumFractionDigits: 2,
 		}).format(amount);
+	};
+
+	const handleSaveCategory = async (description: string, newCategory: string) => {
+		if (!user?.uid || !newCategory) return;
+
+		setIsSaving(true);
+		try {
+			const expense = expenses.find((e) => e.description === description);
+			if (!expense || !expense.transactionIds) return;
+
+			// Update all transactions with this description
+			await Promise.all(
+				expense.transactionIds.map((id) =>
+					updateTransaction(user.uid, id, {
+						category: newCategory as any,
+					}),
+				),
+			);
+
+			// Update local state
+			setExpenses((prev) =>
+				prev.map((exp) => (exp.description === description ? { ...exp, category: newCategory } : exp)),
+			);
+
+			setEditingDescription(null);
+		} catch (error) {
+			console.error("Failed to update category:", error);
+			alert("Failed to update category. Please try again.");
+		} finally {
+			setIsSaving(false);
+		}
 	};
 
 	if (isLoading) {
@@ -191,9 +246,47 @@ export default function ExpensesPage() {
 											</p>
 										</td>
 										<td className="px-6 py-4">
-											<span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300">
-												{expense.category}
-											</span>
+											{editingDescription === expense.description ? (
+												<div className="flex gap-2 items-center">
+													<select
+														value={editingCategory}
+														onChange={(e) => setEditingCategory(e.target.value)}
+														className="text-xs font-medium rounded px-2 py-1 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white">
+														<option value="">Select category...</option>
+														{categories.map((cat) => (
+															<option key={cat} value={cat}>
+																{cat}
+															</option>
+														))}
+													</select>
+													<button
+														onClick={() => handleSaveCategory(expense.description, editingCategory)}
+														disabled={isSaving}
+														className="p-1 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 disabled:opacity-50">
+														<Check className="w-4 h-4" />
+													</button>
+													<button
+														onClick={() => setEditingDescription(null)}
+														disabled={isSaving}
+														className="p-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50">
+														<X className="w-4 h-4" />
+													</button>
+												</div>
+											) : (
+												<div className="flex items-center gap-2">
+													<span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300">
+														{expense.category}
+													</span>
+													<button
+														onClick={() => {
+															setEditingDescription(expense.description);
+															setEditingCategory(expense.category);
+														}}
+														className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+														<Edit2 className="w-4 h-4" />
+													</button>
+												</div>
+											)}
 										</td>
 										<td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 capitalize">
 											{expense.frequency}

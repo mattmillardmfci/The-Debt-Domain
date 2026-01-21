@@ -191,7 +191,9 @@ export default function IncomePage() {
 							</thead>
 							<tbody className="divide-y divide-gray-200 dark:divide-slate-700">
 								{income.map((source) => (
-									<tr key={source.description} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+									<tr
+										key={source.description}
+										className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
 										<td className="px-6 py-4">
 											<p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
 												{source.description}
@@ -265,7 +267,8 @@ export default function IncomePage() {
 						<strong>Manual Entries:</strong> Income sources you manually add in the profile section
 					</li>
 					<li>
-						<strong>Frequency Analysis:</strong> Time gaps between deposits determine if it's weekly, biweekly, or monthly
+						<strong>Frequency Analysis:</strong> Time gaps between deposits determine if it's weekly, biweekly, or
+						monthly
 					</li>
 					<li>
 						<strong>Monthly Calculation:</strong> Per-occurrence amounts are converted to monthly equivalents
