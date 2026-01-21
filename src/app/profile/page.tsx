@@ -193,8 +193,8 @@ export default function ProfilePage() {
 								⚠️ Delete Your Profile Permanently
 							</h3>
 							<p className="text-sm text-red-800 dark:text-red-200 mb-4">
-								This will <strong>permanently delete your entire account</strong>, including all data and your login. You will
-								be able to create a new account with this email address afterward.
+								This will <strong>permanently delete your entire account</strong>, including all data and your login.
+								You will be able to create a new account with this email address afterward.
 							</p>
 							<button
 								onClick={() => setShowDeleteProfile(true)}
@@ -285,7 +285,9 @@ export default function ProfilePage() {
 									<li>Delete your entire account permanently</li>
 									<li>Remove all your data from the database</li>
 									<li>Allow you to create a new account with this email later</li>
-									<li>This action <strong>cannot be undone</strong></li>
+									<li>
+										This action <strong>cannot be undone</strong>
+									</li>
 								</ul>
 							</div>
 
@@ -318,11 +320,7 @@ export default function ProfilePage() {
 							</button>
 							<button
 								onClick={handleDeleteProfile}
-								disabled={
-									isDeleting ||
-									deleteProfileConfirmation !== user?.email ||
-									!deleteProfileConfirmation.trim()
-								}
+								disabled={isDeleting || deleteProfileConfirmation !== user?.email || !deleteProfileConfirmation.trim()}
 								className="flex-1 px-4 py-2 bg-red-700 hover:bg-red-800 disabled:bg-gray-400 text-white font-bold rounded-lg transition-colors disabled:cursor-not-allowed">
 								{isDeleting ? "Deleting..." : "Delete Profile"}
 							</button>

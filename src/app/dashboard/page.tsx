@@ -31,10 +31,12 @@ export default function DashboardPage() {
 		budgetUsage: 0,
 	});
 	const [hasData, setHasData] = useState(false);
+	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
 		if (!user?.uid) {
 			setHasData(false);
+			setIsLoading(false);
 			return;
 		}
 
@@ -111,6 +113,8 @@ export default function DashboardPage() {
 			} catch (err) {
 				console.error("Failed to load metrics:", err);
 				setHasData(false);
+			} finally {
+				setIsLoading(false);
 			}
 		};
 
@@ -125,8 +129,15 @@ export default function DashboardPage() {
 				<p className="text-gray-600 dark:text-gray-400 mt-2">Here's your financial overview</p>
 			</div>
 
-			{/* Empty State */}
-			{!hasData ? (
+			{/* Loading State */}
+			{isLoading ? (
+				<div className="flex items-center justify-center py-16">
+					<div className="flex flex-col items-center gap-4">
+						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+						<p className="text-gray-600 dark:text-gray-400">Loading your dashboard...</p>
+					</div>
+				</div>
+			) : !hasData ? (
 				<div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-8 text-center">
 					<AlertCircle className="w-12 h-12 text-blue-600 dark:text-blue-400 mx-auto mb-4" />
 					<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
