@@ -422,15 +422,21 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 				// Only include patterns that are at least biweekly or more frequent
 				// (exclude quarterly/annual as they're not true "monthly expenses")
 				if (estimatedFrequency === "weekly" || estimatedFrequency === "biweekly" || estimatedFrequency === "monthly") {
-					patterns.push({
-						description,
-						category,
-						count: transactions.length,
-						avgAmount: Math.round(avgAmount * 100) / 100,
-						totalAmount: Math.round(totalAmountDollars * 100) / 100,
-						lastOccurrence,
-						estimatedFrequency,
-					});
+					// Filter out expenses that haven't occurred in the last 4 months
+					const now = new Date();
+					const fourMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 4, now.getDate());
+					
+					if (lastOccurrence >= fourMonthsAgo) {
+						patterns.push({
+							description,
+							category,
+							count: transactions.length,
+							avgAmount: Math.round(avgAmount * 100) / 100,
+							totalAmount: Math.round(totalAmountDollars * 100) / 100,
+							lastOccurrence,
+							estimatedFrequency,
+						});
+					}
 				}
 			}
 		});
@@ -512,24 +518,25 @@ export async function detectIncomePatterns(userId: string): Promise<IncomePatter
 
 					if (gaps.length > 0) {
 						const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
-						
+
 						// Check if this is semi-monthly (twice a month) vs biweekly
 						// Semi-monthly: typically occurs on specific days like 1st and 15th, or 15th and 30th
 						if (avgGap >= 12 && avgGap <= 18) {
 							// Could be either semi-monthly or biweekly
 							// Analyze day-of-month pattern
-							const dayOfMonths = dates.map(d => d.getDate());
+							const dayOfMonths = dates.map((d) => d.getDate());
 							const monthDiffs: number[] = [];
-							
+
 							// Check if there's a pattern of ~2 occurrences per month
 							for (let i = 1; i < dates.length; i++) {
-								const monthDiff = (dates[i].getFullYear() - dates[i-1].getFullYear()) * 12 + 
-									(dates[i].getMonth() - dates[i-1].getMonth());
+								const monthDiff =
+									(dates[i].getFullYear() - dates[i - 1].getFullYear()) * 12 +
+									(dates[i].getMonth() - dates[i - 1].getMonth());
 								monthDiffs.push(monthDiff);
 							}
-							
+
 							// If most gaps are less than 1 month, it's likely semi-monthly
-							const semiMonthlyCount = monthDiffs.filter(m => m <= 0.5).length;
+							const semiMonthlyCount = monthDiffs.filter((m) => m <= 0.5).length;
 							if (semiMonthlyCount > monthDiffs.length * 0.6) {
 								// Likely semi-monthly (twice per month)
 								estimatedFrequency = "semi-monthly";
