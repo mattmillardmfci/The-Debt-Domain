@@ -57,7 +57,7 @@ export default function DashboardPage() {
 					})
 					.reduce((sum, t) => sum + (t.amount || 0), 0);
 
-				// Calculate monthly income
+				// Calculate monthly income from income entries + salary transactions
 				let monthlyIncome = 0;
 				incomeEntries.forEach((income) => {
 					const amount = income.amount || 0;
@@ -72,6 +72,23 @@ export default function DashboardPage() {
 					}
 					// 'once' frequency is not included in monthly income
 				});
+
+				// Also add salary transactions from current month
+				const salarySaleProceedsIncome = transactions
+					.filter((t) => {
+						const transDate = t.date instanceof Date ? t.date : new Date(t.date as any);
+						const isSalaryCategory =
+							t.category === "Salary" ||
+							(t.description &&
+								(t.description.toLowerCase().includes("salary") ||
+									t.description.toLowerCase().includes("income") ||
+									t.description.toLowerCase().includes("paycheck") ||
+									t.description.toLowerCase().includes("payroll")));
+						return transDate.getMonth() === currentMonth && transDate.getFullYear() === currentYear && isSalaryCategory;
+					})
+					.reduce((sum, t) => sum + (t.amount || 0), 0);
+
+				monthlyIncome += salarySaleProceedsIncome;
 
 				// Calculate savings rate
 				const savingsRate =
