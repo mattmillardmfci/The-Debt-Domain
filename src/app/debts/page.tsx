@@ -29,6 +29,16 @@ export default function DebtsPage() {
 		monthlyPayment: 0,
 	});
 
+	// Format currency with thousand separators
+	const formatCurrency = (amount: number) => {
+		return new Intl.NumberFormat("en-US", {
+			style: "currency",
+			currency: "USD",
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+		}).format(Math.abs(amount));
+	};
+
 	// Load debts from Firestore
 	useEffect(() => {
 		if (!user?.uid) {
@@ -495,7 +505,7 @@ export default function DebtsPage() {
 										<div className="flex justify-between">
 											<span>Avg Amount:</span>
 											<span className="font-medium text-gray-900 dark:text-white">
-												${Math.abs(pattern.avgAmount).toFixed(2)}
+												{formatCurrency(pattern.avgAmount)}
 											</span>
 										</div>
 										<div className="flex justify-between">
