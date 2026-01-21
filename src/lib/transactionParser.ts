@@ -19,10 +19,7 @@ export async function parseCSV(file: File): Promise<Partial<Transaction>[]> {
 					const parsed = rows
 						.filter(
 							(row) =>
-								row.Date &&
-								row.Date.trim() !== "Date" &&
-								row.Date.trim().length > 0 &&
-								Object.keys(row).length > 0
+								row.Date && row.Date.trim() !== "Date" && row.Date.trim().length > 0 && Object.keys(row).length > 0,
 						)
 						.map((row) => parseCSVRow(row));
 

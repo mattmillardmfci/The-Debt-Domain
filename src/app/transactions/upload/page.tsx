@@ -78,7 +78,14 @@ export default function TransactionUploadPage() {
 	const handleConfirmUpload = async () => {
 		setLoading(true);
 		try {
-			// TODO: Save transactions to Firestore
+			// Save transactions to localStorage (temporary until Firestore integration)
+			const existing = localStorage.getItem("transactions");
+			const existingTransactions = existing ? JSON.parse(existing) : [];
+			
+			// Combine with existing transactions
+			const allTransactions = [...existingTransactions, ...transactions];
+			localStorage.setItem("transactions", JSON.stringify(allTransactions));
+
 			console.log("Uploading transactions:", transactions);
 
 			// Simulate delay
