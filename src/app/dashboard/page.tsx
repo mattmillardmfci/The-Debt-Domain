@@ -1,5 +1,6 @@
 "use client";
 
+// Force deployment to Vercel
 import { useAuth } from "@/contexts/AuthContext";
 import { TrendingDown, TrendingUp, AlertCircle, Plus } from "lucide-react";
 import Link from "next/link";

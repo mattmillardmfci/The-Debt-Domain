@@ -478,9 +478,7 @@ export default function TransactionsPage() {
 
 						<div className="space-y-4">
 							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-									Date
-								</label>
+								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date</label>
 								<input
 									type="date"
 									value={newTransaction.date}
@@ -495,9 +493,7 @@ export default function TransactionsPage() {
 							</div>
 
 							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-									Description
-								</label>
+								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
 								<input
 									type="text"
 									value={newTransaction.description}
@@ -513,9 +509,7 @@ export default function TransactionsPage() {
 							</div>
 
 							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-									Amount
-								</label>
+								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount</label>
 								<div className="relative">
 									<span className="absolute left-3 top-2 text-gray-500 dark:text-gray-400">$</span>
 									<input
@@ -535,9 +529,7 @@ export default function TransactionsPage() {
 							</div>
 
 							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-									Category
-								</label>
+								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
 								<select
 									value={newTransaction.category}
 									onChange={(e) =>
