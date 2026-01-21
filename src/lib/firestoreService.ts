@@ -15,6 +15,7 @@ import {
 	limit,
 	QueryDocumentSnapshot,
 	startAfter,
+	writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { Transaction, Debt, Budget, CustomCategory, Income } from "@/types";
@@ -206,7 +207,7 @@ export async function updateTransaction(userId: string, transactionId: string, u
 	try {
 		const ref = doc(db, "users", userId, "transactions", transactionId);
 		const data: any = {};
-		
+
 		// Only update the fields that are being changed
 		for (const [key, value] of Object.entries(updates)) {
 			if (key === "date") {
@@ -215,12 +216,70 @@ export async function updateTransaction(userId: string, transactionId: string, u
 			}
 			data[key] = value;
 		}
-		
+
 		data.updatedAt = Timestamp.now();
 		await updateDoc(ref, data);
 	} catch (error) {
 		console.error("Error updating transaction:", error);
 		throw error;
+	}
+}
+
+/**
+ * Bulk rename all transactions with a specific description
+ */
+export async function bulkRenameTransactionDescription(
+	userId: string,
+	oldDescription: string,
+	newDescription: string,
+): Promise<number> {
+	try {
+		const ref = getTransactionsRef(userId);
+		const q = query(ref, where("description", "==", oldDescription));
+		const snapshot = await getDocs(q);
+		let count = 0;
+
+		// Batch updates for efficiency
+		const batch = writeBatch(db);
+		snapshot.forEach((doc) => {
+			batch.update(doc.ref, {
+				description: newDescription,
+				updatedAt: Timestamp.now(),
+			});
+			count++;
+		});
+
+		await batch.commit();
+		return count;
+	} catch (error) {
+		console.error("Error bulk renaming transactions:", error);
+		throw error;
+	}
+}
+
+/**
+ * Get all transactions (for debt detection and other analysis)
+ */
+export async function getAllTransactions(userId: string): Promise<(Partial<Transaction> & { id: string })[]> {
+	try {
+		const ref = getTransactionsRef(userId);
+		const q = query(ref, orderBy("date", "desc"));
+		const snapshot = await getDocs(q);
+		const transactions: (Partial<Transaction> & { id: string })[] = [];
+
+		snapshot.forEach((doc) => {
+			const data = doc.data();
+			transactions.push({
+				...data,
+				id: doc.id,
+				date: data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date),
+			} as Partial<Transaction> & { id: string });
+		});
+
+		return transactions;
+	} catch (error) {
+		console.error("Error fetching all transactions:", error);
+		return [];
 	}
 }
 
@@ -262,6 +321,90 @@ export async function getDebts(userId: string): Promise<(Partial<Debt> & { id: s
 		return debts;
 	} catch (error) {
 		console.error("Error fetching debts:", error);
+		return [];
+	}
+}
+
+/**
+ * Detect recurring debts from transaction patterns
+ */
+export interface RecurringDebtPattern {
+	description: string;
+	count: number;
+	avgAmount: number;
+	totalAmount: number;
+	lastOccurrence: Date;
+	estimatedFrequency?: string;
+}
+
+export async function detectRecurringDebts(userId: string): Promise<RecurringDebtPattern[]> {
+	try {
+		const transactions = await getAllTransactions(userId);
+
+		// Filter for negative amounts (expenses/payments)
+		const negativeTransactions = transactions.filter((t) => t.amount !== undefined && t.amount < 0);
+
+		// Group by description
+		const grouped = new Map<string, Partial<Transaction>[]>();
+		negativeTransactions.forEach((t) => {
+			const desc = t.description || "Unknown";
+			if (!grouped.has(desc)) {
+				grouped.set(desc, []);
+			}
+			grouped.get(desc)!.push(t);
+		});
+
+		// Filter for recurring (2+ occurrences) and calculate stats
+		const patterns: RecurringDebtPattern[] = [];
+		grouped.forEach((transactions, description) => {
+			if (transactions.length >= 2) {
+				const amounts = transactions.map((t) => t.amount || 0).filter((a) => a !== 0);
+				const totalAmount = amounts.reduce((a, b) => a + b, 0);
+				const avgAmount = amounts.length > 0 ? totalAmount / amounts.length : 0;
+
+				// Get last occurrence date
+				const lastOccurrence = transactions
+					.map((t) => (t.date instanceof Date ? t.date : new Date(t.date || 0)))
+					.sort((a, b) => b.getTime() - a.getTime())[0];
+
+				// Estimate frequency based on date gaps
+				let estimatedFrequency = "multiple";
+				if (transactions.length >= 3) {
+					const dates = transactions
+						.map((t) => (t.date instanceof Date ? t.date : new Date(t.date || 0)))
+						.sort((a, b) => a.getTime() - b.getTime());
+
+					const gaps: number[] = [];
+					for (let i = 1; i < dates.length; i++) {
+						const diffDays = Math.round((dates[i].getTime() - dates[i - 1].getTime()) / (1000 * 60 * 60 * 24));
+						gaps.push(diffDays);
+					}
+
+					if (gaps.length > 0) {
+						const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+						if (avgGap < 10) estimatedFrequency = "weekly";
+						else if (avgGap < 20) estimatedFrequency = "biweekly";
+						else if (avgGap < 40) estimatedFrequency = "monthly";
+						else if (avgGap < 100) estimatedFrequency = "quarterly";
+						else estimatedFrequency = "annual";
+					}
+				}
+
+				patterns.push({
+					description,
+					count: transactions.length,
+					avgAmount: Math.round(avgAmount * 100) / 100,
+					totalAmount: Math.round(totalAmount * 100) / 100,
+					lastOccurrence,
+					estimatedFrequency,
+				});
+			}
+		});
+
+		// Sort by frequency (most recent first)
+		return patterns.sort((a, b) => b.lastOccurrence.getTime() - a.lastOccurrence.getTime());
+	} catch (error) {
+		console.error("Error detecting recurring debts:", error);
 		return [];
 	}
 }

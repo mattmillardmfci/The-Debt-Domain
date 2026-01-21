@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { Debt } from "@/types";
-import { Plus, Trash2, Edit2 } from "lucide-react";
+import { Plus, Trash2, Edit2, TrendingDown } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getDebts, saveDebt, deleteDebt, updateDebt } from "@/lib/firestoreService";
+import { getDebts, saveDebt, deleteDebt, updateDebt, detectRecurringDebts, RecurringDebtPattern } from "@/lib/firestoreService";
 
 export default function DebtsPage() {
 	const { user } = useAuth();
 	const [debts, setDebts] = useState<(Partial<Debt> & { id: string })[]>([]);
+	const [recurringDebts, setRecurringDebts] = useState<RecurringDebtPattern[]>([]);
 	const [showForm, setShowForm] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [editingId, setEditingId] = useState<string | null>(null);
@@ -30,8 +31,12 @@ export default function DebtsPage() {
 
 		const loadDebts = async () => {
 			try {
-				const data = await getDebts(user.uid);
-				setDebts(data);
+				const [debtsData, recurringData] = await Promise.all([
+					getDebts(user.uid),
+					detectRecurringDebts(user.uid),
+				]);
+				setDebts(debtsData);
+				setRecurringDebts(recurringData);
 			} catch (err) {
 				console.error("Failed to load debts:", err);
 			} finally {
@@ -144,6 +149,33 @@ export default function DebtsPage() {
 			monthlyPayment: 0,
 		});
 		setShowForm(false);
+	};
+
+	const handleCreateDebtFromRecurring = async (pattern: RecurringDebtPattern) => {
+		if (!user?.uid) {
+			alert("You must be logged in");
+			return;
+		}
+
+		try {
+			const newDebt: Partial<Debt> = {
+				name: pattern.description,
+				balance: Math.round(Math.abs(pattern.avgAmount) * 100),
+				monthlyPayment: Math.round(Math.abs(pattern.avgAmount) * 100),
+				minimumPayment: Math.round(Math.abs(pattern.avgAmount) * 100),
+				interestRate: 0,
+				type: "other",
+			};
+
+			const docId = await saveDebt(user.uid, newDebt);
+			setDebts([...debts, { ...newDebt, id: docId }]);
+			// Remove from recurring list
+			setRecurringDebts(recurringDebts.filter((r) => r.description !== pattern.description));
+			alert(`Created debt "${pattern.description}". Adjust the balance if needed.`);
+		} catch (err) {
+			console.error("Failed to create debt from recurring:", err);
+			alert("Failed to create debt. Please try again.");
+		}
 	};
 
 	const totalDebt = debts.reduce((sum, d) => sum + (d.balance || 0), 0);
@@ -423,6 +455,55 @@ export default function DebtsPage() {
 					<p className="text-gray-600 dark:text-gray-400 mb-6">
 						Start by adding your debts to get a personalized payoff plan
 					</p>
+				</div>
+			)}
+
+			{/* Auto-Detected Recurring Debts */}
+			{recurringDebts.length > 0 && (
+				<div className="border-t border-gray-200 dark:border-slate-700 pt-8 mt-8">
+					<div className="flex items-center gap-2 mb-4">
+						<TrendingDown className="w-5 h-5 text-blue-600" />
+						<h2 className="text-2xl font-bold text-gray-900 dark:text-white">Auto-Detected Recurring Debts</h2>
+					</div>
+					<p className="text-gray-600 dark:text-gray-400 mb-4">
+						We found the following recurring payments in your transaction history. Would you like to add them as tracked debts?
+					</p>
+
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+						{recurringDebts.map((pattern) => (
+							<div key={pattern.description} className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
+								<div className="mb-4">
+									<h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm line-clamp-2">
+										{pattern.description}
+									</h3>
+									<div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+										<div className="flex justify-between">
+											<span>Frequency:</span>
+											<span className="font-medium text-gray-900 dark:text-white">{pattern.count}x</span>
+										</div>
+										<div className="flex justify-between">
+											<span>Interval:</span>
+											<span className="font-medium text-gray-900 dark:text-white">{pattern.estimatedFrequency}</span>
+										</div>
+										<div className="flex justify-between">
+											<span>Avg Amount:</span>
+											<span className="font-medium text-gray-900 dark:text-white">${Math.abs(pattern.avgAmount).toFixed(2)}</span>
+										</div>
+										<div className="flex justify-between">
+											<span>Last Payment:</span>
+											<span className="font-medium text-gray-900 dark:text-white">{pattern.lastOccurrence.toLocaleDateString()}</span>
+										</div>
+									</div>
+								</div>
+
+								<button
+									onClick={() => handleCreateDebtFromRecurring(pattern)}
+									className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg transition-colors">
+									Create as Debt
+								</button>
+							</div>
+						))}
+					</div>
 				</div>
 			)}
 		</div>

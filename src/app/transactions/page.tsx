@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, Trash2, Edit2 } from "lucide-react";
+import { Plus, Trash2, Edit2, Edit3, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Transaction, TransactionCategory } from "@/types";
-import { getTransactionsPaginated, deleteTransaction, updateTransaction } from "@/lib/firestoreService";
+import { getTransactionsPaginated, deleteTransaction, updateTransaction, bulkRenameTransactionDescription } from "@/lib/firestoreService";
 import { useAuth } from "@/contexts/AuthContext";
 import { QueryDocumentSnapshot } from "firebase/firestore";
 
@@ -19,6 +19,13 @@ export default function TransactionsPage() {
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [newCategory, setNewCategory] = useState("");
 	const [saving, setSaving] = useState(false);
+	const [renameModal, setRenameModal] = useState<{ isOpen: boolean; oldDescription: string; newDescription: string; count: number }>({
+		isOpen: false,
+		oldDescription: "",
+		newDescription: "",
+		count: 0,
+	});
+	const [renaming, setRenaming] = useState(false);
 
 	// Initial load - get first page of transactions (50 most recent)
 	useEffect(() => {
@@ -93,6 +100,37 @@ export default function TransactionsPage() {
 			alert("Failed to update category. Please try again.");
 		} finally {
 			setSaving(false);
+		}
+	};
+
+	const openRenameModal = (description: string) => {
+		const count = transactions.filter((t) => t.description === description).length;
+		setRenameModal({
+			isOpen: true,
+			oldDescription: description,
+			newDescription: description,
+			count,
+		});
+	};
+
+	const handleRenameTransaction = async () => {
+		if (!user?.uid || !renameModal.newDescription.trim()) return;
+
+		setRenaming(true);
+		try {
+			await bulkRenameTransactionDescription(user.uid, renameModal.oldDescription, renameModal.newDescription.trim());
+			// Update local transactions
+			setTransactions(
+				transactions.map((t) =>
+					t.description === renameModal.oldDescription ? { ...t, description: renameModal.newDescription.trim() } : t,
+				),
+			);
+			setRenameModal({ isOpen: false, oldDescription: "", newDescription: "", count: 0 });
+		} catch (err) {
+			console.error("Failed to rename transactions:", err);
+			alert("Failed to rename transactions. Please try again.");
+		} finally {
+			setRenaming(false);
 		}
 	};
 
@@ -173,7 +211,17 @@ export default function TransactionsPage() {
 								<td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
 									{t.date instanceof Date ? t.date.toLocaleDateString() : new Date(t.date as any).toLocaleDateString()}
 								</td>
-								<td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{t.description}</td>
+								<td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+									<div className="flex items-center justify-between group">
+										<span>{t.description}</span>
+										<button
+											onClick={() => openRenameModal(t.description || "Unknown")}
+											className="p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-all ml-2"
+											title="Rename all transactions with this description">
+											<Edit3 className="w-4 h-4" />
+										</button>
+									</div>
+								</td>
 								<td className="px-6 py-4 text-sm">
 									{editingId === t.id ? (
 										<div className="flex gap-2">
@@ -251,6 +299,69 @@ export default function TransactionsPage() {
 				<p className="text-sm text-gray-600 dark:text-gray-400 text-center">
 					You've loaded all {transactions.length} transactions
 				</p>
+			)}
+
+			{/* Rename Modal */}
+			{renameModal.isOpen && (
+				<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg max-w-md w-full p-6">
+						<div className="flex items-center justify-between mb-4">
+							<h2 className="text-xl font-bold text-gray-900 dark:text-white">Rename Transaction Description</h2>
+							<button
+								onClick={() => setRenameModal({ isOpen: false, oldDescription: "", newDescription: "", count: 0 })}
+								className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+								<X className="w-5 h-5" />
+							</button>
+						</div>
+
+						<div className="space-y-4">
+							<div>
+								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Current Description</label>
+								<div className="p-3 bg-gray-100 dark:bg-slate-700 rounded border border-gray-300 dark:border-slate-600 text-gray-900 dark:text-gray-100">
+									{renameModal.oldDescription}
+								</div>
+								<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+									This description appears in {renameModal.count} transaction{renameModal.count !== 1 ? "s" : ""}
+								</p>
+							</div>
+
+							<div>
+								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">New Description</label>
+								<input
+									type="text"
+									value={renameModal.newDescription}
+									onChange={(e) =>
+										setRenameModal({
+											...renameModal,
+											newDescription: e.target.value,
+										})
+									}
+									className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+									placeholder="Enter new description"
+								/>
+							</div>
+
+							<div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-3 text-sm text-blue-800 dark:text-blue-300">
+								Renaming will update the description for all {renameModal.count} transaction{renameModal.count !== 1 ? "s" : ""} with this name.
+							</div>
+
+							<div className="flex gap-3 justify-end mt-6">
+								<button
+									onClick={() => setRenameModal({ isOpen: false, oldDescription: "", newDescription: "", count: 0 })}
+									disabled={renaming}
+									className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 font-medium transition-colors disabled:opacity-50">
+									Cancel
+								</button>
+								<button
+									onClick={handleRenameTransaction}
+									disabled={renaming || !renameModal.newDescription.trim() || renameModal.newDescription === renameModal.oldDescription}
+									className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-md transition-colors">
+									{renaming ? "Renaming..." : "Rename All"}
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
 			)}
 		</div>
 	);
