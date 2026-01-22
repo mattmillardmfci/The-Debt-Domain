@@ -225,53 +225,53 @@ export default function TransactionUploadPage() {
 					</label>
 				</div>
 
-			{/* Test Data Button */}
-			<div className="text-center">
-				<p className="text-gray-600 dark:text-gray-400 mb-3">Want to explore first?</p>
-				<button
-					onClick={() => processCSVContent(TEST_DATA_CSV)}
-					disabled={loading}
-					className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors">
-					{loading ? "Loading..." : "Use Test Data"}
-				</button>
-			</div>
+				{/* Test Data Button */}
+				<div className="text-center">
+					<p className="text-gray-600 dark:text-gray-400 mb-3">Want to explore first?</p>
+					<button
+						onClick={() => processCSVContent(TEST_DATA_CSV)}
+						disabled={loading}
+						className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors">
+						{loading ? "Loading..." : "Use Test Data"}
+					</button>
+				</div>
 
-			{/* Supported Formats */}
-			<div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-				<h3 className="font-semibold text-gray-900 dark:text-white mb-2">Supported Formats</h3>
-				<ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-					<li>• CSV files with columns: Date, Description, Amount</li>
-					<li>• Date formats: MM/DD/YYYY, YYYY-MM-DD</li>
-					<li>• At least 120 days of transaction history</li>
-				</ul>
-			</div>
+				{/* Supported Formats */}
+				<div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+					<h3 className="font-semibold text-gray-900 dark:text-white mb-2">Supported Formats</h3>
+					<ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+						<li>• CSV files with columns: Date, Description, Amount</li>
+						<li>• Date formats: MM/DD/YYYY, YYYY-MM-DD</li>
+						<li>• At least 120 days of transaction history</li>
+					</ul>
+				</div>
 
-			{/* Security & Privacy Disclaimer */}
-			<div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-				<h3 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-					<svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-						<path d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" />
-					</svg>
-					Your Financial Data Is Completely Safe
-				</h3>
-				<ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-					<li>
-						<strong>Encrypted Storage:</strong> All data encrypted at rest using industry-standard protocols
-					</li>
-					<li>
-						<strong>Secure Transmission:</strong> HTTPS and end-to-end encryption in transit
-					</li>
-					<li>
-						<strong>Private & Confidential:</strong> Only YOU can access your financial information
-					</li>
-					<li>
-						<strong>No Third-Party Access:</strong> We never share, sell, or access your personal data
-					</li>
-					<li>
-						<strong>Firebase Security:</strong> Enterprise-grade security with automatic backups
-					</li>
-				</ul>
-			</div>
+				{/* Security & Privacy Disclaimer */}
+				<div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+					<h3 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+						<svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+							<path d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" />
+						</svg>
+						Your Financial Data Is Completely Safe
+					</h3>
+					<ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+						<li>
+							<strong>Encrypted Storage:</strong> All data encrypted at rest using industry-standard protocols
+						</li>
+						<li>
+							<strong>Secure Transmission:</strong> HTTPS and end-to-end encryption in transit
+						</li>
+						<li>
+							<strong>Private & Confidential:</strong> Only YOU can access your financial information
+						</li>
+						<li>
+							<strong>No Third-Party Access:</strong> We never share, sell, or access your personal data
+						</li>
+						<li>
+							<strong>Firebase Security:</strong> Enterprise-grade security with automatic backups
+						</li>
+					</ul>
+				</div>
 
 				{/* Error Message */}
 				{error && (

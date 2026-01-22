@@ -69,6 +69,7 @@ export default function ExpensesPage() {
 	const [swipedIndex, setSwipedIndex] = useState<number | null>(null);
 	const [touchStart, setTouchStart] = useState(0);
 	const [touchEnd, setTouchEnd] = useState(0);
+	const [showInstructions, setShowInstructions] = useState(false);
 	const [allCategories] = useState([
 		"Groceries",
 		"Restaurants",
@@ -389,6 +390,19 @@ export default function ExpensesPage() {
 
 		loadExpenses();
 	}, [user?.uid]);
+
+	// Check if user has seen instructions on first visit
+	useEffect(() => {
+		const hasSeenInstructions = localStorage.getItem("expensesPageInstructionsSeen");
+		if (!hasSeenInstructions) {
+			setShowInstructions(true);
+		}
+	}, []);
+
+	const handleDismissInstructions = () => {
+		setShowInstructions(false);
+		localStorage.setItem("expensesPageInstructionsSeen", "true");
+	};
 
 	const formatCurrency = (amount: number) => {
 		return new Intl.NumberFormat("en-US", {
@@ -876,6 +890,66 @@ export default function ExpensesPage() {
 								{renaming ? "Renaming..." : "Rename"}
 							</button>
 						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Instructions Modal */}
+			{showInstructions && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6 space-y-4">
+						<div>
+							<h2 className="text-xl font-semibold text-gray-900 dark:text-white">Welcome to Monthly Expenses!</h2>
+							<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Here's a quick guide to get you started:</p>
+						</div>
+
+						<div className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
+							<div className="flex gap-3">
+								<div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 text-xs font-bold">
+									1
+								</div>
+								<div>
+									<p className="font-medium text-gray-900 dark:text-white">Desktop: Edit in Table</p>
+									<p className="text-xs text-gray-600 dark:text-gray-400">Hover over descriptions to see the edit icon. Click to rename all matching expenses.</p>
+								</div>
+							</div>
+
+							<div className="flex gap-3">
+								<div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 text-xs font-bold">
+									2
+								</div>
+								<div>
+									<p className="font-medium text-gray-900 dark:text-white">Mobile: Swipe to Edit/Delete</p>
+									<p className="text-xs text-gray-600 dark:text-gray-400">Swipe left on any card to reveal edit and delete options. Swipe right to close.</p>
+								</div>
+							</div>
+
+							<div className="flex gap-3">
+								<div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 text-xs font-bold">
+									3
+								</div>
+								<div>
+									<p className="font-medium text-gray-900 dark:text-white">Detected Expenses</p>
+									<p className="text-xs text-gray-600 dark:text-gray-400">Expand "Detected Recurring Expenses" to add more transactions to your monthly budget.</p>
+								</div>
+							</div>
+
+							<div className="flex gap-3">
+								<div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 text-xs font-bold">
+									4
+								</div>
+								<div>
+									<p className="font-medium text-gray-900 dark:text-white">Non-Destructive</p>
+									<p className="text-xs text-gray-600 dark:text-gray-400">Deleting an expense just removes it from this page—it won't affect your transaction history.</p>
+								</div>
+							</div>
+						</div>
+
+						<button
+							onClick={handleDismissInstructions}
+							className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+							Got It!
+						</button>
 					</div>
 				</div>
 			)}
