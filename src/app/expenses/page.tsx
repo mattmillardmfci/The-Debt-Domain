@@ -63,6 +63,12 @@ export default function ExpensesPage() {
 		count: 0,
 	});
 	const [renaming, setRenaming] = useState(false);
+	const [mobileEditingIndex, setMobileEditingIndex] = useState<number | null>(null);
+	const [mobileEditDescription, setMobileEditDescription] = useState("");
+	const [mobileEditCategory, setMobileEditCategory] = useState("");
+	const [swipedIndex, setSwipedIndex] = useState<number | null>(null);
+	const [touchStart, setTouchStart] = useState(0);
+	const [touchEnd, setTouchEnd] = useState(0);
 	const [allCategories] = useState([
 		"Groceries",
 		"Restaurants",
@@ -254,6 +260,60 @@ export default function ExpensesPage() {
 			alert("Failed to rename expenses. Please try again.");
 		} finally {
 			setRenaming(false);
+		}
+	};
+
+	const handleMobileTouchStart = (e: React.TouchEvent) => {
+		setTouchStart(e.targetTouches[0].clientX);
+	};
+
+	const handleMobileTouchEnd = (e: React.TouchEvent, index: number) => {
+		setTouchEnd(e.changedTouches[0].clientX);
+		const distance = touchStart - e.changedTouches[0].clientX;
+
+		// Swipe left (distance > 50px)
+		if (distance > 50) {
+			setSwipedIndex(index);
+		}
+		// Swipe right (distance < -50px) or close if already swiped
+		else if (distance < -50 || swipedIndex === index) {
+			setSwipedIndex(null);
+		}
+	};
+
+	const handleMobileEdit = (index: number, expense: RecurringExpense) => {
+		setMobileEditingIndex(index);
+		setMobileEditDescription(expense.descriptionOverride || expense.description);
+		setMobileEditCategory(expense.categoryOverride || expense.category || "Other");
+		setSwipedIndex(null);
+	};
+
+	const handleMobileSaveEdit = async (index: number, expense: RecurringExpense) => {
+		if (!user?.uid || !mobileEditDescription.trim()) return;
+
+		setMobileEditingIndex(null);
+		setSwipedIndex(null);
+
+		try {
+			await updateRecurringExpenseOverride(user.uid, {
+				originalDescription: expense.description,
+				amount: expense.amount,
+				categoryOverride: mobileEditCategory,
+				descriptionOverride: mobileEditDescription,
+			});
+
+			const updated = [...expenses];
+			updated[index] = {
+				...updated[index],
+				categoryOverride: mobileEditCategory,
+				descriptionOverride: mobileEditDescription,
+				category: mobileEditCategory,
+				description: mobileEditDescription,
+			};
+			setExpenses(updated);
+		} catch (error) {
+			console.error("Failed to save edit:", error);
+			alert("Failed to save changes");
 		}
 	};
 
@@ -611,51 +671,120 @@ export default function ExpensesPage() {
 
 					{/* Mobile Cards */}
 					<div className="sm:hidden space-y-3">
-						{expenses.map((expense) => (
+						{expenses.map((expense, index) => (
 							<div
 								key={expense.description}
-								className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
-								<div className="space-y-3">
-									{/* Description and category */}
-									<div>
-										<p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
-											{expense.description}
-										</p>
-										<span className="inline-block mt-2 px-2 py-1 text-xs bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded">
-											{expense.category || "Other"}
-										</span>
+								className="relative bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
+								{mobileEditingIndex === index ? (
+									<div className="p-4 space-y-4">
+										<div>
+											<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+												Expense Name
+											</label>
+											<input
+												type="text"
+												value={mobileEditDescription}
+												onChange={(e) => setMobileEditDescription(e.target.value)}
+												className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded text-sm text-gray-900 dark:text-white"
+												placeholder="Expense name..."
+											/>
+										</div>
+										<div>
+											<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+												Category
+											</label>
+											<select
+												value={mobileEditCategory}
+												onChange={(e) => setMobileEditCategory(e.target.value)}
+												className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded text-sm text-gray-900 dark:text-white">
+												{allCategories.map((cat) => (
+													<option key={cat} value={cat}>
+														{cat}
+													</option>
+												))}
+											</select>
+										</div>
+										<div className="flex gap-2">
+											<button
+												onClick={() => handleMobileSaveEdit(index, expense)}
+												className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded font-medium">
+												Save
+											</button>
+											<button
+												onClick={() => setMobileEditingIndex(null)}
+												className="flex-1 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded font-medium">
+												Cancel
+											</button>
+										</div>
 									</div>
+								) : (
+									<>
+										<div
+											onTouchStart={handleMobileTouchStart}
+											onTouchEnd={(e) => handleMobileTouchEnd(e, index)}
+											className={`p-4 transition-all duration-300 ${swipedIndex === index ? "-translate-x-24" : ""}`}>
+											<div className="space-y-3">
+												{/* Description and category */}
+												<div>
+													<p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
+														{expense.descriptionOverride || expense.description}
+													</p>
+													<span className="inline-block mt-2 px-2 py-1 text-xs bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded">
+														{expense.categoryOverride || expense.category || "Other"}
+													</span>
+												</div>
 
-									{/* Monthly impact highlight */}
-									<div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-3">
-										<p className="text-xs text-red-600 dark:text-red-400">Monthly Impact</p>
-										<p className="text-lg font-bold text-red-700 dark:text-red-300">
-											{formatCurrency(expense.monthlyAmount)}
-										</p>
-									</div>
+												{/* Monthly impact highlight */}
+												<div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-3">
+													<p className="text-xs text-red-600 dark:text-red-400">Monthly Impact</p>
+													<p className="text-lg font-bold text-red-700 dark:text-red-300">
+														{formatCurrency(expense.monthlyAmount)}
+													</p>
+												</div>
 
-									{/* Details grid */}
-									<div className="grid grid-cols-2 gap-3 text-xs">
-										<div>
-											<p className="text-gray-600 dark:text-gray-400">Per Occurrence</p>
-											<p className="font-medium text-gray-900 dark:text-white">{formatCurrency(expense.amount)}</p>
+												{/* Details grid */}
+												<div className="grid grid-cols-2 gap-3 text-xs">
+													<div>
+														<p className="text-gray-600 dark:text-gray-400">Per Occurrence</p>
+														<p className="font-medium text-gray-900 dark:text-white">
+															{formatCurrency(expense.amount)}
+														</p>
+													</div>
+													<div>
+														<p className="text-gray-600 dark:text-gray-400">Frequency</p>
+														<p className="font-medium text-gray-900 dark:text-white capitalize">{expense.frequency}</p>
+													</div>
+													<div>
+														<p className="text-gray-600 dark:text-gray-400">Count</p>
+														<p className="font-medium text-gray-900 dark:text-white">{expense.count}x</p>
+													</div>
+													<div>
+														<p className="text-gray-600 dark:text-gray-400">Last Occurrence</p>
+														<p className="font-medium text-gray-900 dark:text-white">
+															{expense.lastOccurrence.toLocaleDateString()}
+														</p>
+													</div>
+												</div>
+											</div>
 										</div>
-										<div>
-											<p className="text-gray-600 dark:text-gray-400">Frequency</p>
-											<p className="font-medium text-gray-900 dark:text-white capitalize">{expense.frequency}</p>
-										</div>
-										<div>
-											<p className="text-gray-600 dark:text-gray-400">Count</p>
-											<p className="font-medium text-gray-900 dark:text-white">{expense.count}x</p>
-										</div>
-										<div>
-											<p className="text-gray-600 dark:text-gray-400">Last Occurrence</p>
-											<p className="font-medium text-gray-900 dark:text-white">
-												{expense.lastOccurrence.toLocaleDateString()}
-											</p>
-										</div>
-									</div>
-								</div>
+										{/* Swipe action buttons */}
+										{swipedIndex === index && (
+											<div className="absolute right-0 top-0 h-full flex items-center gap-2 bg-white dark:bg-slate-800 pr-4">
+												<button
+													onClick={() => handleMobileEdit(index, expense)}
+													className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors">
+													<Edit2 className="w-5 h-5" />
+												</button>
+												<button
+													onClick={() => handleDelete(index)}
+													disabled={deletingIndex !== null}
+													className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50">
+													<Trash2 className="w-5 h-5" />
+												</button>
+											</div>
+										)}
+									</>
+								)}
 							</div>
 						))}
 					</div>
