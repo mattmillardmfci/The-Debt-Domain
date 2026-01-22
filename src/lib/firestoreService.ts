@@ -1190,14 +1190,15 @@ export async function findUndetectedRecurringExpenses(userId: string): Promise<
 		// Create a set of already-detected amounts for quick lookup
 		const detectedAmounts = new Set(detectedExpenses.map((e) => Math.round(e.avgAmount * 100) / 100));
 
-		// Group by amount (rounded to nearest cent) and find patterns with 2+ occurrences
+		// Group by amount (in dollars, rounded to nearest cent) and find patterns with 2+ occurrences
+		// Transaction amounts are stored in cents, so divide by 100
 		const amountGroups = new Map<number, Partial<Transaction>[]>();
 		negativeTransactions.forEach((t) => {
-			const roundedAmount = Math.round(Math.abs(t.amount || 0) * 100) / 100;
-			if (!amountGroups.has(roundedAmount)) {
-				amountGroups.set(roundedAmount, []);
+			const amountInDollars = Math.round(Math.abs(t.amount || 0) / 100 * 100) / 100;
+			if (!amountGroups.has(amountInDollars)) {
+				amountGroups.set(amountInDollars, []);
 			}
-			amountGroups.get(roundedAmount)!.push(t);
+			amountGroups.get(amountInDollars)!.push(t);
 		});
 
 		// Find groups with 2+ transactions that aren't already detected
