@@ -357,29 +357,107 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 			return words.slice(0, 4).join(" ");
 		};
 
-		// Group by normalized description
-		const grouped = new Map<string, Partial<Transaction>[]>();
+		// NEW APPROACH: Group by CHARGE AMOUNT first, then verify vendor consistency
+		// This prevents grouping different purchases from the same vendor
+		// (e.g., different pharmacy items with different costs)
+		
+		interface ChargeGroup {
+			amount: number; // in cents (absolute value)
+			vendors: Set<string>; // normalized vendor names
+			transactions: Partial<Transaction>[];
+		}
+
+		// Round amounts to nearest 5 cents to handle minor variation (e.g., $9.12 vs $9.13)
+		const roundAmount = (amount: number): number => Math.round(Math.abs(amount) / 5) * 5;
+		
+		// Group by rounded charge amount
+		const chargeGroups = new Map<number, ChargeGroup>();
 		negativeTransactions.forEach((t) => {
-			const originalDesc = t.description || "Unknown";
-			const normalizedDesc = normalizeDescription(originalDesc);
-			if (!grouped.has(normalizedDesc)) {
-				grouped.set(normalizedDesc, []);
+			const roundedAmount = roundAmount(t.amount || 0);
+			const normalizedDesc = normalizeDescription(t.description || "Unknown");
+			
+			if (!chargeGroups.has(roundedAmount)) {
+				chargeGroups.set(roundedAmount, {
+					amount: roundedAmount,
+					vendors: new Set(),
+					transactions: [],
+				});
 			}
-			grouped.get(normalizedDesc)!.push(t);
+			
+			const group = chargeGroups.get(roundedAmount)!;
+			group.vendors.add(normalizedDesc);
+			group.transactions.push(t);
 		});
 
 		// Filter for recurring (2+ occurrences) and calculate stats
 		const patterns: RecurringDebtPattern[] = [];
-		grouped.forEach((transactions, normalizedDescription) => {
-			if (transactions.length >= 2) {
+		chargeGroups.forEach((chargeGroup) => {
+			if (chargeGroup.transactions.length >= 2) {
+				const transactions = chargeGroup.transactions;
 				const amounts = transactions.map((t) => t.amount || 0).filter((a) => a !== 0);
 				const totalAmount = amounts.reduce((a, b) => a + b, 0);
 				// Convert from cents to dollars by dividing by 100
 				const avgAmount = amounts.length > 0 ? totalAmount / amounts.length / 100 : 0;
 				const totalAmountDollars = totalAmount / 100;
 
-				// Validate that amounts are reasonably consistent
-				// Calculate coefficient of variation (standard deviation / mean)
+				// IMPROVED VALIDATION: For same-amount charges, require VERY consistent vendor names
+				// (within reasonable normalization tolerance)
+				// This catches cases like "AMAZON PRIME" vs "AMAZON PRIME PMTS Amzn.com/bill"
+				const vendors = Array.from(chargeGroup.vendors);
+				
+				// If we have multiple different vendor names for the same charge amount,
+				// try to find a common base (e.g., "AMAZON" appears in both)
+				let mainVendor = vendors[0];
+				if (vendors.length > 1) {
+					// Check if all vendors share a common word (the main merchant name)
+					const allWords = vendors.flatMap(v => v.split(/\s+/));
+					const wordCounts = new Map<string, number>();
+					allWords.forEach(word => {
+						wordCounts.set(word, (wordCounts.get(word) || 0) + 1);
+					});
+					
+					// Find the most common word that appears in multiple vendors
+					let commonWord = '';
+					let maxCount = 0;
+					wordCounts.forEach((count, word) => {
+						if (count >= Math.ceil(vendors.length / 2) && word.length > 2 && count > maxCount) {
+							commonWord = word;
+							maxCount = count;
+						}
+					});
+					
+					// If we found a common word (likely the main merchant), validate it
+					if (commonWord) {
+						mainVendor = commonWord;
+						// Verify that all vendors contain the main word
+						const allVendorsHaveCommonWord = vendors.every(v => v.includes(commonWord));
+						if (!allVendorsHaveCommonWord) {
+							// Vendors don't share a common merchant name - likely different charges
+							return;
+						}
+					} else {
+						// Multiple different vendors for same amount - likely different charges
+						// Skip this unless they're very similar
+						const firstVendor = vendors[0];
+						const allSimilar = vendors.every(v => {
+							const similarity = (a: string, b: string) => {
+								const aParts = a.split(/\s+/);
+								const bParts = b.split(/\s+/);
+								const common = aParts.filter(part => bParts.includes(part)).length;
+								return common > 0;
+							};
+							return similarity(firstVendor, v);
+						});
+						
+						if (!allSimilar) {
+							// Vendors are too different - skip this charge group
+							return;
+						}
+					}
+				}
+
+				// Calculate coefficient of variation to ensure amount consistency
+				// (should be very low since we grouped by amount, but check for rounding variance)
 				const mean = Math.abs(avgAmount);
 				if (mean > 0) {
 					const variance =
@@ -390,10 +468,10 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 					const stdDev = Math.sqrt(variance);
 					const coefficientOfVariation = stdDev / mean;
 
-					// If variation is too high (>30%), it's likely not a true recurring charge
-					// Examples: random pharmacy purchases, one-time charges
-					if (coefficientOfVariation > 0.3) {
-						// Skip this pattern - amounts are too inconsistent
+					// For charge-based grouping, amounts should be nearly identical
+					// Use stricter threshold (10%) than vendor-based (30%)
+					if (coefficientOfVariation > 0.1) {
+						// Skip this pattern - amounts vary too much for same charge
 						return;
 					}
 				}
@@ -404,7 +482,7 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 				)[0];
 				const category = mostRecentTransaction?.category || "Other";
 				// Use the most recent (original) description for display
-				const description = mostRecentTransaction?.description || normalizedDescription;
+				const description = mostRecentTransaction?.description || mainVendor;
 
 				// Get last occurrence date
 				const lastOccurrence = transactions
