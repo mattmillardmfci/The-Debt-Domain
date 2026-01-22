@@ -2,7 +2,7 @@
 
 // Force deployment to Vercel
 import { useAuth } from "@/contexts/AuthContext";
-import { TrendingUp, TrendingDown, AlertCircle, Plus } from "lucide-react";
+import { TrendingUp, TrendingDown, AlertCircle, Plus, Info } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import {
@@ -19,6 +19,8 @@ interface DashboardMetrics {
 	savingsRate: number;
 	totalDebt: number;
 	budgetUsage: number;
+	incomeBreakdown: string; // For tooltip
+	expensesBreakdown: string; // For tooltip
 }
 
 export default function DashboardPage() {
@@ -29,9 +31,13 @@ export default function DashboardPage() {
 		savingsRate: 0,
 		totalDebt: 0,
 		budgetUsage: 0,
+		incomeBreakdown: "",
+		expensesBreakdown: "",
 	});
 	const [hasData, setHasData] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
+	const [showIncomeTooltip, setShowIncomeTooltip] = useState(false);
+	const [showExpensestooltip, setShowExpensesTooltip] = useState(false);
 
 	useEffect(() => {
 		if (!user?.uid) {
@@ -56,6 +62,8 @@ export default function DashboardPage() {
 
 				// Calculate monthly expenses from recurring debt patterns (same as expenses page)
 				let monthlyExpensesAbsolute = 0;
+				let expensesBreakdownLines: string[] = [];
+				
 				recurringDebts.forEach((debt) => {
 					let monthlyImpact = debt.avgAmount;
 
@@ -73,30 +81,45 @@ export default function DashboardPage() {
 					}
 
 					monthlyExpensesAbsolute += monthlyImpact;
+					expensesBreakdownLines.push(
+						`${debt.description} (${debt.estimatedFrequency}): $${debt.avgAmount.toFixed(2)} per occurrence × frequency = $${monthlyImpact.toFixed(2)}/mo`
+					);
 				});
 
 				// Calculate monthly income from income entries + detected income patterns
 				let monthlyIncome = 0;
+				let incomeBreakdownLines: string[] = [];
 
 				// From manual income entries
 				incomeEntries.forEach((income) => {
-					const amount = income.amount || 0;
+					const amountInDollars = (income.amount || 0) / 100; // Convert from cents
+					let monthlyAmount = 0;
 					if (income.frequency === "monthly") {
-						monthlyIncome += amount;
+						monthlyAmount = amountInDollars;
 					} else if (income.frequency === "yearly") {
-						monthlyIncome += amount / 12;
+						monthlyAmount = amountInDollars / 12;
 					} else if (income.frequency === "biweekly") {
-						monthlyIncome += (amount * 26) / 12;
+						monthlyAmount = amountInDollars * (26 / 12);
 					} else if (income.frequency === "semi-monthly") {
-						monthlyIncome += amount * 2;
+						monthlyAmount = amountInDollars * 2;
 					} else if (income.frequency === "weekly") {
-						monthlyIncome += (amount * 52) / 12;
+						monthlyAmount = amountInDollars * (52 / 12);
+					}
+					
+					if (income.frequency !== "once") {
+						monthlyIncome += monthlyAmount;
+						incomeBreakdownLines.push(
+							`${income.description || "Manual Income"} (${income.frequency}): $${amountInDollars.toFixed(2)} × frequency multiplier = $${monthlyAmount.toFixed(2)}/mo`
+						);
 					}
 				});
 
 				// From detected recurring income patterns
 				incomePatterns.forEach((pattern) => {
 					monthlyIncome += pattern.monthlyAmount; // Already in dollars
+					incomeBreakdownLines.push(
+						`${pattern.description} (${pattern.frequency}): $${pattern.amount.toFixed(2)} per occurrence × frequency = $${pattern.monthlyAmount.toFixed(2)}/mo`
+					);
 				});
 				const savingsRate =
 					monthlyIncome > 0 ? Math.round(((monthlyIncome - monthlyExpensesAbsolute) / monthlyIncome) * 100) : 0;
@@ -107,6 +130,12 @@ export default function DashboardPage() {
 					savingsRate: savingsRate,
 					totalDebt: Math.round(totalDebt / 100),
 					budgetUsage: 0, // TODO: Integrate with budgets
+					incomeBreakdown: incomeBreakdownLines.length > 0 
+						? incomeBreakdownLines.join("\n")
+						: "No income sources found. Add income entries or upload transactions.",
+					expensesBreakdown: expensesBreakdownLines.length > 0
+						? expensesBreakdownLines.join("\n")
+						: "No recurring expenses found. Upload transactions to detect patterns.",
 				});
 
 				setHasData(transactions.length > 0);
@@ -158,38 +187,74 @@ export default function DashboardPage() {
 					{/* Metrics Grid */}
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 						{/* Monthly Income */}
-						<Link href="/income" className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg hover:border-green-300 dark:hover:border-green-600 transition-all cursor-pointer">
-							<div className="flex items-center justify-between">
-								<div>
-									<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Income</p>
-									<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-										$
-										{metrics.monthlyIncome.toLocaleString("en-US", {
-											minimumFractionDigits: 2,
-											maximumFractionDigits: 2,
-										})}
-									</p>
-								</div>
-								<TrendingUp className="w-8 h-8 text-green-600" />
+					<Link 
+						href="/income" 
+						className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg hover:border-green-300 dark:hover:border-green-600 transition-all cursor-pointer relative"
+						onMouseEnter={() => setShowIncomeTooltip(true)}
+						onMouseLeave={() => setShowIncomeTooltip(false)}
+						onTouchStart={() => setShowIncomeTooltip(!showIncomeTooltip)}
+					>
+						<div className="flex items-center justify-between">
+							<div className="flex-1">
+								<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Income</p>
+								<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+									$
+									{metrics.monthlyIncome.toLocaleString("en-US", {
+										minimumFractionDigits: 2,
+										maximumFractionDigits: 2,
+									})}
+								</p>
 							</div>
-						</Link>
+							<div className="flex flex-col items-center gap-2">
+								<TrendingUp className="w-8 h-8 text-green-600" />
+								<Info className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+							</div>
+						</div>
+
+						{/* Tooltip */}
+						{showIncomeTooltip && (
+							<div className="absolute bottom-full left-0 right-0 mb-2 bg-gray-900 dark:bg-gray-800 text-white text-xs p-3 rounded border border-gray-700 z-50 whitespace-pre-wrap">
+								<div className="font-semibold mb-2">How Monthly Income is Calculated:</div>
+								<div className="text-gray-200">{metrics.incomeBreakdown}</div>
+								<div className="text-gray-400 text-xs mt-2 italic">Frequency multipliers:</div>
+								<div className="text-gray-400 text-xs">Weekly: ×4.33 | Biweekly: ×2.17 | Semi-monthly: ×2 | Monthly: ×1 | Yearly: ÷12</div>
+							</div>
+						)}
 
 						{/* Monthly Expenses */}
-						<Link href="/expenses" className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg hover:border-red-300 dark:hover:border-red-600 transition-all cursor-pointer">
-							<div className="flex items-center justify-between">
-								<div>
-									<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Expenses</p>
-									<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-										$
-										{metrics.monthlyExpenses.toLocaleString("en-US", {
-											minimumFractionDigits: 2,
-											maximumFractionDigits: 2,
-										})}
-									</p>
-								</div>
-								<TrendingDown className="w-8 h-8 text-red-600" />
+					<Link 
+						href="/expenses" 
+						className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg hover:border-red-300 dark:hover:border-red-600 transition-all cursor-pointer relative"
+						onMouseEnter={() => setShowExpensesTooltip(true)}
+						onMouseLeave={() => setShowExpensesTooltip(false)}
+						onTouchStart={() => setShowExpensesTooltip(!showExpensestooltip)}
+					>
+						<div className="flex items-center justify-between">
+							<div className="flex-1">
+								<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Expenses</p>
+								<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+									$
+									{metrics.monthlyExpenses.toLocaleString("en-US", {
+										minimumFractionDigits: 2,
+										maximumFractionDigits: 2,
+									})}
+								</p>
 							</div>
-						</Link>
+							<div className="flex flex-col items-center gap-2">
+								<TrendingDown className="w-8 h-8 text-red-600" />
+								<Info className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+							</div>
+						</div>
+
+						{/* Tooltip */}
+						{showExpensestooltip && (
+							<div className="absolute bottom-full left-0 right-0 mb-2 bg-gray-900 dark:bg-gray-800 text-white text-xs p-3 rounded border border-gray-700 z-50 whitespace-pre-wrap">
+								<div className="font-semibold mb-2">How Monthly Expenses are Calculated:</div>
+								<div className="text-gray-200">{metrics.expensesBreakdown}</div>
+								<div className="text-gray-400 text-xs mt-2 italic">Frequency multipliers:</div>
+								<div className="text-gray-400 text-xs">Weekly: ×4.33 | Biweekly: ×2.17 | Monthly: ×1 | Quarterly: ÷3 | Annual: ÷12</div>
+							</div>
+						)}
 
 						{/* Total Debt */}
 						<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
