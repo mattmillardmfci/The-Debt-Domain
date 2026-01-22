@@ -1,0 +1,1001 @@
+Date,Description,Amount,Balance
+2025-01-22,Sam's Club,-144.75,4855.25
+2025-01-23,Daycare Tuition,-852.77,4002.48
+2025-01-25,Sam's Club,-138.23,3864.25
+2025-01-27,Walmart,-84.1,3780.15
+2025-01-27,DummyInc Payroll,2495.94,6276.09
+2025-01-27,Restaurant,-43.98,6232.11
+2025-01-29,Love's Travel Stop,-59.84,6172.27
+2025-01-31,ATM Withdrawal,-100.8,6071.47
+2025-02-01,Spotify Subscription,-7.9,6063.57
+2025-02-01,Phillips 66 Gas,-46.02,6017.55
+2025-02-02,Spotify Subscription,-14.44,6003.12
+2025-02-03,Sam's Club,-144.07,5859.04
+2025-02-03,Target,-70.53,5788.52
+2025-02-05,Spotify Subscription,-7.92,5780.6
+2025-02-07,Internet Service,-94.64,5685.96
+2025-02-08,Walmart,-84.48,5601.48
+2025-02-10,Target,-73.23,5528.26
+2025-02-12,Walmart,-89.54,5438.72
+2025-02-12,PayPal Transfer,-115.15,5323.57
+2025-02-12,Sam's Club,-141.2,5182.37
+2025-02-13,Target,-77.37,5105.0
+2025-02-14,Love's Travel Stop,-60.3,5044.7
+2025-02-16,Walmart,-83.91,4960.79
+2025-02-16,ATM Withdrawal,-97.71,4863.08
+2025-02-16,Internet Service,-96.21,4766.87
+2025-02-18,ATM Withdrawal,-102.8,4664.07
+2025-02-19,McDonalds,-14.71,4649.36
+2025-02-19,Amazon Purchase,-65.99,4583.37
+2025-02-19,Love's Travel Stop,-57.87,4525.5
+2025-02-21,Amazon Purchase,-67.87,4457.63
+2025-02-22,Electric Utility,-126.15,4331.48
+2025-02-24,Internet Service,-98.57,4232.91
+2025-02-24,Daycare Tuition,-847.55,3385.36
+2025-02-26,Spotify Subscription,-8.52,3376.84
+2025-02-27,Electric Utility,-131.38,3245.46
+2025-02-27,Restaurant,-45.06,3200.39
+2025-02-27,Sam's Club,-143.47,3056.92
+2025-02-27,Water Utility,-54.04,3002.88
+2025-02-28,Electric Utility,-129.04,2873.84
+2025-03-01,Restaurant,-47.49,2826.36
+2025-03-03,DummyInc Payroll,2501.8,5328.16
+2025-03-03,ATM Withdrawal,-97.49,5230.67
+2025-03-05,Amazon Purchase,-68.88,5161.78
+2025-03-06,Phillips 66 Gas,-48.46,5113.32
+2025-03-08,Spotify Subscription,-6.27,5107.05
+2025-03-08,Restaurant,-40.87,5066.18
+2025-03-10,PayPal Transfer,-116.58,4949.59
+2025-03-12,Love's Travel Stop,-65.47,4884.12
+2025-03-12,ATM Withdrawal,-95.47,4788.66
+2025-03-14,DummyInc Payroll,2500.99,7289.65
+2025-03-15,DummyInc Payroll,2496.12,9785.76
+2025-03-16,PayPal Transfer,-122.61,9663.16
+2025-03-16,Walmart,-89.14,9574.02
+2025-03-17,Walmart,-80.22,9493.79
+2025-03-19,Starbucks,-9.72,9484.08
+2025-03-20,ATM Withdrawal,-103.35,9380.73
+2025-03-22,Water Utility,-50.36,9330.37
+2025-03-24,Love's Travel Stop,-59.87,9270.5
+2025-03-25,Target,-74.62,9195.88
+2025-03-27,Internet Service,-98.79,9097.09
+2025-03-27,Walmart,-86.62,9010.48
+2025-03-29,ATM Withdrawal,-102.7,8907.78
+2025-03-29,DummyInc Payroll,2495.71,11403.49
+2025-03-31,McDonalds,-14.71,11388.78
+2025-03-31,Amazon Purchase,-69.29,11319.48
+2025-03-31,Spotify Subscription,-9.3,11310.18
+2025-03-31,ATM Withdrawal,-103.68,11206.51
+2025-04-02,Health Insurance,-322.57,10883.94
+2025-04-03,Water Utility,-58.1,10825.84
+2025-04-03,Water Utility,-56.46,10769.38
+2025-04-04,Internet Service,-91.36,10678.02
+2025-04-04,Sam's Club,-144.39,10533.63
+2025-04-06,Amazon Purchase,-61.99,10471.63
+2025-04-06,Daycare Tuition,-853.08,9618.55
+2025-04-08,Internet Service,-98.6,9519.95
+2025-04-08,Spotify Subscription,-11.36,9508.59
+2025-04-08,Internet Service,-91.92,9416.67
+2025-04-10,Sam's Club,-144.49,9272.17
+2025-04-12,DummyInc Payroll,2504.69,11776.86
+2025-04-12,Phillips 66 Gas,-48.94,11727.93
+2025-04-13,Love's Travel Stop,-58.35,11669.58
+2025-04-13,Phillips 66 Gas,-49.21,11620.37
+2025-04-14,Spotify Subscription,-6.72,11613.64
+2025-04-15,PayPal Transfer,-120.77,11492.87
+2025-04-17,ATM Withdrawal,-98.38,11394.49
+2025-04-18,Starbucks,-9.1,11385.39
+2025-04-18,McDonalds,-11.21,11374.18
+2025-04-20,McDonalds,-9.52,11364.66
+2025-04-20,McDonalds,-11.16,11353.5
+2025-04-22,Restaurant,-48.43,11305.08
+2025-04-24,Walmart,-81.49,11223.59
+2025-04-24,Walmart,-83.25,11140.34
+2025-04-24,Electric Utility,-133.8,11006.54
+2025-04-26,Daycare Tuition,-849.21,10157.33
+2025-04-26,Walmart,-85.81,10071.52
+2025-04-28,Restaurant,-46.84,10024.69
+2025-04-29,Love's Travel Stop,-60.3,9964.38
+2025-04-30,Daycare Tuition,-852.34,9112.04
+2025-04-30,PayPal Transfer,-120.43,8991.61
+2025-04-30,DummyInc Payroll,2499.58,11491.19
+2025-05-02,Sam's Club,-144.27,11346.93
+2025-05-02,Restaurant,-47.35,11299.58
+2025-05-03,Walmart,-81.21,11218.37
+2025-05-04,PayPal Transfer,-123.42,11094.95
+2025-05-06,PayPal Transfer,-118.88,10976.07
+2025-05-08,Restaurant,-49.92,10926.14
+2025-05-10,PayPal Transfer,-115.68,10810.46
+2025-05-10,Starbucks,-8.36,10802.11
+2025-05-10,ATM Withdrawal,-103.45,10698.66
+2025-05-11,Love's Travel Stop,-59.82,10638.84
+2025-05-11,Spotify Subscription,-10.94,10627.9
+2025-05-12,McDonalds,-16.08,10611.82
+2025-05-13,Spotify Subscription,-15.55,10596.27
+2025-05-14,Starbucks,-4.63,10591.65
+2025-05-15,Phillips 66 Gas,-45.59,10546.06
+2025-05-17,Water Utility,-54.39,10491.67
+2025-05-17,Walmart,-80.55,10411.12
+2025-05-19,Starbucks,-5.54,10405.57
+2025-05-20,ATM Withdrawal,-103.52,10302.05
+2025-05-20,McDonalds,-13.92,10288.14
+2025-05-20,Target,-76.9,10211.24
+2025-05-20,Sam's Club,-141.46,10069.77
+2025-05-22,Water Utility,-50.26,10019.51
+2025-05-24,Starbucks,-1.74,10017.77
+2025-05-24,Phillips 66 Gas,-43.24,9974.53
+2025-05-24,Water Utility,-59.75,9914.78
+2025-05-26,Amazon Purchase,-62.18,9852.6
+2025-05-27,Daycare Tuition,-852.33,9000.27
+2025-05-29,Sam's Club,-141.17,8859.1
+2025-05-29,Health Insurance,-322.78,8536.32
+2025-05-30,Target,-75.95,8460.37
+2025-05-30,Daycare Tuition,-854.76,7605.61
+2025-05-30,Electric Utility,-131.72,7473.89
+2025-05-30,Spotify Subscription,-12.48,7461.41
+2025-06-01,Electric Utility,-128.2,7333.21
+2025-06-03,Amazon Purchase,-60.61,7272.6
+2025-06-03,Spotify Subscription,-14.2,7258.4
+2025-06-04,McDonalds,-15.92,7242.48
+2025-06-05,Target,-71.71,7170.77
+2025-06-06,Water Utility,-53.94,7116.83
+2025-06-08,Sam's Club,-141.15,6975.68
+2025-06-10,Love's Travel Stop,-64.45,6911.23
+2025-06-12,Water Utility,-59.98,6851.25
+2025-06-14,Love's Travel Stop,-63.36,6787.89
+2025-06-14,Amazon Purchase,-63.77,6724.12
+2025-06-16,Sam's Club,-137.8,6586.32
+2025-06-17,Restaurant,-46.91,6539.41
+2025-06-18,Amazon Purchase,-65.98,6473.43
+2025-06-19,ATM Withdrawal,-103.73,6369.71
+2025-06-20,Electric Utility,-128.23,6241.48
+2025-06-20,PayPal Transfer,-120.94,6120.54
+2025-06-20,PayPal Transfer,-122.13,5998.41
+2025-06-21,Amazon Purchase,-65.35,5933.06
+2025-06-22,Love's Travel Stop,-61.89,5871.17
+2025-06-24,Phillips 66 Gas,-46.41,5824.76
+2025-06-25,Restaurant,-43.36,5781.4
+2025-06-27,Amazon Purchase,-69.07,5712.33
+2025-06-27,PayPal Transfer,-122.75,5589.58
+2025-06-27,Starbucks,-10.76,5578.82
+2025-06-27,Health Insurance,-318.89,5259.94
+2025-06-27,Internet Service,-95.86,5164.08
+2025-06-29,Love's Travel Stop,-59.82,5104.26
+2025-06-30,Health Insurance,-321.0,4783.26
+2025-06-30,DummyInc Payroll,2503.93,7287.19
+2025-06-30,Water Utility,-57.81,7229.37
+2025-07-02,Restaurant,-45.35,7184.02
+2025-07-04,Daycare Tuition,-845.83,6338.2
+2025-07-04,Internet Service,-98.67,6239.53
+2025-07-05,Restaurant,-40.12,6199.41
+2025-07-07,Amazon Purchase,-60.5,6138.91
+2025-07-08,Restaurant,-45.73,6093.18
+2025-07-10,Internet Service,-91.03,6002.15
+2025-07-12,Health Insurance,-320.5,5681.65
+2025-07-12,Spotify Subscription,-8.33,5673.32
+2025-07-14,Health Insurance,-318.73,5354.58
+2025-07-15,Internet Service,-99.23,5255.36
+2025-07-16,Daycare Tuition,-852.28,4403.08
+2025-07-17,ATM Withdrawal,-104.19,4298.88
+2025-07-17,Daycare Tuition,-851.17,3447.71
+2025-07-17,Love's Travel Stop,-66.36,3381.35
+2025-07-18,Amazon Purchase,-64.57,3316.78
+2025-07-19,McDonalds,-14.93,3301.85
+2025-07-20,Electric Utility,-125.95,3175.9
+2025-07-22,DummyInc Payroll,2503.57,5679.46
+2025-07-24,Electric Utility,-130.23,5549.23
+2025-07-25,PayPal Transfer,-117.47,5431.77
+2025-07-26,ATM Withdrawal,-97.52,5334.24
+2025-07-28,Daycare Tuition,-850.12,4484.13
+2025-07-29,Water Utility,-55.14,4428.98
+2025-07-30,Amazon Purchase,-63.31,4365.67
+2025-07-31,Phillips 66 Gas,-44.59,4321.08
+2025-07-31,ATM Withdrawal,-104.73,4216.35
+2025-08-01,DummyInc Payroll,2495.84,6712.19
+2025-08-02,Starbucks,-2.33,6709.85
+2025-08-02,McDonalds,-14.4,6695.46
+2025-08-03,Love's Travel Stop,-62.45,6633.0
+2025-08-04,Electric Utility,-132.22,6500.79
+2025-08-05,Spotify Subscription,-7.64,6493.14
+2025-08-06,DummyInc Payroll,2502.49,8995.63
+2025-08-06,Target,-76.76,8918.88
+2025-08-06,McDonalds,-9.46,8909.42
+2025-08-06,Love's Travel Stop,-58.61,8850.81
+2025-08-08,Starbucks,-8.61,8842.2
+2025-08-09,Sam's Club,-139.36,8702.84
+2025-08-09,Internet Service,-93.01,8609.83
+2025-08-10,Phillips 66 Gas,-46.94,8562.89
+2025-08-12,Sam's Club,-137.22,8425.67
+2025-08-12,PayPal Transfer,-123.92,8301.75
+2025-08-12,PayPal Transfer,-119.24,8182.51
+2025-08-13,Electric Utility,-125.59,8056.92
+2025-08-13,Walmart,-84.08,7972.84
+2025-08-15,Daycare Tuition,-853.98,7118.86
+2025-08-16,Sam's Club,-137.04,6981.82
+2025-08-18,McDonalds,-13.53,6968.3
+2025-08-19,Target,-78.31,6889.99
+2025-08-21,Amazon Purchase,-69.87,6820.11
+2025-08-22,Health Insurance,-323.94,6496.17
+2025-08-23,Internet Service,-92.93,6403.24
+2025-08-24,Phillips 66 Gas,-45.66,6357.58
+2025-08-26,Spotify Subscription,-9.83,6347.75
+2025-08-28,Health Insurance,-320.35,6027.4
+2025-08-30,Spotify Subscription,-12.77,6014.63
+2025-08-30,Walmart,-87.21,5927.42
+2025-08-31,Daycare Tuition,-847.5,5079.92
+2025-09-02,Electric Utility,-131.64,4948.29
+2025-09-03,Amazon Purchase,-68.18,4880.11
+2025-09-03,Target,-71.02,4809.08
+2025-09-04,Spotify Subscription,-7.19,4801.9
+2025-09-06,Spotify Subscription,-10.43,4791.47
+2025-09-08,Love's Travel Stop,-66.14,4725.32
+2025-09-10,Water Utility,-55.11,4670.21
+2025-09-10,Health Insurance,-318.54,4351.67
+2025-09-11,Internet Service,-92.07,4259.6
+2025-09-11,PayPal Transfer,-122.78,4136.81
+2025-09-13,Daycare Tuition,-851.94,3284.87
+2025-09-15,Target,-74.27,3210.61
+2025-09-17,Target,-74.74,3135.86
+2025-09-19,ATM Withdrawal,-101.69,3034.17
+2025-09-21,Internet Service,-97.29,2936.88
+2025-09-22,Daycare Tuition,-853.79,2083.08
+2025-09-22,Amazon Purchase,-68.8,2014.28
+2025-09-24,Phillips 66 Gas,-51.08,1963.2
+2025-09-26,Health Insurance,-322.24,1640.96
+2025-09-28,Restaurant,-44.03,1596.93
+2025-09-28,Love's Travel Stop,-64.04,1532.89
+2025-09-29,Phillips 66 Gas,-49.98,1482.91
+2025-10-01,ATM Withdrawal,-103.73,1379.18
+2025-10-01,McDonalds,-11.47,1367.71
+2025-10-03,Starbucks,-4.62,1363.09
+2025-10-04,Sam's Club,-136.27,1226.82
+2025-10-06,PayPal Transfer,-120.31,1106.51
+2025-10-07,Amazon Purchase,-68.16,1038.36
+2025-10-07,Spotify Subscription,-6.58,1031.78
+2025-10-08,Sam's Club,-136.78,895.0
+2025-10-09,Health Insurance,-324.26,570.74
+2025-10-11,McDonalds,-15.48,555.26
+2025-10-13,PayPal Transfer,-124.15,431.11
+2025-10-13,Sam's Club,-139.42,291.69
+2025-10-14,Daycare Tuition,-847.24,-555.55
+2025-10-15,Internet Service,-90.91,-646.47
+2025-10-16,Water Utility,-56.95,-703.42
+2025-10-18,McDonalds,-10.9,-714.32
+2025-10-20,Sam's Club,-135.52,-849.84
+2025-10-20,Love's Travel Stop,-64.35,-914.2
+2025-10-20,Phillips 66 Gas,-50.6,-964.8
+2025-10-22,Walmart,-88.43,-1053.23
+2025-10-23,Internet Service,-93.11,-1146.34
+2025-10-24,PayPal Transfer,-124.67,-1271.01
+2025-10-25,PayPal Transfer,-117.97,-1388.98
+2025-10-26,Walmart,-83.13,-1472.11
+2025-10-27,Love's Travel Stop,-62.75,-1534.86
+2025-10-29,Daycare Tuition,-848.52,-2383.38
+2025-10-30,Starbucks,-10.29,-2393.67
+2025-10-30,PayPal Transfer,-119.05,-2512.72
+2025-11-01,PayPal Transfer,-120.61,-2633.32
+2025-11-02,PayPal Transfer,-118.0,-2751.33
+2025-11-03,Restaurant,-44.6,-2795.93
+2025-11-04,Walmart,-84.02,-2879.95
+2025-11-05,Amazon Purchase,-63.96,-2943.91
+2025-11-05,Walmart,-87.71,-3031.62
+2025-11-07,DummyInc Payroll,2505.0,-526.63
+2025-11-09,Spotify Subscription,-10.23,-536.85
+2025-11-09,Health Insurance,-319.81,-856.66
+2025-11-10,Spotify Subscription,-14.18,-870.84
+2025-11-12,Water Utility,-53.65,-924.49
+2025-11-13,Walmart,-85.3,-1009.79
+2025-11-14,Amazon Purchase,-66.79,-1076.58
+2025-11-14,Phillips 66 Gas,-49.7,-1126.28
+2025-11-16,Health Insurance,-322.12,-1448.4
+2025-11-17,ATM Withdrawal,-104.63,-1553.03
+2025-11-17,Amazon Purchase,-67.48,-1620.51
+2025-11-17,Electric Utility,-126.35,-1746.86
+2025-11-17,ATM Withdrawal,-100.38,-1847.24
+2025-11-17,Love's Travel Stop,-61.82,-1909.06
+2025-11-19,Health Insurance,-318.75,-2227.8
+2025-11-19,Love's Travel Stop,-64.33,-2292.13
+2025-11-19,PayPal Transfer,-120.62,-2412.75
+2025-11-21,Health Insurance,-323.79,-2736.54
+2025-11-23,Daycare Tuition,-847.9,-3584.44
+2025-11-24,ATM Withdrawal,-104.86,-3689.3
+2025-11-25,Walmart,-87.75,-3777.05
+2025-11-25,Internet Service,-90.53,-3867.58
+2025-11-27,Starbucks,-6.02,-3873.6
+2025-11-29,PayPal Transfer,-119.91,-3993.51
+2025-11-30,Water Utility,-51.65,-4045.16
+2025-12-01,Daycare Tuition,-850.43,-4895.6
+2025-12-01,Electric Utility,-133.09,-5028.69
+2025-12-03,Restaurant,-42.54,-5071.23
+2025-12-03,Walmart,-87.24,-5158.46
+2025-12-04,Amazon Purchase,-60.66,-5219.12
+2025-12-06,Spotify Subscription,-7.78,-5226.91
+2025-12-07,PayPal Transfer,-116.63,-5343.53
+2025-12-09,Health Insurance,-316.35,-5659.88
+2025-12-10,ATM Withdrawal,-100.16,-5760.04
+2025-12-11,ATM Withdrawal,-97.37,-5857.41
+2025-12-12,Internet Service,-90.67,-5948.08
+2025-12-12,Daycare Tuition,-849.28,-6797.36
+2025-12-12,Water Utility,-59.56,-6856.92
+2025-12-14,Health Insurance,-317.95,-7174.87
+2025-12-15,Electric Utility,-125.12,-7299.99
+2025-12-17,Starbucks,-6.05,-7306.03
+2025-12-17,Starbucks,-5.98,-7312.01
+2025-12-19,Amazon Purchase,-61.3,-7373.31
+2025-12-20,Sam's Club,-139.74,-7513.05
+2025-12-21,DummyInc Payroll,2502.22,-5010.83
+2025-12-22,Starbucks,-10.25,-5021.08
+2025-12-23,Amazon Purchase,-63.77,-5084.85
+2025-12-24,Walmart,-81.48,-5166.33
+2025-12-26,ATM Withdrawal,-101.2,-5267.53
+2025-12-27,Health Insurance,-316.28,-5583.81
+2025-12-27,Walmart,-87.65,-5671.46
+2025-12-29,PayPal Transfer,-115.03,-5786.49
+2025-12-31,Walmart,-85.66,-5872.15
+2025-12-31,Sam's Club,-140.56,-6012.71
+2026-01-02,PayPal Transfer,-115.97,-6128.67
+2026-01-02,Amazon Purchase,-62.04,-6190.71
+2026-01-03,Target,-75.25,-6265.96
+2026-01-03,Daycare Tuition,-849.69,-7115.65
+2026-01-05,Phillips 66 Gas,-51.3,-7166.95
+2026-01-05,Electric Utility,-128.8,-7295.76
+2026-01-05,Health Insurance,-315.87,-7611.63
+2026-01-05,Daycare Tuition,-850.39,-8462.02
+2026-01-06,Internet Service,-97.45,-8559.46
+2026-01-06,Internet Service,-90.99,-8650.45
+2026-01-08,ATM Withdrawal,-103.42,-8753.87
+2026-01-09,Target,-69.12,-8822.99
+2026-01-10,Water Utility,-53.1,-8876.09
+2026-01-11,PayPal Transfer,-123.01,-8999.1
+2026-01-12,Health Insurance,-323.93,-9323.03
+2026-01-13,Target,-73.25,-9396.28
+2026-01-15,PayPal Transfer,-124.78,-9521.07
+2026-01-17,Electric Utility,-132.26,-9653.32
+2026-01-19,McDonalds,-7.89,-9661.21
+2026-01-21,Health Insurance,-316.67,-9977.89
+2026-01-22,Daycare Tuition,-848.93,-10826.82
+2026-01-23,Daycare Tuition,-848.63,-11675.45
+2026-01-25,Spotify Subscription,-9.21,-11684.66
+2026-01-27,Starbucks,-4.72,-11689.38
+2026-01-29,McDonalds,-13.91,-11703.29
+2026-01-30,McDonalds,-11.2,-11714.49
+2026-02-01,Starbucks,-10.1,-11724.59
+2026-02-02,Amazon Purchase,-62.53,-11787.12
+2026-02-02,Love's Travel Stop,-65.68,-11852.8
+2026-02-04,Target,-73.69,-11926.49
+2026-02-05,Phillips 66 Gas,-50.43,-11976.92
+2026-02-06,PayPal Transfer,-117.53,-12094.45
+2026-02-07,Sam's Club,-140.32,-12234.77
+2026-02-07,Starbucks,-3.46,-12238.23
+2026-02-07,Electric Utility,-125.33,-12363.55
+2026-02-09,Target,-78.1,-12441.65
+2026-02-10,DummyInc Payroll,2497.64,-9944.01
+2026-02-10,Internet Service,-96.31,-10040.32
+2026-02-12,Spotify Subscription,-10.14,-10050.47
+2026-02-14,Target,-77.92,-10128.38
+2026-02-14,Health Insurance,-324.75,-10453.13
+2026-02-16,Amazon Purchase,-60.85,-10513.98
+2026-02-16,Walmart,-83.65,-10597.63
+2026-02-17,PayPal Transfer,-118.51,-10716.13
+2026-02-17,Starbucks,-10.55,-10726.68
+2026-02-17,PayPal Transfer,-115.04,-10841.72
+2026-02-17,Sam's Club,-142.65,-10984.37
+2026-02-19,Starbucks,-7.11,-10991.49
+2026-02-20,ATM Withdrawal,-100.81,-11092.29
+2026-02-22,Starbucks,-2.15,-11094.44
+2026-02-24,Sam's Club,-136.66,-11231.1
+2026-02-26,Water Utility,-50.61,-11281.71
+2026-02-27,McDonalds,-10.1,-11291.81
+2026-02-27,Internet Service,-95.55,-11387.36
+2026-02-27,Target,-78.01,-11465.37
+2026-03-01,Target,-73.56,-11538.93
+2026-03-03,Target,-78.39,-11617.32
+2026-03-04,Love's Travel Stop,-57.32,-11674.64
+2026-03-05,Walmart,-83.37,-11758.01
+2026-03-07,DummyInc Payroll,2495.51,-9262.5
+2026-03-08,Daycare Tuition,-845.11,-10107.62
+2026-03-10,Love's Travel Stop,-66.31,-10173.93
+2026-03-12,Love's Travel Stop,-61.14,-10235.07
+2026-03-12,Amazon Purchase,-62.26,-10297.32
+2026-03-14,DummyInc Payroll,2497.77,-7799.55
+2026-03-14,Starbucks,-5.6,-7805.15
+2026-03-14,Sam's Club,-138.39,-7943.54
+2026-03-14,Starbucks,-10.85,-7954.39
+2026-03-14,Amazon Purchase,-69.84,-8024.23
+2026-03-15,McDonalds,-15.73,-8039.96
+2026-03-16,Restaurant,-48.86,-8088.83
+2026-03-16,Health Insurance,-320.52,-8409.34
+2026-03-17,Restaurant,-44.06,-8453.41
+2026-03-18,Restaurant,-47.78,-8501.19
+2026-03-20,McDonalds,-9.73,-8510.92
+2026-03-22,Restaurant,-46.98,-8557.9
+2026-03-24,DummyInc Payroll,2495.61,-6062.29
+2026-03-25,Electric Utility,-130.74,-6193.03
+2026-03-25,Health Insurance,-317.88,-6510.91
+2026-03-26,Walmart,-81.01,-6591.92
+2026-03-27,Starbucks,-10.34,-6602.26
+2026-03-28,ATM Withdrawal,-97.88,-6700.14
+2026-03-29,Restaurant,-47.05,-6747.19
+2026-03-31,Water Utility,-59.01,-6806.2
+2026-04-02,Sam's Club,-136.47,-6942.67
+2026-04-04,ATM Withdrawal,-97.79,-7040.46
+2026-04-04,Water Utility,-55.48,-7095.94
+2026-04-04,Water Utility,-56.61,-7152.55
+2026-04-05,Electric Utility,-130.84,-7283.39
+2026-04-05,Amazon Purchase,-65.73,-7349.13
+2026-04-07,Spotify Subscription,-12.25,-7361.37
+2026-04-07,Health Insurance,-324.33,-7685.7
+2026-04-07,Walmart,-85.68,-7771.38
+2026-04-09,Target,-70.88,-7842.27
+2026-04-11,McDonalds,-11.14,-7853.4
+2026-04-13,ATM Withdrawal,-101.7,-7955.11
+2026-04-13,Water Utility,-56.46,-8011.57
+2026-04-15,Water Utility,-51.32,-8062.89
+2026-04-17,McDonalds,-7.32,-8070.2
+2026-04-19,PayPal Transfer,-121.48,-8191.69
+2026-04-21,Restaurant,-47.87,-8239.56
+2026-04-23,Health Insurance,-322.76,-8562.32
+2026-04-23,Target,-70.55,-8632.86
+2026-04-24,Sam's Club,-137.37,-8770.24
+2026-04-26,Daycare Tuition,-846.93,-9617.17
+2026-04-28,ATM Withdrawal,-104.74,-9721.9
+2026-04-30,Spotify Subscription,-15.7,-9737.6
+2026-05-01,PayPal Transfer,-115.78,-9853.39
+2026-05-02,DummyInc Payroll,2496.81,-7356.57
+2026-05-02,Electric Utility,-134.3,-7490.88
+2026-05-04,DummyInc Payroll,2495.92,-4994.96
+2026-05-06,Love's Travel Stop,-63.24,-5058.2
+2026-05-07,Amazon Purchase,-68.43,-5126.63
+2026-05-08,Amazon Purchase,-62.23,-5188.86
+2026-05-10,Walmart,-81.17,-5270.02
+2026-05-10,Phillips 66 Gas,-45.46,-5315.48
+2026-05-10,Walmart,-87.28,-5402.76
+2026-05-12,Water Utility,-55.14,-5457.9
+2026-05-13,Water Utility,-57.27,-5515.17
+2026-05-15,Sam's Club,-141.55,-5656.72
+2026-05-15,PayPal Transfer,-118.22,-5774.94
+2026-05-17,Health Insurance,-319.73,-6094.67
+2026-05-18,McDonalds,-14.79,-6109.46
+2026-05-20,McDonalds,-16.92,-6126.38
+2026-05-21,Love's Travel Stop,-59.33,-6185.71
+2026-05-22,PayPal Transfer,-121.72,-6307.43
+2026-05-22,Health Insurance,-317.53,-6624.96
+2026-05-22,Starbucks,-7.2,-6632.16
+2026-05-24,Daycare Tuition,-850.0,-7482.15
+2026-05-26,Target,-78.28,-7560.43
+2026-05-28,McDonalds,-12.64,-7573.07
+2026-05-29,Walmart,-81.38,-7654.45
+2026-05-31,Water Utility,-54.27,-7708.72
+2026-06-02,Water Utility,-57.1,-7765.82
+2026-06-03,DummyInc Payroll,2504.66,-5261.16
+2026-06-03,Internet Service,-91.68,-5352.84
+2026-06-04,Walmart,-85.63,-5438.47
+2026-06-04,Daycare Tuition,-850.64,-6289.12
+2026-06-05,Restaurant,-49.21,-6338.33
+2026-06-06,Amazon Purchase,-67.78,-6406.11
+2026-06-06,Walmart,-84.9,-6491.01
+2026-06-06,Restaurant,-44.9,-6535.91
+2026-06-07,Target,-71.73,-6607.64
+2026-06-09,Starbucks,-8.64,-6616.27
+2026-06-09,Spotify Subscription,-14.02,-6630.29
+2026-06-11,Starbucks,-3.4,-6633.69
+2026-06-13,Walmart,-88.23,-6721.92
+2026-06-15,Health Insurance,-320.36,-7042.28
+2026-06-17,Internet Service,-93.19,-7135.47
+2026-06-19,Amazon Purchase,-61.36,-7196.82
+2026-06-21,Amazon Purchase,-68.49,-7265.31
+2026-06-21,Health Insurance,-320.58,-7585.89
+2026-06-22,Spotify Subscription,-10.08,-7595.97
+2026-06-23,Restaurant,-49.26,-7645.23
+2026-06-24,Internet Service,-99.62,-7744.85
+2026-06-25,PayPal Transfer,-124.23,-7869.08
+2026-06-25,Restaurant,-46.16,-7915.24
+2026-06-27,ATM Withdrawal,-95.46,-8010.69
+2026-06-29,McDonalds,-12.5,-8023.2
+2026-07-01,Love's Travel Stop,-63.78,-8086.98
+2026-07-02,Restaurant,-48.49,-8135.47
+2026-07-02,Internet Service,-98.96,-8234.44
+2026-07-03,Walmart,-84.95,-8319.39
+2026-07-03,McDonalds,-14.52,-8333.92
+2026-07-04,Internet Service,-94.76,-8428.67
+2026-07-06,Phillips 66 Gas,-49.36,-8478.04
+2026-07-07,Electric Utility,-130.91,-8608.95
+2026-07-08,McDonalds,-9.11,-8618.06
+2026-07-10,Amazon Purchase,-69.34,-8687.4
+2026-07-10,ATM Withdrawal,-98.22,-8785.61
+2026-07-11,Spotify Subscription,-8.75,-8794.37
+2026-07-13,Starbucks,-7.67,-8802.03
+2026-07-15,Starbucks,-1.83,-8803.86
+2026-07-16,Electric Utility,-133.71,-8937.57
+2026-07-18,Walmart,-86.9,-9024.48
+2026-07-19,Amazon Purchase,-61.87,-9086.35
+2026-07-21,Restaurant,-49.07,-9135.41
+2026-07-23,Water Utility,-54.92,-9190.33
+2026-07-23,Target,-75.91,-9266.24
+2026-07-23,Amazon Purchase,-60.52,-9326.76
+2026-07-24,Love's Travel Stop,-64.73,-9391.5
+2026-07-24,Starbucks,-10.23,-9401.73
+2026-07-24,Restaurant,-42.29,-9444.02
+2026-07-26,Restaurant,-49.62,-9493.64
+2026-07-27,Starbucks,-5.03,-9498.67
+2026-07-27,Phillips 66 Gas,-51.19,-9549.86
+2026-07-29,Phillips 66 Gas,-45.79,-9595.65
+2026-07-29,Water Utility,-56.36,-9652.0
+2026-07-31,Daycare Tuition,-845.3,-10497.31
+2026-08-02,PayPal Transfer,-117.48,-10614.78
+2026-08-03,Daycare Tuition,-849.66,-11464.44
+2026-08-04,Health Insurance,-315.96,-11780.4
+2026-08-04,Target,-72.22,-11852.62
+2026-08-06,Internet Service,-95.38,-11948.0
+2026-08-07,Electric Utility,-129.97,-12077.97
+2026-08-08,Phillips 66 Gas,-44.83,-12122.81
+2026-08-10,Starbucks,-2.27,-12125.08
+2026-08-10,Health Insurance,-316.26,-12441.33
+2026-08-12,Sam's Club,-137.89,-12579.22
+2026-08-14,Sam's Club,-142.15,-12721.37
+2026-08-14,Spotify Subscription,-11.5,-12732.87
+2026-08-16,Starbucks,-2.69,-12735.56
+2026-08-16,Daycare Tuition,-846.83,-13582.39
+2026-08-17,DummyInc Payroll,2499.15,-11083.24
+2026-08-18,Restaurant,-46.26,-11129.5
+2026-08-19,Walmart,-86.25,-11215.75
+2026-08-19,Amazon Purchase,-60.69,-11276.44
+2026-08-21,Amazon Purchase,-62.09,-11338.53
+2026-08-21,McDonalds,-14.13,-11352.66
+2026-08-22,Starbucks,-3.41,-11356.07
+2026-08-23,Internet Service,-93.85,-11449.92
+2026-08-23,DummyInc Payroll,2497.56,-8952.36
+2026-08-23,ATM Withdrawal,-95.6,-9047.96
+2026-08-25,Restaurant,-45.77,-9093.72
+2026-08-26,Daycare Tuition,-851.99,-9945.71
+2026-08-26,Daycare Tuition,-850.8,-10796.52
+2026-08-28,Internet Service,-99.37,-10895.89
+2026-08-29,ATM Withdrawal,-104.84,-11000.72
+2026-08-31,Daycare Tuition,-847.81,-11848.54
+2026-09-01,Water Utility,-59.98,-11908.52
+2026-09-02,Daycare Tuition,-849.29,-12757.81
+2026-09-02,Walmart,-84.77,-12842.58
+2026-09-03,Walmart,-80.47,-12923.05
+2026-09-05,Restaurant,-42.14,-12965.18
+2026-09-07,ATM Withdrawal,-104.8,-13069.98
+2026-09-08,McDonalds,-10.64,-13080.62
+2026-09-09,Spotify Subscription,-8.52,-13089.14
+2026-09-10,Walmart,-86.55,-13175.69
+2026-09-12,Sam's Club,-137.28,-13312.98
+2026-09-14,Amazon Purchase,-68.67,-13381.64
+2026-09-15,ATM Withdrawal,-101.61,-13483.26
+2026-09-17,Phillips 66 Gas,-44.7,-13527.95
+2026-09-19,Internet Service,-90.19,-13618.14
+2026-09-20,Phillips 66 Gas,-44.89,-13663.03
+2026-09-20,Internet Service,-99.63,-13762.66
+2026-09-20,McDonalds,-9.09,-13771.75
+2026-09-20,Amazon Purchase,-60.67,-13832.41
+2026-09-22,Electric Utility,-125.11,-13957.52
+2026-09-24,Health Insurance,-322.47,-14279.99
+2026-09-26,Love's Travel Stop,-64.14,-14344.13
+2026-09-26,Amazon Purchase,-67.27,-14411.4
+2026-09-27,Water Utility,-51.11,-14462.5
+2026-09-29,Internet Service,-91.05,-14553.56
+2026-09-30,Amazon Purchase,-60.26,-14613.82
+2026-10-01,Health Insurance,-321.33,-14935.14
+2026-10-03,Spotify Subscription,-7.98,-14943.12
+2026-10-05,Water Utility,-59.21,-15002.33
+2026-10-07,Phillips 66 Gas,-47.55,-15049.88
+2026-10-08,Sam's Club,-144.2,-15194.08
+2026-10-10,PayPal Transfer,-121.94,-15316.01
+2026-10-12,Water Utility,-58.33,-15374.35
+2026-10-13,Target,-74.53,-15448.88
+2026-10-15,Target,-72.85,-15521.73
+2026-10-16,Spotify Subscription,-9.6,-15531.32
+2026-10-16,Walmart,-83.29,-15614.61
+2026-10-17,Target,-73.87,-15688.48
+2026-10-19,Phillips 66 Gas,-43.47,-15731.95
+2026-10-19,Internet Service,-99.65,-15831.6
+2026-10-19,Daycare Tuition,-847.21,-16678.82
+2026-10-20,Target,-75.17,-16753.99
+2026-10-22,McDonalds,-10.95,-16764.94
+2026-10-24,Internet Service,-90.51,-16855.45
+2026-10-25,Internet Service,-92.37,-16947.82
+2026-10-27,Starbucks,-5.71,-16953.53
+2026-10-28,Amazon Purchase,-63.5,-17017.03
+2026-10-28,Sam's Club,-144.74,-17161.77
+2026-10-28,Health Insurance,-319.82,-17481.59
+2026-10-30,Sam's Club,-142.38,-17623.98
+2026-10-31,Internet Service,-97.85,-17721.83
+2026-11-02,PayPal Transfer,-118.06,-17839.89
+2026-11-03,Love's Travel Stop,-65.77,-17905.66
+2026-11-03,Internet Service,-98.27,-18003.94
+2026-11-05,Internet Service,-90.03,-18093.96
+2026-11-07,Amazon Purchase,-63.32,-18157.29
+2026-11-09,Walmart,-84.5,-18241.79
+2026-11-10,PayPal Transfer,-116.49,-18358.27
+2026-11-12,Phillips 66 Gas,-45.06,-18403.34
+2026-11-14,Daycare Tuition,-853.79,-19257.12
+2026-11-14,Starbucks,-8.63,-19265.75
+2026-11-15,DummyInc Payroll,2498.61,-16767.15
+2026-11-17,Target,-74.33,-16841.47
+2026-11-19,Starbucks,-4.88,-16846.35
+2026-11-19,Walmart,-86.91,-16933.26
+2026-11-21,Health Insurance,-319.74,-17253.0
+2026-11-22,Walmart,-88.75,-17341.75
+2026-11-23,Walmart,-85.5,-17427.25
+2026-11-25,Restaurant,-46.55,-17473.8
+2026-11-27,Phillips 66 Gas,-45.32,-17519.13
+2026-11-27,Water Utility,-54.97,-17574.1
+2026-11-27,Sam's Club,-139.82,-17713.92
+2026-11-28,Phillips 66 Gas,-51.38,-17765.3
+2026-11-30,Daycare Tuition,-851.54,-18616.84
+2026-12-02,PayPal Transfer,-116.54,-18733.38
+2026-12-03,Love's Travel Stop,-60.65,-18794.03
+2026-12-05,Spotify Subscription,-14.74,-18808.77
+2026-12-06,ATM Withdrawal,-104.07,-18912.83
+2026-12-08,Phillips 66 Gas,-47.08,-18959.91
+2026-12-10,Starbucks,-9.29,-18969.2
+2026-12-12,Amazon Purchase,-61.57,-19030.78
+2026-12-14,McDonalds,-8.75,-19039.52
+2026-12-14,Walmart,-89.55,-19129.07
+2026-12-16,Spotify Subscription,-9.48,-19138.55
+2026-12-18,Water Utility,-53.82,-19192.37
+2026-12-18,Health Insurance,-316.11,-19508.48
+2026-12-20,PayPal Transfer,-118.58,-19627.06
+2026-12-21,Health Insurance,-322.55,-19949.61
+2026-12-23,Electric Utility,-132.03,-20081.63
+2026-12-23,McDonalds,-15.42,-20097.05
+2026-12-24,Health Insurance,-320.36,-20417.41
+2026-12-25,Starbucks,-7.87,-20425.28
+2026-12-27,Amazon Purchase,-62.66,-20487.94
+2026-12-28,Electric Utility,-133.69,-20621.63
+2026-12-29,Restaurant,-44.38,-20666.02
+2026-12-30,Daycare Tuition,-850.34,-21516.35
+2026-12-31,Internet Service,-97.52,-21613.87
+2026-12-31,McDonalds,-14.1,-21627.97
+2027-01-01,Water Utility,-57.52,-21685.49
+2027-01-01,Amazon Purchase,-60.66,-21746.15
+2027-01-03,Amazon Purchase,-68.1,-21814.25
+2027-01-03,Health Insurance,-315.04,-22129.29
+2027-01-04,Health Insurance,-316.21,-22445.5
+2027-01-05,DummyInc Payroll,2495.9,-19949.6
+2027-01-06,Restaurant,-45.43,-19995.03
+2027-01-06,Love's Travel Stop,-61.17,-20056.2
+2027-01-06,McDonalds,-14.19,-20070.38
+2027-01-08,Health Insurance,-322.14,-20392.52
+2027-01-08,Sam's Club,-140.69,-20533.22
+2027-01-09,Target,-71.36,-20604.58
+2027-01-10,McDonalds,-12.99,-20617.57
+2027-01-12,ATM Withdrawal,-103.05,-20720.62
+2027-01-14,PayPal Transfer,-124.26,-20844.89
+2027-01-16,Internet Service,-92.36,-20937.25
+2027-01-17,Sam's Club,-143.71,-21080.96
+2027-01-17,Electric Utility,-131.27,-21212.23
+2027-01-18,ATM Withdrawal,-95.61,-21307.84
+2027-01-18,Love's Travel Stop,-60.98,-21368.81
+2027-01-19,Restaurant,-49.6,-21418.41
+2027-01-19,Starbucks,-3.86,-21422.27
+2027-01-20,Restaurant,-45.43,-21467.7
+2027-01-22,Restaurant,-48.6,-21516.31
+2027-01-24,Amazon Purchase,-68.37,-21584.68
+2027-01-26,PayPal Transfer,-119.06,-21703.74
+2027-01-28,Restaurant,-44.68,-21748.42
+2027-01-30,PayPal Transfer,-120.25,-21868.67
+2027-01-30,Target,-75.69,-21944.36
+2027-01-30,Water Utility,-54.16,-21998.52
+2027-02-01,DummyInc Payroll,2500.97,-19497.55
+2027-02-02,Daycare Tuition,-847.79,-20345.34
+2027-02-04,Health Insurance,-323.29,-20668.63
+2027-02-06,Electric Utility,-133.52,-20802.16
+2027-02-08,Daycare Tuition,-854.68,-21656.84
+2027-02-10,Sam's Club,-143.09,-21799.93
+2027-02-11,Amazon Purchase,-65.81,-21865.74
+2027-02-12,Love's Travel Stop,-62.9,-21928.64
+2027-02-14,Health Insurance,-316.27,-22244.91
+2027-02-16,McDonalds,-9.94,-22254.86
+2027-02-18,Love's Travel Stop,-61.39,-22316.25
+2027-02-20,Health Insurance,-319.75,-22635.99
+2027-02-21,Phillips 66 Gas,-48.4,-22684.39
+2027-02-23,Amazon Purchase,-64.54,-22748.93
+2027-02-25,Spotify Subscription,-9.89,-22758.82
+2027-02-25,Daycare Tuition,-852.21,-23611.03
+2027-02-26,Daycare Tuition,-845.59,-24456.62
+2027-02-27,PayPal Transfer,-117.95,-24574.57
+2027-03-01,Health Insurance,-321.83,-24896.4
+2027-03-02,ATM Withdrawal,-95.66,-24992.06
+2027-03-04,Spotify Subscription,-13.11,-25005.17
+2027-03-06,ATM Withdrawal,-101.2,-25106.38
+2027-03-07,Target,-69.45,-25175.83
+2027-03-07,PayPal Transfer,-124.58,-25300.41
+2027-03-09,Walmart,-86.54,-25386.94
+2027-03-10,Spotify Subscription,-8.52,-25395.46
+2027-03-10,Love's Travel Stop,-58.72,-25454.18
+2027-03-11,ATM Withdrawal,-98.04,-25552.22
+2027-03-11,Sam's Club,-138.84,-25691.06
+2027-03-13,Daycare Tuition,-852.58,-26543.64
+2027-03-15,Restaurant,-47.74,-26591.38
+2027-03-15,McDonalds,-16.0,-26607.38
+2027-03-16,Health Insurance,-323.99,-26931.37
+2027-03-16,DummyInc Payroll,2504.65,-24426.73
+2027-03-16,Water Utility,-53.47,-24480.2
+2027-03-17,Health Insurance,-318.49,-24798.7
+2027-03-18,Amazon Purchase,-67.15,-24865.84
+2027-03-18,Walmart,-83.48,-24949.32
+2027-03-18,ATM Withdrawal,-97.61,-25046.93
+2027-03-18,Phillips 66 Gas,-48.82,-25095.75
+2027-03-18,McDonalds,-7.03,-25102.78
+2027-03-19,Health Insurance,-323.14,-25425.92
+2027-03-21,PayPal Transfer,-116.23,-25542.15
+2027-03-21,PayPal Transfer,-119.32,-25661.47
+2027-03-21,Amazon Purchase,-67.15,-25728.62
+2027-03-23,ATM Withdrawal,-99.76,-25828.38
+2027-03-23,Restaurant,-45.32,-25873.7
+2027-03-23,Sam's Club,-141.69,-26015.39
+2027-03-25,Internet Service,-93.52,-26108.91
+2027-03-27,Phillips 66 Gas,-52.86,-26161.77
+2027-03-28,PayPal Transfer,-119.32,-26281.09
+2027-03-28,Phillips 66 Gas,-46.89,-26327.98
+2027-03-30,Electric Utility,-126.73,-26454.71
+2027-04-01,Amazon Purchase,-69.13,-26523.85
+2027-04-03,Sam's Club,-143.15,-26667.0
+2027-04-03,Health Insurance,-321.76,-26988.76
+2027-04-03,DummyInc Payroll,2497.61,-24491.15
+2027-04-03,Internet Service,-92.46,-24583.62
+2027-04-04,PayPal Transfer,-119.18,-24702.79
+2027-04-06,DummyInc Payroll,2497.62,-22205.18
+2027-04-07,Daycare Tuition,-854.38,-23059.56
+2027-04-07,Internet Service,-96.93,-23156.49
+2027-04-08,Restaurant,-40.77,-23197.26
+2027-04-10,PayPal Transfer,-118.1,-23315.35
+2027-04-12,PayPal Transfer,-121.32,-23436.68
+2027-04-12,Daycare Tuition,-845.43,-24282.1
+2027-04-13,Starbucks,-6.45,-24288.55
+2027-04-15,Target,-74.84,-24363.4
+2027-04-17,Health Insurance,-317.43,-24680.82
+2027-04-19,Love's Travel Stop,-59.38,-24740.2
+2027-04-21,Walmart,-84.74,-24824.95
+2027-04-23,Target,-78.22,-24903.17
+2027-04-25,Sam's Club,-144.38,-25047.55
+2027-04-27,Restaurant,-47.98,-25095.53
+2027-04-29,Starbucks,-9.35,-25104.88
+2027-05-01,Internet Service,-98.84,-25203.72
+2027-05-01,Health Insurance,-324.09,-25527.81
+2027-05-03,Internet Service,-91.91,-25619.72
+2027-05-04,Starbucks,-5.87,-25625.59
+2027-05-05,McDonalds,-11.41,-25637.0
+2027-05-07,PayPal Transfer,-117.77,-25754.77
+2027-05-08,Spotify Subscription,-7.83,-25762.6
+2027-05-10,Love's Travel Stop,-61.22,-25823.81
+2027-05-10,Water Utility,-56.55,-25880.37
+2027-05-10,ATM Withdrawal,-95.06,-25975.43
+2027-05-10,Health Insurance,-324.68,-26300.11
+2027-05-11,Phillips 66 Gas,-45.31,-26345.42
+2027-05-13,Water Utility,-56.26,-26401.68
+2027-05-14,Internet Service,-91.3,-26492.98
+2027-05-15,Electric Utility,-134.2,-26627.18
+2027-05-17,ATM Withdrawal,-103.67,-26730.85
+2027-05-18,Sam's Club,-143.22,-26874.06
+2027-05-20,Electric Utility,-129.71,-27003.77
+2027-05-22,Daycare Tuition,-846.65,-27850.43
+2027-05-22,PayPal Transfer,-120.37,-27970.8
+2027-05-24,ATM Withdrawal,-100.76,-28071.55
+2027-05-25,Daycare Tuition,-852.52,-28924.08
+2027-05-26,Starbucks,-8.24,-28932.32
+2027-05-28,Sam's Club,-144.68,-29077.0
+2027-05-30,Water Utility,-53.85,-29130.85
+2027-05-30,Daycare Tuition,-852.94,-29983.79
+2027-05-30,McDonalds,-12.54,-29996.33
+2027-06-01,McDonalds,-14.55,-30010.88
+2027-06-01,Electric Utility,-130.61,-30141.49
+2027-06-03,Love's Travel Stop,-59.46,-30200.95
+2027-06-03,Starbucks,-5.96,-30206.91
+2027-06-04,Daycare Tuition,-846.84,-31053.75
+2027-06-06,Amazon Purchase,-64.23,-31117.97
+2027-06-08,Amazon Purchase,-67.63,-31185.6
+2027-06-08,Restaurant,-47.79,-31233.39
+2027-06-09,Spotify Subscription,-15.38,-31248.77
+2027-06-11,Phillips 66 Gas,-46.74,-31295.51
+2027-06-12,ATM Withdrawal,-100.04,-31395.56
+2027-06-13,Electric Utility,-127.14,-31522.7
+2027-06-14,Water Utility,-55.92,-31578.62
+2027-06-15,Electric Utility,-133.16,-31711.78
+2027-06-17,Health Insurance,-322.59,-32034.37
+2027-06-17,PayPal Transfer,-116.42,-32150.79
+2027-06-17,Internet Service,-90.85,-32241.65
+2027-06-19,Water Utility,-50.32,-32291.97
+2027-06-21,Restaurant,-48.66,-32340.63
+2027-06-21,Spotify Subscription,-13.96,-32354.58
+2027-06-23,Walmart,-80.78,-32435.36
+2027-06-24,Walmart,-84.64,-32520.01
+2027-06-24,McDonalds,-14.32,-32534.32
+2027-06-26,McDonalds,-8.26,-32542.59
+2027-06-26,ATM Withdrawal,-102.83,-32645.41
+2027-06-26,Amazon Purchase,-66.97,-32712.38
+2027-06-26,Love's Travel Stop,-57.63,-32770.01
+2027-06-28,Sam's Club,-137.53,-32907.54
+2027-06-29,Daycare Tuition,-848.04,-33755.59
+2027-07-01,Love's Travel Stop,-63.03,-33818.62
+2027-07-01,ATM Withdrawal,-101.78,-33920.4
+2027-07-02,Electric Utility,-130.34,-34050.74
+2027-07-04,Target,-75.92,-34126.66
+2027-07-05,Restaurant,-41.17,-34167.83
+2027-07-06,Sam's Club,-136.97,-34304.8
+2027-07-08,Health Insurance,-317.38,-34622.18
+2027-07-09,Love's Travel Stop,-63.29,-34685.48
+2027-07-10,McDonalds,-11.37,-34696.85
+2027-07-10,Starbucks,-10.84,-34707.69
+2027-07-12,Water Utility,-57.05,-34764.74
+2027-07-12,Amazon Purchase,-67.7,-34832.44
+2027-07-14,Daycare Tuition,-850.01,-35682.45
+2027-07-16,Amazon Purchase,-67.43,-35749.87
+2027-07-17,Health Insurance,-320.39,-36070.26
+2027-07-19,Target,-77.31,-36147.57
+2027-07-21,ATM Withdrawal,-100.12,-36247.69
+2027-07-23,McDonalds,-11.76,-36259.45
+2027-07-23,McDonalds,-9.36,-36268.8
+2027-07-24,Starbucks,-2.57,-36271.38
+2027-07-24,Walmart,-82.93,-36354.31
+2027-07-24,Love's Travel Stop,-61.94,-36416.25
+2027-07-25,McDonalds,-10.82,-36427.07
+2027-07-27,Health Insurance,-318.41,-36745.48
+2027-07-27,DummyInc Payroll,2500.32,-34245.16
+2027-07-28,DummyInc Payroll,2495.17,-31749.99
+2027-07-30,Spotify Subscription,-10.63,-31760.62
+2027-07-31,DummyInc Payroll,2500.02,-29260.6
+2027-08-02,Water Utility,-51.94,-29312.54
+2027-08-02,Sam's Club,-135.82,-29448.36
+2027-08-04,Starbucks,-8.59,-29456.95
+2027-08-06,Restaurant,-47.48,-29504.42
+2027-08-07,Spotify Subscription,-8.04,-29512.46
+2027-08-07,Target,-69.41,-29581.87
+2027-08-08,Daycare Tuition,-845.1,-30426.97
+2027-08-08,PayPal Transfer,-118.16,-30545.13
+2027-08-08,McDonalds,-16.06,-30561.19
+2027-08-09,Electric Utility,-129.47,-30690.67
+2027-08-09,DummyInc Payroll,2502.03,-28188.64
+2027-08-09,Health Insurance,-316.55,-28505.19
+2027-08-11,Amazon Purchase,-64.34,-28569.53
+2027-08-11,Restaurant,-40.81,-28610.34
+2027-08-11,Love's Travel Stop,-57.99,-28668.32
+2027-08-13,Health Insurance,-322.29,-28990.61
+2027-08-13,Spotify Subscription,-7.0,-28997.61
+2027-08-15,McDonalds,-15.21,-29012.81
+2027-08-16,DummyInc Payroll,2504.61,-26508.2
+2027-08-18,Starbucks,-3.48,-26511.68
+2027-08-20,Electric Utility,-125.71,-26637.39
+2027-08-21,Phillips 66 Gas,-47.36,-26684.75
+2027-08-23,Electric Utility,-128.23,-26812.98
+2027-08-25,Amazon Purchase,-66.16,-26879.14
+2027-08-27,Starbucks,-3.1,-26882.24
+2027-08-29,Walmart,-84.99,-26967.23
+2027-08-30,McDonalds,-16.02,-26983.25
+2027-08-30,Walmart,-86.59,-27069.84
+2027-09-01,Electric Utility,-125.31,-27195.16
+2027-09-02,DummyInc Payroll,2501.34,-24693.81
+2027-09-03,Health Insurance,-322.72,-25016.53
+2027-09-05,Electric Utility,-130.68,-25147.21
+2027-09-07,Electric Utility,-134.14,-25281.36
+2027-09-09,PayPal Transfer,-117.02,-25398.38
+2027-09-11,Walmart,-89.18,-25487.56
+2027-09-11,Electric Utility,-127.88,-25615.44
+2027-09-13,Starbucks,-3.6,-25619.04
+2027-09-14,Target,-77.93,-25696.98
+2027-09-14,PayPal Transfer,-120.55,-25817.53
+2027-09-15,Sam's Club,-143.67,-25961.21
+2027-09-15,Water Utility,-55.51,-26016.72
+2027-09-17,Restaurant,-45.92,-26062.64
+2027-09-17,Walmart,-86.46,-26149.1
+2027-09-17,Amazon Purchase,-61.36,-26210.46
+2027-09-17,PayPal Transfer,-120.86,-26331.32
+2027-09-17,ATM Withdrawal,-95.95,-26427.27
+2027-09-17,Restaurant,-48.3,-26475.57
+2027-09-18,Phillips 66 Gas,-51.61,-26527.19
+2027-09-19,Spotify Subscription,-11.06,-26538.24
+2027-09-19,Phillips 66 Gas,-48.65,-26586.9
+2027-09-20,PayPal Transfer,-120.16,-26707.06
+2027-09-20,Target,-76.48,-26783.54
+2027-09-20,Health Insurance,-319.06,-27102.6
+2027-09-20,Internet Service,-98.93,-27201.53
+2027-09-21,DummyInc Payroll,2504.49,-24697.04
+2027-09-22,Electric Utility,-126.96,-24824.0
+2027-09-23,Internet Service,-96.65,-24920.65
+2027-09-25,Starbucks,-8.0,-24928.65
+2027-09-27,Love's Travel Stop,-62.21,-24990.86
+2027-09-27,Electric Utility,-125.31,-25116.17
+2027-09-28,Health Insurance,-315.32,-25431.49
+2027-09-28,Amazon Purchase,-66.24,-25497.73
+2027-09-29,Target,-77.86,-25575.6
+2027-10-01,Love's Travel Stop,-61.08,-25636.67
+2027-10-03,Phillips 66 Gas,-46.18,-25682.86
+2027-10-05,DummyInc Payroll,2504.53,-23178.33
+2027-10-06,Love's Travel Stop,-62.62,-23240.94
+2027-10-07,Walmart,-81.81,-23322.75
+2027-10-08,Health Insurance,-323.61,-23646.36
+2027-10-09,Daycare Tuition,-852.47,-24498.83
+2027-10-09,Water Utility,-52.11,-24550.94
+2027-10-09,Internet Service,-90.09,-24641.04
+2027-10-10,Electric Utility,-129.66,-24770.69
+2027-10-12,Water Utility,-54.56,-24825.26
+2027-10-13,ATM Withdrawal,-99.06,-24924.32
+2027-10-13,Sam's Club,-137.31,-25061.63
+2027-10-15,Target,-77.34,-25138.96
+2027-10-17,McDonalds,-11.37,-25150.33
+2027-10-19,Electric Utility,-125.33,-25275.66
+2027-10-20,Water Utility,-58.94,-25334.6
+2027-10-20,Spotify Subscription,-13.77,-25348.37
+2027-10-22,Restaurant,-44.42,-25392.79
+2027-10-24,Daycare Tuition,-850.54,-26243.34
+2027-10-25,Internet Service,-92.28,-26335.61
+2027-10-27,Restaurant,-48.49,-26384.11
+2027-10-27,Health Insurance,-323.95,-26708.06
+2027-10-28,Walmart,-88.84,-26796.9
+2027-10-30,Starbucks,-7.52,-26804.42
+2027-10-31,Internet Service,-92.16,-26896.57
+2027-11-02,Health Insurance,-321.52,-27218.09
+2027-11-02,Internet Service,-92.78,-27310.87
+2027-11-03,Amazon Purchase,-69.33,-27380.2
+2027-11-03,Sam's Club,-144.77,-27524.97
+2027-11-04,Sam's Club,-138.23,-27663.2
+2027-11-04,Daycare Tuition,-849.84,-28513.04
+2027-11-06,Phillips 66 Gas,-49.69,-28562.73
+2027-11-07,Internet Service,-97.68,-28660.41
+2027-11-08,Phillips 66 Gas,-51.14,-28711.55
+2027-11-10,Water Utility,-56.04,-28767.59
+2027-11-12,Love's Travel Stop,-62.5,-28830.1
+2027-11-13,Electric Utility,-134.96,-28965.05
+2027-11-13,Love's Travel Stop,-64.22,-29029.27
+2027-11-15,Walmart,-84.23,-29113.5
+2027-11-17,Phillips 66 Gas,-49.34,-29162.84
+2027-11-17,Internet Service,-98.86,-29261.7
+2027-11-19,Health Insurance,-319.72,-29581.42
+2027-11-21,Amazon Purchase,-64.03,-29645.45
+2027-11-23,Electric Utility,-129.13,-29774.58
+2027-11-24,Target,-70.54,-29845.13
+2027-11-26,Phillips 66 Gas,-44.86,-29889.99
+2027-11-28,PayPal Transfer,-115.81,-30005.8
+2027-11-30,Walmart,-83.28,-30089.08
+2027-12-01,Sam's Club,-142.61,-30231.7
+2027-12-01,Phillips 66 Gas,-49.27,-30280.96
+2027-12-01,Restaurant,-46.12,-30327.08
+2027-12-03,Starbucks,-5.25,-30332.33
+2027-12-04,Phillips 66 Gas,-48.13,-30380.46
+2027-12-06,Phillips 66 Gas,-47.45,-30427.91
+2027-12-07,PayPal Transfer,-123.6,-30551.51
+2027-12-08,Internet Service,-93.81,-30645.32
+2027-12-09,DummyInc Payroll,2499.85,-28145.47
+2027-12-09,Electric Utility,-125.36,-28270.83
+2027-12-11,Health Insurance,-320.91,-28591.74
+2027-12-12,Water Utility,-52.9,-28644.64
+2027-12-13,Health Insurance,-323.33,-28967.97
+2027-12-15,DummyInc Payroll,2502.96,-26465.01
+2027-12-15,PayPal Transfer,-124.67,-26589.68
+2027-12-15,ATM Withdrawal,-102.11,-26691.8
+2027-12-16,Health Insurance,-319.5,-27011.3
+2027-12-16,Sam's Club,-142.32,-27153.62
+2027-12-18,Target,-73.58,-27227.2
+2027-12-18,Internet Service,-94.54,-27321.74
+2027-12-19,Sam's Club,-137.64,-27459.38
+2027-12-21,Daycare Tuition,-852.02,-28311.4
+2027-12-21,Internet Service,-97.37,-28408.77
+2027-12-21,Internet Service,-91.35,-28500.12
+2027-12-21,Daycare Tuition,-852.9,-29353.02
+2027-12-23,Target,-70.39,-29423.41
+2027-12-25,Water Utility,-58.34,-29481.75
+2027-12-25,Love's Travel Stop,-58.86,-29540.61
+2027-12-25,Target,-73.68,-29614.29
+2027-12-27,ATM Withdrawal,-103.32,-29717.61
+2027-12-29,PayPal Transfer,-122.11,-29839.71
+2027-12-30,Restaurant,-40.15,-29879.86
+2028-01-01,Sam's Club,-143.64,-30023.5
+2028-01-02,McDonalds,-7.08,-30030.58
+2028-01-04,Starbucks,-3.99,-30034.56
+2028-01-04,Daycare Tuition,-853.54,-30888.1
+2028-01-05,Daycare Tuition,-847.39,-31735.49
+2028-01-07,Electric Utility,-130.11,-31865.59
+2028-01-09,Spotify Subscription,-9.71,-31875.3
+2028-01-10,Internet Service,-99.24,-31974.55
+2028-01-10,Electric Utility,-129.84,-32104.39
+2028-01-11,Target,-74.45,-32178.84
+2028-01-12,Amazon Purchase,-64.18,-32243.03
+2028-01-14,Walmart,-82.69,-32325.72
+2028-01-15,Target,-70.5,-32396.21
+2028-01-17,Electric Utility,-132.82,-32529.04
+2028-01-18,Love's Travel Stop,-62.05,-32591.09
+2028-01-19,PayPal Transfer,-121.62,-32712.71
+2028-01-21,Starbucks,-5.34,-32718.05

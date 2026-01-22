@@ -11,6 +11,60 @@ import Link from "next/link";
 
 type UploadStep = "upload" | "preview" | "confirm" | "success";
 
+// Test data CSV content
+const TEST_DATA_CSV = `Date,Description,Amount,Balance
+2025-01-22,Sam's Club,-144.75,4855.25
+2025-01-23,Daycare Tuition,-852.77,4002.48
+2025-01-25,Sam's Club,-138.23,3864.25
+2025-01-27,Walmart,-84.1,3780.15
+2025-01-27,DummyInc Payroll,2495.94,6276.09
+2025-01-27,Restaurant,-43.98,6232.11
+2025-01-29,Love's Travel Stop,-59.84,6172.27
+2025-01-31,ATM Withdrawal,-100.8,6071.47
+2025-02-01,Spotify Subscription,-7.9,6063.57
+2025-02-01,Phillips 66 Gas,-46.02,6017.55
+2025-02-02,Spotify Subscription,-14.44,6003.12
+2025-02-03,Sam's Club,-144.07,5859.04
+2025-02-03,Target,-70.53,5788.52
+2025-02-05,Spotify Subscription,-7.92,5780.6
+2025-02-07,Internet Service,-94.64,5685.96
+2025-02-08,Walmart,-84.48,5601.48
+2025-02-10,Target,-73.23,5528.26
+2025-02-12,Walmart,-89.54,5438.72
+2025-02-12,PayPal Transfer,-115.15,5323.57
+2025-02-12,Sam's Club,-141.2,5182.37
+2025-02-13,Target,-77.37,5105.0
+2025-02-14,Love's Travel Stop,-60.3,5044.7
+2025-02-16,Walmart,-83.91,4960.79
+2025-02-16,ATM Withdrawal,-97.71,4863.08
+2025-02-16,Internet Service,-96.21,4766.87
+2025-02-18,ATM Withdrawal,-102.8,4664.07
+2025-02-19,McDonalds,-14.71,4649.36
+2025-02-19,Amazon Purchase,-65.99,4583.37
+2025-02-19,Love's Travel Stop,-57.87,4525.5
+2025-02-21,Amazon Purchase,-67.87,4457.63
+2025-02-22,Electric Utility,-126.15,4331.48
+2025-02-24,Internet Service,-98.57,4232.91
+2025-02-24,Daycare Tuition,-847.55,3385.36
+2025-02-26,Spotify Subscription,-8.52,3376.84
+2025-02-27,Electric Utility,-131.38,3245.46
+2025-02-27,Restaurant,-45.06,3200.39
+2025-02-27,Sam's Club,-143.47,3056.92
+2025-02-27,Water Utility,-54.04,3002.88
+2025-02-28,Electric Utility,-129.04,2873.84
+2025-03-01,Restaurant,-47.49,2826.36
+2025-03-03,DummyInc Payroll,2501.8,5328.16
+2025-03-03,ATM Withdrawal,-97.49,5230.67
+2025-03-05,Amazon Purchase,-68.88,5161.78
+2025-03-06,Phillips 66 Gas,-48.46,5113.32
+2025-03-08,Spotify Subscription,-6.27,5107.05
+2025-03-08,Restaurant,-40.87,5066.18
+2025-03-10,PayPal Transfer,-116.58,4949.59
+2025-03-12,Love's Travel Stop,-65.47,4884.12
+2025-03-12,ATM Withdrawal,-95.47,4788.66
+2025-03-14,DummyInc Payroll,2500.99,7289.65
+2025-03-15,DummyInc Payroll,2496.12,9785.76`;
+
 export default function TransactionUploadPage() {
 	const { user } = useAuth();
 	const [step, setStep] = useState<UploadStep>("upload");
@@ -78,6 +132,40 @@ export default function TransactionUploadPage() {
 		}
 	};
 
+	const processCSVContent = async (csvContent: string) => {
+		setError("");
+		setFile(null);
+		setLoading(true);
+
+		try {
+			// Create a blob from CSV content
+			const blob = new Blob([csvContent], { type: "text/csv" });
+			const file = new File([blob], "test-data.csv", { type: "text/csv" });
+
+			// Parse CSV
+			const parsed = await parseCSV(file);
+
+			if (parsed.length === 0) {
+				throw new Error("No valid transactions found in test data");
+			}
+
+			// Auto-categorize transactions
+			const categorized = parsed.map((t) => ({
+				...t,
+				category: autoCategorizeTransaction(t.description || "", t.merchant, t.amount),
+				confidence: getCategorizationConfidence(t.description || "", t.merchant, t.category || "Other"),
+			}));
+
+			setTransactions(categorized);
+			setStep("preview");
+		} catch (err) {
+			const message = err instanceof Error ? err.message : "Failed to load test data";
+			setError(message);
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	const handleConfirmUpload = async () => {
 		if (!user?.uid) {
 			setError("You must be logged in to upload transactions");
@@ -137,42 +225,53 @@ export default function TransactionUploadPage() {
 					</label>
 				</div>
 
-				{/* Supported Formats */}
-				<div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-					<h3 className="font-semibold text-gray-900 dark:text-white mb-2">Supported Formats</h3>
-					<ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-						<li>• CSV files with columns: Date, Description, Amount</li>
-						<li>• Date formats: MM/DD/YYYY, YYYY-MM-DD</li>
-						<li>• At least 120 days of transaction history</li>
-					</ul>
-				</div>
+			{/* Test Data Button */}
+			<div className="text-center">
+				<p className="text-gray-600 dark:text-gray-400 mb-3">Want to explore first?</p>
+				<button
+					onClick={() => processCSVContent(TEST_DATA_CSV)}
+					disabled={loading}
+					className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors">
+					{loading ? "Loading..." : "Use Test Data"}
+				</button>
+			</div>
 
-				{/* Security & Privacy Disclaimer */}
-				<div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-					<h3 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-						<svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-							<path d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" />
-						</svg>
-						Your Financial Data Is Completely Safe
-					</h3>
-					<ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-						<li>
-							🔐 <strong>Encrypted Storage:</strong> All data encrypted at rest using industry-standard protocols
-						</li>
-						<li>
-							🔒 <strong>Secure Transmission:</strong> HTTPS and end-to-end encryption in transit
-						</li>
-						<li>
-							👤 <strong>Private & Confidential:</strong> Only YOU can access your financial information
-						</li>
-						<li>
-							🚫 <strong>No Third-Party Access:</strong> We never share, sell, or access your personal data
-						</li>
-						<li>
-							✅ <strong>Firebase Security:</strong> Enterprise-grade security with automatic backups
-						</li>
-					</ul>
-				</div>
+			{/* Supported Formats */}
+			<div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+				<h3 className="font-semibold text-gray-900 dark:text-white mb-2">Supported Formats</h3>
+				<ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+					<li>• CSV files with columns: Date, Description, Amount</li>
+					<li>• Date formats: MM/DD/YYYY, YYYY-MM-DD</li>
+					<li>• At least 120 days of transaction history</li>
+				</ul>
+			</div>
+
+			{/* Security & Privacy Disclaimer */}
+			<div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+				<h3 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+					<svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+						<path d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" />
+					</svg>
+					Your Financial Data Is Completely Safe
+				</h3>
+				<ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+					<li>
+						<strong>Encrypted Storage:</strong> All data encrypted at rest using industry-standard protocols
+					</li>
+					<li>
+						<strong>Secure Transmission:</strong> HTTPS and end-to-end encryption in transit
+					</li>
+					<li>
+						<strong>Private & Confidential:</strong> Only YOU can access your financial information
+					</li>
+					<li>
+						<strong>No Third-Party Access:</strong> We never share, sell, or access your personal data
+					</li>
+					<li>
+						<strong>Firebase Security:</strong> Enterprise-grade security with automatic backups
+					</li>
+				</ul>
+			</div>
 
 				{/* Error Message */}
 				{error && (
