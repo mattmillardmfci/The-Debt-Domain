@@ -16,6 +16,7 @@ import {
 	QueryDocumentSnapshot,
 	startAfter,
 	writeBatch,
+	setDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { auth } from "./firebase";
@@ -360,7 +361,7 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 		// NEW APPROACH: Group by CHARGE AMOUNT first, then verify vendor consistency
 		// This prevents grouping different purchases from the same vendor
 		// (e.g., different pharmacy items with different costs)
-		
+
 		interface ChargeGroup {
 			amount: number; // in cents (absolute value)
 			vendors: Set<string>; // normalized vendor names
@@ -369,13 +370,13 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 
 		// Round amounts to nearest 5 cents to handle minor variation (e.g., $9.12 vs $9.13)
 		const roundAmount = (amount: number): number => Math.round(Math.abs(amount) / 5) * 5;
-		
+
 		// Group by rounded charge amount
 		const chargeGroups = new Map<number, ChargeGroup>();
 		negativeTransactions.forEach((t) => {
 			const roundedAmount = roundAmount(t.amount || 0);
 			const normalizedDesc = normalizeDescription(t.description || "Unknown");
-			
+
 			if (!chargeGroups.has(roundedAmount)) {
 				chargeGroups.set(roundedAmount, {
 					amount: roundedAmount,
@@ -383,7 +384,7 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 					transactions: [],
 				});
 			}
-			
+
 			const group = chargeGroups.get(roundedAmount)!;
 			group.vendors.add(normalizedDesc);
 			group.transactions.push(t);
@@ -404,20 +405,20 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 				// (within reasonable normalization tolerance)
 				// This catches cases like "AMAZON PRIME" vs "AMAZON PRIME PMTS Amzn.com/bill"
 				const vendors = Array.from(chargeGroup.vendors);
-				
+
 				// If we have multiple different vendor names for the same charge amount,
 				// try to find a common base (e.g., "AMAZON" appears in both)
 				let mainVendor = vendors[0];
 				if (vendors.length > 1) {
 					// Check if all vendors share a common word (the main merchant name)
-					const allWords = vendors.flatMap(v => v.split(/\s+/));
+					const allWords = vendors.flatMap((v) => v.split(/\s+/));
 					const wordCounts = new Map<string, number>();
-					allWords.forEach(word => {
+					allWords.forEach((word) => {
 						wordCounts.set(word, (wordCounts.get(word) || 0) + 1);
 					});
-					
+
 					// Find the most common word that appears in multiple vendors
-					let commonWord = '';
+					let commonWord = "";
 					let maxCount = 0;
 					wordCounts.forEach((count, word) => {
 						if (count >= Math.ceil(vendors.length / 2) && word.length > 2 && count > maxCount) {
@@ -425,12 +426,12 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 							maxCount = count;
 						}
 					});
-					
+
 					// If we found a common word (likely the main merchant), validate it
 					if (commonWord) {
 						mainVendor = commonWord;
 						// Verify that all vendors contain the main word
-						const allVendorsHaveCommonWord = vendors.every(v => v.includes(commonWord));
+						const allVendorsHaveCommonWord = vendors.every((v) => v.includes(commonWord));
 						if (!allVendorsHaveCommonWord) {
 							// Vendors don't share a common merchant name - likely different charges
 							return;
@@ -439,16 +440,16 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 						// Multiple different vendors for same amount - likely different charges
 						// Skip this unless they're very similar
 						const firstVendor = vendors[0];
-						const allSimilar = vendors.every(v => {
+						const allSimilar = vendors.every((v) => {
 							const similarity = (a: string, b: string) => {
 								const aParts = a.split(/\s+/);
 								const bParts = b.split(/\s+/);
-								const common = aParts.filter(part => bParts.includes(part)).length;
+								const common = aParts.filter((part) => bParts.includes(part)).length;
 								return common > 0;
 							};
 							return similarity(firstVendor, v);
 						});
-						
+
 						if (!allSimilar) {
 							// Vendors are too different - skip this charge group
 							return;
@@ -1024,6 +1025,56 @@ export async function deleteUserProfile(userId: string) {
 		}
 	} catch (error) {
 		console.error("Error deleting user profile:", error);
+		throw error;
+	}
+}
+
+/**
+ * Save ignored recurring expense (when user removes it from tracking)
+ */
+export async function saveIgnoredRecurringExpense(
+	userId: string,
+	expense: {
+		description: string;
+		amount: number;
+		vendor: string;
+		reason: string;
+	},
+) {
+	try {
+		const ref = collection(db, "users", userId, "ignoredRecurringExpenses");
+		await addDoc(ref, {
+			...expense,
+			createdAt: Timestamp.now(),
+		});
+	} catch (error) {
+		console.error("Error saving ignored recurring expense:", error);
+		throw error;
+	}
+}
+
+/**
+ * Save override for recurring expense (category change, description override)
+ */
+export async function updateRecurringExpenseOverride(
+	userId: string,
+	override: {
+		originalDescription: string;
+		amount: number;
+		categoryOverride?: string;
+		descriptionOverride?: string;
+	},
+) {
+	try {
+		const ref = collection(db, "users", userId, "recurringExpenseOverrides");
+		// Use original description + amount as composite key
+		const docId = `${override.originalDescription}-${override.amount}`.replace(/\s+/g, "-");
+		await setDoc(doc(ref, docId), {
+			...override,
+			updatedAt: Timestamp.now(),
+		});
+	} catch (error) {
+		console.error("Error updating recurring expense override:", error);
 		throw error;
 	}
 }

@@ -1,10 +1,15 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { TrendingDown, AlertCircle } from "lucide-react";
+import { TrendingDown, AlertCircle, Edit2, X, Trash2, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { detectRecurringDebts } from "@/lib/firestoreService";
+import React from "react";
+import {
+	detectRecurringDebts,
+	saveIgnoredRecurringExpense,
+	updateRecurringExpenseOverride,
+} from "@/lib/firestoreService";
 
 interface RecurringExpense {
 	description: string;
@@ -14,6 +19,10 @@ interface RecurringExpense {
 	count: number;
 	lastOccurrence: Date;
 	category?: string;
+	originalDescription?: string;
+	categoryOverride?: string;
+	descriptionOverride?: string;
+	isEditing?: boolean;
 }
 
 export default function ExpensesPage() {
@@ -21,8 +30,97 @@ export default function ExpensesPage() {
 	const [expenses, setExpenses] = useState<RecurringExpense[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [totalMonthlyExpenses, setTotalMonthlyExpenses] = useState(0);
+	const [editingIndex, setEditingIndex] = useState<number | null>(null);
+	const [editedCategory, setEditedCategory] = useState("");
+	const [editedDescription, setEditedDescription] = useState("");
+	const [saving, setSaving] = useState(false);
+	const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
+	const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+	const [allCategories] = useState([
+		"Groceries",
+		"Restaurants",
+		"Gas/Fuel",
+		"Utilities",
+		"Entertainment",
+		"Shopping",
+		"Healthcare",
+		"Transportation",
+		"Housing",
+		"Insurance",
+		"Subscription",
+		"Phone/Internet",
+		"Fitness",
+		"Software",
+		"Other",
+	]);
 
-	// Calculate monthly amount based on frequency
+	const handleEditClick = (index: number, expense: RecurringExpense) => {
+		setEditingIndex(index);
+		setEditedCategory(expense.categoryOverride || expense.category || "Other");
+		setEditedDescription(expense.descriptionOverride || expense.description);
+	};
+
+	const handleSaveEdit = async (index: number, expense: RecurringExpense) => {
+		if (!user?.uid || !editedDescription.trim()) return;
+
+		setSaving(true);
+		try {
+			// Save the override to Firestore
+			await updateRecurringExpenseOverride(user.uid, {
+				originalDescription: expense.description,
+				amount: expense.amount,
+				categoryOverride: editedCategory,
+				descriptionOverride: editedDescription,
+			});
+
+			// Update local state
+			const updated = [...expenses];
+			updated[index] = {
+				...updated[index],
+				categoryOverride: editedCategory,
+				descriptionOverride: editedDescription,
+				category: editedCategory,
+				description: editedDescription,
+			};
+			setExpenses(updated);
+			setEditingIndex(null);
+		} catch (error) {
+			console.error("Failed to save edit:", error);
+			alert("Failed to save changes");
+		} finally {
+			setSaving(false);
+		}
+	};
+
+	const handleDelete = async (index: number) => {
+		if (!user?.uid || deletingIndex !== null) return;
+
+		setDeletingIndex(index);
+		try {
+			const expense = expenses[index];
+			// Save to ignored recurring expenses
+			await saveIgnoredRecurringExpense(user.uid, {
+				description: expense.description,
+				amount: expense.amount,
+				vendor: expense.description.split(/\s+/)[0], // Use first word as vendor
+				reason: "user-removed",
+			});
+
+			// Remove from display
+			const updated = expenses.filter((_, i) => i !== index);
+			setExpenses(updated);
+
+			// Recalculate total
+			const total = updated.reduce((sum, exp) => sum + exp.monthlyAmount, 0);
+			setTotalMonthlyExpenses(total);
+		} catch (error) {
+			console.error("Failed to delete expense:", error);
+			alert("Failed to remove expense");
+		} finally {
+			setDeletingIndex(null);
+		}
+	};
+
 	const calculateMonthlyAmount = (amount: number, frequency: string | undefined): number => {
 		if (!frequency || frequency === "monthly") return amount;
 		if (frequency === "weekly") return amount * (52 / 12);
@@ -156,45 +254,123 @@ export default function ExpensesPage() {
 										<th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">
 											Last Occurrence
 										</th>
+										<th className="px-6 py-3 text-center text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">
+											Actions
+										</th>
 									</tr>
 								</thead>
 								<tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-									{expenses.map((expense) => (
-										<tr
-											key={expense.description}
-											className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
-											<td className="px-6 py-4">
-												<p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
-													{expense.description}
-												</p>
-											</td>
-											<td className="px-6 py-4">
-												<span className="inline-block px-2 py-1 text-xs bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded">
-													{expense.category || "Other"}
-												</span>
-											</td>
-											<td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 capitalize">
-												{expense.frequency}
-											</td>
-											<td className="px-6 py-4 text-right">
-												<p className="text-sm font-medium text-gray-900 dark:text-white">
-													{formatCurrency(expense.amount)}
-												</p>
-											</td>
-											<td className="px-6 py-4 text-right">
-												<p className="text-sm font-bold text-red-600 dark:text-red-400">
-													{formatCurrency(expense.monthlyAmount)}
-												</p>
-											</td>
-											<td className="px-6 py-4">
-												<span className="inline-block px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">
-													{expense.count}x
-												</span>
-											</td>
-											<td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-												{expense.lastOccurrence.toLocaleDateString()}
-											</td>
-										</tr>
+									{expenses.map((expense, index) => (
+										<React.Fragment key={`${expense.description}-${index}`}>
+											<tr
+												className={
+													editingIndex === index
+														? "bg-blue-50 dark:bg-blue-900/20"
+														: "hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
+												}>
+												<td className="px-6 py-4">
+													{editingIndex === index ? (
+														<input
+															type="text"
+															value={editedDescription}
+															onChange={(e) => setEditedDescription(e.target.value)}
+															className="w-full px-2 py-1 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded text-sm text-gray-900 dark:text-white"
+															placeholder="Vendor name..."
+														/>
+													) : (
+														<p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
+															{expense.descriptionOverride || expense.description}
+														</p>
+													)}
+												</td>
+												<td className="px-6 py-4">
+													{editingIndex === index ? (
+														<select
+															value={editedCategory}
+															onChange={(e) => setEditedCategory(e.target.value)}
+															className="w-full px-2 py-1 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded text-xs text-gray-900 dark:text-white">
+															{allCategories.map((cat) => (
+																<option key={cat} value={cat}>
+																	{cat}
+																</option>
+															))}
+														</select>
+													) : (
+														<span className="inline-block px-2 py-1 text-xs bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded">
+															{expense.categoryOverride || expense.category || "Other"}
+														</span>
+													)}
+												</td>
+												<td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 capitalize">
+													{expense.frequency}
+												</td>
+												<td className="px-6 py-4 text-right">
+													<p className="text-sm font-medium text-gray-900 dark:text-white">
+														{formatCurrency(expense.amount)}
+													</p>
+												</td>
+												<td className="px-6 py-4 text-right">
+													<p className="text-sm font-bold text-red-600 dark:text-red-400">
+														{formatCurrency(expense.monthlyAmount)}
+													</p>
+												</td>
+												<td className="px-6 py-4">
+													<span className="inline-block px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">
+														{expense.count}x
+													</span>
+												</td>
+												<td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+													{expense.lastOccurrence.toLocaleDateString()}
+												</td>
+												<td className="px-6 py-4">
+													<div className="flex items-center gap-2 justify-center">
+														{editingIndex === index ? (
+															<>
+																<button
+																	onClick={() => handleSaveEdit(index, expense)}
+																	disabled={saving}
+																	className="px-2 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-xs rounded">
+																	Save
+																</button>
+																<button
+																	onClick={() => setEditingIndex(null)}
+																	className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded">
+																	Cancel
+																</button>
+															</>
+														) : (
+															<>
+																<button
+																	onClick={() => handleEditClick(index, expense)}
+																	className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors min-h-8 min-w-8 flex items-center justify-center">
+																	<Edit2 className="w-4 h-4" />
+																</button>
+																<button
+																	onClick={() => handleDelete(index)}
+																	disabled={deletingIndex !== null}
+																	className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 min-h-8 min-w-8 flex items-center justify-center">
+																	<Trash2 className="w-4 h-4" />
+																</button>
+															</>
+														)}
+													</div>
+												</td>
+											</tr>
+											{expandedIndex === index && (
+												<tr className="bg-gray-50 dark:bg-slate-800/50">
+													<td colSpan={8} className="px-6 py-4">
+														<div className="text-xs text-gray-600 dark:text-gray-400">
+															<p className="font-semibold mb-2">Grouped with similar charges:</p>
+															<p>Charge amount: {formatCurrency(expense.amount)} (±1%)</p>
+															<p>Vendor: {expense.description}</p>
+															<p className="mt-2 text-gray-500">
+																Click to expand more details about all grouped transactions
+															</p>
+														</div>
+													</td>
+												</tr>
+											)}
+										</React.Fragment>
 									))}
 								</tbody>
 							</table>
