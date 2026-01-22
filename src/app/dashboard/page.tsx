@@ -37,7 +37,7 @@ export default function DashboardPage() {
 	const [hasData, setHasData] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 	const [showIncomeTooltip, setShowIncomeTooltip] = useState(false);
-	const [showExpensestooltip, setShowExpensesTooltip] = useState(false);
+	const [showExpensesTooltip, setShowExpensesTooltip] = useState(false);
 
 	useEffect(() => {
 		if (!user?.uid) {
@@ -220,14 +220,15 @@ export default function DashboardPage() {
 								<div className="text-gray-400 text-xs">Weekly: ×4.33 | Biweekly: ×2.17 | Semi-monthly: ×2 | Monthly: ×1 | Yearly: ÷12</div>
 							</div>
 						)}
+					</Link>
 
-						{/* Monthly Expenses */}
+					{/* Monthly Expenses */}
 					<Link 
 						href="/expenses" 
 						className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg hover:border-red-300 dark:hover:border-red-600 transition-all cursor-pointer relative"
 						onMouseEnter={() => setShowExpensesTooltip(true)}
 						onMouseLeave={() => setShowExpensesTooltip(false)}
-						onTouchStart={() => setShowExpensesTooltip(!showExpensestooltip)}
+						onTouchStart={() => setShowExpensesTooltip(!showExpensesTooltip)}
 					>
 						<div className="flex items-center justify-between">
 							<div className="flex-1">
@@ -247,7 +248,7 @@ export default function DashboardPage() {
 						</div>
 
 						{/* Tooltip */}
-						{showExpensestooltip && (
+						{showExpensesTooltip && (
 							<div className="absolute bottom-full left-0 right-0 mb-2 bg-gray-900 dark:bg-gray-800 text-white text-xs p-3 rounded border border-gray-700 z-50 whitespace-pre-wrap">
 								<div className="font-semibold mb-2">How Monthly Expenses are Calculated:</div>
 								<div className="text-gray-200">{metrics.expensesBreakdown}</div>
@@ -255,19 +256,20 @@ export default function DashboardPage() {
 								<div className="text-gray-400 text-xs">Weekly: ×4.33 | Biweekly: ×2.17 | Monthly: ×1 | Quarterly: ÷3 | Annual: ÷12</div>
 							</div>
 						)}
+					</Link>
 
-						{/* Total Debt */}
-						<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
-							<div className="flex items-center justify-between">
-								<div>
-									<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Debt</p>
-									<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-										${metrics.totalDebt.toLocaleString()}
-									</p>
-								</div>
-								<AlertCircle className="w-8 h-8 text-orange-600" />
+					{/* Total Debt */}
+					<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
+						<div className="flex items-center justify-between">
+							<div>
+								<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Debt</p>
+								<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+									${metrics.totalDebt.toLocaleString()}
+								</p>
 							</div>
+							<AlertCircle className="w-8 h-8 text-orange-600" />
 						</div>
+					</div>
 
 						{/* Savings Rate */}
 						<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">

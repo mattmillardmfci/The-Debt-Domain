@@ -538,7 +538,7 @@ export async function detectIncomePatterns(userId: string): Promise<IncomePatter
 						// Semi-monthly: typically occurs on specific days like 1st and 15th, or 15th and 30th
 						if (avgGap >= 12 && avgGap <= 18) {
 							// Could be either semi-monthly or biweekly
-							// Analyze the day-of-month pattern to distinguish
+							// Analyze the day-of-month pattern and transaction count to distinguish
 							const dayOfMonths = dates.map((d) => d.getDate());
 
 							// For semi-monthly, we expect typically 2 distinct day-of-month values
@@ -558,12 +558,32 @@ export async function detectIncomePatterns(userId: string): Promise<IncomePatter
 							).length;
 							const totalMonths = monthlyPaychecks.size;
 
+							// Use transaction count as additional confirmation:
+							// Semi-monthly: ~24 paychecks/year, Biweekly: ~26 paychecks/year
+							const monthsOfData =
+								(dates[dates.length - 1].getTime() - dates[0].getTime()) / (1000 * 60 * 60 * 24 * 30);
+							const paychecksPerYear = monthsOfData > 0 ? (transactions.length / monthsOfData) * 12 : 0;
+
+							// Decision logic:
+							// 1. If pattern shows 2 consistent days per month (semi-monthly pattern), prefer semi-monthly
+							// 2. Use paycheck count as tiebreaker: < 25/year = semi-monthly, >= 25/year = biweekly
 							if (uniqueDays.size === 2 && monthsWithTwoPaychecks >= totalMonths * 0.7) {
-								// Likely semi-monthly (twice per month, on consistent days)
+								// Clear semi-monthly pattern: 2 distinct days, most months have 2 paychecks
 								estimatedFrequency = "semi-monthly";
 								monthlyAmount = avgAmount * 2;
-							} else if (avgGap >= 12 && avgGap <= 16) {
-								// Biweekly (every 14 days, regardless of month boundaries)
+							} else if (avgGap >= 12 && avgGap <= 16 && paychecksPerYear > 25) {
+								// Biweekly pattern: 14-day gap, count suggests 26+ per year
+								estimatedFrequency = "biweekly";
+								monthlyAmount = avgAmount * (26 / 12);
+							} else if (
+								paychecksPerYear <= 25 ||
+								(uniqueDays.size === 2 && monthsWithTwoPaychecks >= totalMonths * 0.6)
+							) {
+								// Count suggests semi-monthly (< 25/year) or pattern suggests 2 days per month
+								estimatedFrequency = "semi-monthly";
+								monthlyAmount = avgAmount * 2;
+							} else {
+								// Default to biweekly if ambiguous
 								estimatedFrequency = "biweekly";
 								monthlyAmount = avgAmount * (26 / 12);
 							}
