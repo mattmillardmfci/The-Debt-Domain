@@ -1166,6 +1166,31 @@ export async function deleteCustomRecurringExpense(userId: string, description: 
 }
 
 /**
+ * Rename all custom recurring expenses with a specific description
+ */
+export async function bulkRenameRecurringExpenseDescription(
+	userId: string,
+	oldDescription: string,
+	newDescription: string,
+) {
+	try {
+		const ref = collection(db, "users", userId, "customRecurringExpenses");
+		const q = query(ref, where("description", "==", oldDescription));
+		const snapshot = await getDocs(q);
+
+		const batch = writeBatch(db);
+		snapshot.docs.forEach((docSnap) => {
+			batch.update(docSnap.ref, { description: newDescription });
+		});
+
+		await batch.commit();
+	} catch (error) {
+		console.error("Error renaming recurring expenses:", error);
+		throw error;
+	}
+}
+
+/**
  * Find undetected recurring transaction patterns
  * Looks for transactions with 2+ occurrences that weren't caught by detectRecurringDebts
  * Returns grouped transactions by amount that could be marked as recurring

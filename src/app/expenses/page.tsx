@@ -11,8 +11,8 @@ import {
 	updateRecurringExpenseOverride,
 	saveCustomRecurringExpense,
 	getCustomRecurringExpenses,
-	deleteCustomRecurringExpense,
 	findUndetectedRecurringExpenses,
+	bulkRenameRecurringExpenseDescription,
 } from "@/lib/firestoreService";
 
 interface RecurringExpense {
@@ -50,6 +50,19 @@ export default function ExpensesPage() {
 			category?: string;
 		}>
 	>([]);
+	const [showDetectedExpenses, setShowDetectedExpenses] = useState(false);
+	const [renameModal, setRenameModal] = useState<{
+		isOpen: boolean;
+		oldDescription: string;
+		newDescription: string;
+		count: number;
+	}>({
+		isOpen: false,
+		oldDescription: "",
+		newDescription: "",
+		count: 0,
+	});
+	const [renaming, setRenaming] = useState(false);
 	const [allCategories] = useState([
 		"Groceries",
 		"Restaurants",
@@ -114,8 +127,16 @@ export default function ExpensesPage() {
 			const expense = expenses[index];
 
 			if (expense.isCustom) {
-				// Delete custom expense
-				await deleteCustomRecurringExpense(user.uid, expense.description, expense.amount);
+				// Move custom expense back to detected/undetected list
+				// Create an undetected expense object from the custom expense
+				const undetected = {
+					description: expense.description,
+					amount: expense.amount,
+					count: expense.count,
+					lastOccurrence: expense.lastOccurrence,
+					category: expense.category,
+				};
+				setUndetectedExpenses([...undetectedExpenses, undetected]);
 			} else {
 				// Save to ignored recurring expenses for detected expenses
 				await saveIgnoredRecurringExpense(user.uid, {
@@ -196,6 +217,43 @@ export default function ExpensesPage() {
 			alert("Failed to add expense");
 		} finally {
 			setSaving(false);
+		}
+	};
+
+	const openRenameModal = (description: string) => {
+		const count = expenses.filter((exp) => exp.description === description).length;
+		setRenameModal({
+			isOpen: true,
+			oldDescription: description,
+			newDescription: description,
+			count,
+		});
+	};
+
+	const handleRenameExpense = async () => {
+		if (!user?.uid || !renameModal.newDescription.trim()) return;
+
+		setRenaming(true);
+		try {
+			await bulkRenameRecurringExpenseDescription(
+				user.uid,
+				renameModal.oldDescription,
+				renameModal.newDescription.trim(),
+			);
+			// Update local expenses
+			setExpenses(
+				expenses.map((exp) =>
+					exp.description === renameModal.oldDescription
+						? { ...exp, description: renameModal.newDescription.trim() }
+						: exp,
+				),
+			);
+			setRenameModal({ isOpen: false, oldDescription: "", newDescription: "", count: 0 });
+		} catch (err) {
+			console.error("Failed to rename expenses:", err);
+			alert("Failed to rename expenses. Please try again.");
+		} finally {
+			setRenaming(false);
 		}
 	};
 
@@ -324,48 +382,54 @@ export default function ExpensesPage() {
 				</div>
 			</div>
 
-			{/* Detected Expenses Section */}
+			{/* Detected Expenses Section - Collapsible */}
 			{undetectedExpenses.length > 0 && (
 				<div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
-					<div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-slate-700 bg-blue-50 dark:bg-blue-900/20">
-						<h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-							Detected Recurring Expenses ({undetectedExpenses.length})
-						</h3>
-						<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-							Click "Add" to include these in your monthly expenses
-						</p>
-					</div>
-					<div className="divide-y divide-gray-200 dark:divide-slate-700">
-						{undetectedExpenses.map((expense, index) => (
-							<div
-								key={`${expense.description}-${index}`}
-								className="p-4 sm:p-6 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
-								<div className="flex justify-between items-start gap-4">
-									<div className="flex-grow">
-										<p className="font-medium text-gray-900 dark:text-white">{expense.description}</p>
-										<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-											{expense.count}x occurrences • Last: {expense.lastOccurrence.toLocaleDateString()}
+					<button
+						onClick={() => setShowDetectedExpenses(!showDetectedExpenses)}
+						className="w-full px-4 sm:px-6 py-3 flex items-center justify-between hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
+						<div className="text-left">
+							<h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+								Detected Recurring Expenses ({undetectedExpenses.length})
+							</h3>
+							<p className="text-xs text-gray-600 dark:text-gray-400">Click to add more to your monthly expenses</p>
+						</div>
+						<ChevronDown
+							className={`w-5 h-5 text-gray-600 dark:text-gray-400 transition-transform ${
+								showDetectedExpenses ? "transform rotate-180" : ""
+							}`}
+						/>
+					</button>
+
+					{showDetectedExpenses && (
+						<div className="divide-y divide-gray-200 dark:divide-slate-700 border-t border-gray-200 dark:border-slate-700">
+							{undetectedExpenses.map((expense, index) => (
+								<div
+									key={`${expense.description}-${index}`}
+									className="px-4 sm:px-6 py-2 sm:py-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors flex items-center justify-between gap-2 sm:gap-4">
+									<div className="flex-grow min-w-0">
+										<p className="text-sm font-medium text-gray-900 dark:text-white truncate">{expense.description}</p>
+										<p className="text-xs text-gray-600 dark:text-gray-400">
+											{expense.count}x • {expense.category || "Other"}
 										</p>
-										{expense.category && (
-											<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Category: {expense.category}</p>
-										)}
 									</div>
-									<div className="flex items-center gap-3 flex-shrink-0">
+									<div className="flex items-center gap-2 flex-shrink-0">
 										<div className="text-right">
-											<p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(expense.amount)}</p>
-											<p className="text-xs text-gray-600 dark:text-gray-400 mt-1">per month</p>
+											<p className="text-sm font-semibold text-gray-900 dark:text-white">
+												{formatCurrency(expense.amount)}
+											</p>
 										</div>
 										<button
 											onClick={() => handleAddExpense(index)}
 											disabled={saving}
-											className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-sm font-medium transition-colors whitespace-nowrap">
+											className="px-2 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-xs font-medium transition-colors whitespace-nowrap">
 											{saving ? "..." : "Add"}
 										</button>
 									</div>
 								</div>
-							</div>
-						))}
-					</div>
+							))}
+						</div>
+					)}
 				</div>
 			)}
 
@@ -423,10 +487,16 @@ export default function ExpensesPage() {
 															placeholder="Vendor name..."
 														/>
 													) : (
-														<div className="flex items-center gap-2">
+														<div className="flex items-center gap-2 group">
 															<p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
 																{expense.descriptionOverride || expense.description}
 															</p>
+															<button
+																onClick={() => openRenameModal(expense.description)}
+																className="p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-all"
+																title="Rename all expenses with this description">
+																<Edit2 className="w-4 h-4" />
+															</button>
 															{expense.isCustom && (
 																<span className="inline-block px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded whitespace-nowrap">
 																	Custom
@@ -632,6 +702,54 @@ export default function ExpensesPage() {
 					</li>
 				</ul>
 			</div>
+
+			{/* Rename Modal */}
+			{renameModal.isOpen && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6">
+						<h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Rename Expense</h2>
+						<p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+							This will rename all {renameModal.count} expense{renameModal.count !== 1 ? "s" : ""} with this description
+						</p>
+
+						<div className="space-y-4">
+							<div>
+								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">New Name</label>
+								<input
+									type="text"
+									value={renameModal.newDescription}
+									onChange={(e) => setRenameModal({ ...renameModal, newDescription: e.target.value })}
+									className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white"
+									placeholder="Enter new name..."
+									autoFocus
+								/>
+							</div>
+						</div>
+
+						<div className="flex gap-2 justify-end mt-6">
+							<button
+								type="button"
+								onClick={() =>
+									setRenameModal({
+										isOpen: false,
+										oldDescription: "",
+										newDescription: "",
+										count: 0,
+									})
+								}
+								className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-900 dark:text-white rounded-lg text-sm font-medium transition-colors">
+								Cancel
+							</button>
+							<button
+								onClick={handleRenameExpense}
+								disabled={renaming || !renameModal.newDescription.trim()}
+								className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-medium transition-colors">
+								{renaming ? "Renaming..." : "Rename"}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }
