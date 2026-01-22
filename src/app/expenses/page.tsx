@@ -150,9 +150,7 @@ export default function ExpensesPage() {
 		const selected = undetectedExpenses[index];
 
 		// Check if already in expenses list
-		const isDuplicate = expenses.some(
-			(exp) => exp.description.toLowerCase() === selected.description.toLowerCase()
-		);
+		const isDuplicate = expenses.some((exp) => exp.description.toLowerCase() === selected.description.toLowerCase());
 
 		if (isDuplicate) {
 			alert(`"${selected.description}" is already in your monthly expenses.`);
@@ -326,50 +324,50 @@ export default function ExpensesPage() {
 				</div>
 			</div>
 
-{/* Detected Expenses Section */}
-		{undetectedExpenses.length > 0 && (
-			<div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
-				<div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-slate-700 bg-blue-50 dark:bg-blue-900/20">
-					<h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-						Detected Recurring Expenses ({undetectedExpenses.length})
-					</h3>
-					<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-						Click "Add" to include these in your monthly expenses
-					</p>
-				</div>
-				<div className="divide-y divide-gray-200 dark:divide-slate-700">
-					{undetectedExpenses.map((expense, index) => (
-						<div
-							key={`${expense.description}-${index}`}
-							className="p-4 sm:p-6 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
-							<div className="flex justify-between items-start gap-4">
-								<div className="flex-grow">
-									<p className="font-medium text-gray-900 dark:text-white">{expense.description}</p>
-									<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-										{expense.count}x occurrences • Last: {expense.lastOccurrence.toLocaleDateString()}
-									</p>
-									{expense.category && (
-										<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Category: {expense.category}</p>
-									)}
-								</div>
-								<div className="flex items-center gap-3 flex-shrink-0">
-									<div className="text-right">
-										<p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(expense.amount)}</p>
-										<p className="text-xs text-gray-600 dark:text-gray-400 mt-1">per month</p>
+			{/* Detected Expenses Section */}
+			{undetectedExpenses.length > 0 && (
+				<div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
+					<div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-slate-700 bg-blue-50 dark:bg-blue-900/20">
+						<h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+							Detected Recurring Expenses ({undetectedExpenses.length})
+						</h3>
+						<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+							Click "Add" to include these in your monthly expenses
+						</p>
+					</div>
+					<div className="divide-y divide-gray-200 dark:divide-slate-700">
+						{undetectedExpenses.map((expense, index) => (
+							<div
+								key={`${expense.description}-${index}`}
+								className="p-4 sm:p-6 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+								<div className="flex justify-between items-start gap-4">
+									<div className="flex-grow">
+										<p className="font-medium text-gray-900 dark:text-white">{expense.description}</p>
+										<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+											{expense.count}x occurrences • Last: {expense.lastOccurrence.toLocaleDateString()}
+										</p>
+										{expense.category && (
+											<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Category: {expense.category}</p>
+										)}
 									</div>
-									<button
-										onClick={() => handleAddExpense(index)}
-										disabled={saving}
-										className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-sm font-medium transition-colors whitespace-nowrap">
-										{saving ? "..." : "Add"}
-									</button>
+									<div className="flex items-center gap-3 flex-shrink-0">
+										<div className="text-right">
+											<p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(expense.amount)}</p>
+											<p className="text-xs text-gray-600 dark:text-gray-400 mt-1">per month</p>
+										</div>
+										<button
+											onClick={() => handleAddExpense(index)}
+											disabled={saving}
+											className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-sm font-medium transition-colors whitespace-nowrap">
+											{saving ? "..." : "Add"}
+										</button>
+									</div>
 								</div>
 							</div>
-						</div>
-					))}
+						))}
+					</div>
 				</div>
-			</div>
-		)}
+			)}
 
 			{/* Expenses List */}
 			{expenses.length > 0 ? (

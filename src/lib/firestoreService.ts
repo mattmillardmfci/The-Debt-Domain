@@ -1194,7 +1194,7 @@ export async function findUndetectedRecurringExpenses(userId: string): Promise<
 		// Transaction amounts are stored in cents, so divide by 100
 		const amountGroups = new Map<number, Partial<Transaction>[]>();
 		negativeTransactions.forEach((t) => {
-			const amountInDollars = Math.round(Math.abs(t.amount || 0) / 100 * 100) / 100;
+			const amountInDollars = Math.round((Math.abs(t.amount || 0) / 100) * 100) / 100;
 			if (!amountGroups.has(amountInDollars)) {
 				amountGroups.set(amountInDollars, []);
 			}

@@ -11,6 +11,7 @@ import {
 	bulkRenameTransactionDescription,
 	getCustomCategories,
 	saveTransaction,
+	saveCustomRecurringExpense,
 } from "@/lib/firestoreService";
 import { useAuth } from "@/contexts/AuthContext";
 import { QueryDocumentSnapshot } from "firebase/firestore";
@@ -63,6 +64,7 @@ export default function TransactionsPage() {
 		category: "Other" as TransactionCategory,
 	});
 	const [savingTransaction, setSavingTransaction] = useState(false);
+	const [addingToExpenses, setAddingToExpenses] = useState<string | null>(null);
 
 	// Initial load - get first page of transactions (50 most recent)
 	useEffect(() => {
@@ -223,6 +225,34 @@ export default function TransactionsPage() {
 		}
 	};
 
+	const handleAddToMonthlyExpenses = async (transaction: Partial<Transaction> & { id: string }) => {
+		if (!user?.uid) {
+			alert("Please log in");
+			return;
+		}
+
+		setAddingToExpenses(transaction.id);
+		try {
+			const amountInDollars = (transaction.amount || 0) / 100;
+
+			// Save as custom recurring expense
+			await saveCustomRecurringExpense(user.uid, {
+				description: transaction.description || "Unknown",
+				amount: amountInDollars,
+				frequency: "monthly",
+				category: (transaction.category as string) || "Other",
+				lastOccurrence: transaction.date instanceof Date ? transaction.date : new Date(transaction.date || ""),
+			});
+
+			alert(`"${transaction.description}" added to your monthly expenses!`);
+		} catch (err) {
+			console.error("Failed to add to monthly expenses:", err);
+			alert("Failed to add expense. Please try again.");
+		} finally {
+			setAddingToExpenses(null);
+		}
+	};
+
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center min-h-screen">
@@ -363,11 +393,24 @@ export default function TransactionsPage() {
 									${((t.amount || 0) / 100).toFixed(2)}
 								</td>
 								<td className="px-6 py-4 text-sm text-right">
-									<button
-										onClick={() => handleDeleteTransaction(t.id)}
-										className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors min-h-10 min-w-10 flex items-center justify-center">
-										<Trash2 className="w-4 h-4" />
-									</button>
+									<div className="flex items-center justify-end gap-2">
+										<button
+											onClick={() => handleAddToMonthlyExpenses(t)}
+											disabled={addingToExpenses === t.id}
+											title="Add to monthly recurring expenses"
+											className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors min-h-10 min-w-10 flex items-center justify-center disabled:opacity-50">
+											{addingToExpenses === t.id ? (
+												<span className="text-xs font-medium">...</span>
+											) : (
+												<Plus className="w-4 h-4" />
+											)}
+										</button>
+										<button
+											onClick={() => handleDeleteTransaction(t.id)}
+											className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors min-h-10 min-w-10 flex items-center justify-center">
+											<Trash2 className="w-4 h-4" />
+										</button>
+									</div>
 								</td>
 							</tr>
 						))}
@@ -443,11 +486,24 @@ export default function TransactionsPage() {
 										</button>
 									)}
 								</div>
-								<button
-									onClick={() => handleDeleteTransaction(t.id)}
-									className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors min-h-10 min-w-10 flex items-center justify-center">
-									<Trash2 className="w-4 h-4" />
-								</button>
+								<div className="flex gap-2">
+									<button
+										onClick={() => handleAddToMonthlyExpenses(t)}
+										disabled={addingToExpenses === t.id}
+										title="Add to monthly recurring expenses"
+										className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors min-h-10 min-w-10 flex items-center justify-center disabled:opacity-50">
+										{addingToExpenses === t.id ? (
+											<span className="text-xs font-medium">...</span>
+										) : (
+											<Plus className="w-4 h-4" />
+										)}
+									</button>
+									<button
+										onClick={() => handleDeleteTransaction(t.id)}
+										className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors min-h-10 min-w-10 flex items-center justify-center">
+										<Trash2 className="w-4 h-4" />
+									</button>
+								</div>
 							</div>
 						</div>
 					</div>
