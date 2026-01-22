@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -16,7 +16,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
 	title: "TheDebtDomain",
 	description: "Professional financial audit and advice platform",
-	viewport: "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover",
+};
+
+export const viewport: Viewport = {
+	width: "device-width",
+	initialScale: 1.0,
+	maximumScale: 1.0,
+	userScalable: false,
+	viewportFit: "cover",
 };
 
 export default function RootLayout({
