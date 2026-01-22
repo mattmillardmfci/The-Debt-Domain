@@ -9,6 +9,9 @@ import {
 	detectRecurringDebts,
 	saveIgnoredRecurringExpense,
 	updateRecurringExpenseOverride,
+	saveCustomRecurringExpense,
+	getCustomRecurringExpenses,
+	deleteCustomRecurringExpense,
 } from "@/lib/firestoreService";
 
 interface RecurringExpense {
@@ -23,6 +26,7 @@ interface RecurringExpense {
 	categoryOverride?: string;
 	descriptionOverride?: string;
 	isEditing?: boolean;
+	isCustom?: boolean;
 }
 
 export default function ExpensesPage() {
@@ -36,6 +40,13 @@ export default function ExpensesPage() {
 	const [saving, setSaving] = useState(false);
 	const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
 	const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+	const [showAddForm, setShowAddForm] = useState(false);
+	const [newExpenseForm, setNewExpenseForm] = useState({
+		description: "",
+		amount: "",
+		frequency: "monthly",
+		category: "Housing",
+	});
 	const [allCategories] = useState([
 		"Groceries",
 		"Restaurants",
@@ -98,13 +109,19 @@ export default function ExpensesPage() {
 		setDeletingIndex(index);
 		try {
 			const expense = expenses[index];
-			// Save to ignored recurring expenses
-			await saveIgnoredRecurringExpense(user.uid, {
-				description: expense.description,
-				amount: expense.amount,
-				vendor: expense.description.split(/\s+/)[0], // Use first word as vendor
-				reason: "user-removed",
-			});
+			
+			if (expense.isCustom) {
+				// Delete custom expense
+				await deleteCustomRecurringExpense(user.uid, expense.description, expense.amount);
+			} else {
+				// Save to ignored recurring expenses for detected expenses
+				await saveIgnoredRecurringExpense(user.uid, {
+					description: expense.description,
+					amount: expense.amount,
+					vendor: expense.description.split(/\s+/)[0], // Use first word as vendor
+					reason: "user-removed",
+				});
+			}
 
 			// Remove from display
 			const updated = expenses.filter((_, i) => i !== index);
@@ -118,6 +135,66 @@ export default function ExpensesPage() {
 			alert("Failed to remove expense");
 		} finally {
 			setDeletingIndex(null);
+		}
+	};
+
+	const handleAddExpense = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!user?.uid || !newExpenseForm.description.trim() || !newExpenseForm.amount) {
+			alert("Please fill in all fields");
+			return;
+		}
+
+		setSaving(true);
+		try {
+			const amount = parseFloat(newExpenseForm.amount);
+			if (isNaN(amount) || amount <= 0) {
+				alert("Please enter a valid amount");
+				return;
+			}
+
+			// Save to custom recurring expenses
+			await saveCustomRecurringExpense(user.uid, {
+				description: newExpenseForm.description.trim(),
+				amount,
+				frequency: newExpenseForm.frequency,
+				category: newExpenseForm.category,
+				lastOccurrence: new Date(),
+			});
+
+			// Add to local state
+			const newExpense: RecurringExpense = {
+				description: newExpenseForm.description.trim(),
+				amount,
+				frequency: newExpenseForm.frequency,
+				monthlyAmount: calculateMonthlyAmount(amount, newExpenseForm.frequency),
+				count: 0,
+				lastOccurrence: new Date(),
+				category: newExpenseForm.category,
+				isCustom: true,
+			};
+
+			const updated = [...expenses, newExpense];
+			updated.sort((a, b) => b.monthlyAmount - a.monthlyAmount);
+			setExpenses(updated);
+
+			// Recalculate total
+			const total = updated.reduce((sum, exp) => sum + exp.monthlyAmount, 0);
+			setTotalMonthlyExpenses(total);
+
+			// Reset form
+			setNewExpenseForm({
+				description: "",
+				amount: "",
+				frequency: "monthly",
+				category: "Housing",
+			});
+			setShowAddForm(false);
+		} catch (error) {
+			console.error("Failed to add expense:", error);
+			alert("Failed to add expense");
+		} finally {
+			setSaving(false);
 		}
 	};
 
@@ -139,28 +216,48 @@ export default function ExpensesPage() {
 
 		const loadExpenses = async () => {
 			try {
-				const recurringDebts = await detectRecurringDebts(user.uid);
+				const [recurringDebts, customExpenses] = await Promise.all([
+					detectRecurringDebts(user.uid),
+					getCustomRecurringExpenses(user.uid),
+				]);
 
-				const expensesList: RecurringExpense[] = recurringDebts.map((debt) => {
-					const monthlyAmount = calculateMonthlyAmount(debt.avgAmount, debt.estimatedFrequency);
-					return {
-						description: debt.description,
-						amount: debt.avgAmount,
-						frequency: debt.estimatedFrequency || "monthly",
-						monthlyAmount,
-						count: debt.count,
-						lastOccurrence: debt.lastOccurrence,
-						category: debt.category,
-					};
-				});
+				// Combine detected and custom expenses
+				const allExpenses = [
+					...recurringDebts.map((debt) => {
+						const monthlyAmount = calculateMonthlyAmount(debt.avgAmount, debt.estimatedFrequency);
+						return {
+							description: debt.description,
+							amount: debt.avgAmount,
+							frequency: debt.estimatedFrequency || "monthly",
+							monthlyAmount,
+							count: debt.count,
+							lastOccurrence: debt.lastOccurrence,
+							category: debt.category,
+							isCustom: false,
+						};
+					}),
+					...customExpenses.map((custom) => {
+						const monthlyAmount = calculateMonthlyAmount(custom.avgAmount, custom.estimatedFrequency);
+						return {
+							description: custom.description,
+							amount: custom.avgAmount,
+							frequency: custom.estimatedFrequency || "monthly",
+							monthlyAmount,
+							count: 0,
+							lastOccurrence: custom.lastOccurrence,
+							category: custom.category,
+							isCustom: true,
+						};
+					}),
+				];
 
 				// Sort by monthly amount (highest first)
-				expensesList.sort((a, b) => b.monthlyAmount - a.monthlyAmount);
+				allExpenses.sort((a, b) => b.monthlyAmount - a.monthlyAmount);
 
 				// Calculate total
-				const total = expensesList.reduce((sum, expense) => sum + expense.monthlyAmount, 0);
+				const total = allExpenses.reduce((sum, expense) => sum + expense.monthlyAmount, 0);
 
-				setExpenses(expensesList);
+				setExpenses(allExpenses);
 				setTotalMonthlyExpenses(total);
 			} catch (error) {
 				console.error("Failed to load expenses:", error);
@@ -224,6 +321,93 @@ export default function ExpensesPage() {
 				</div>
 			</div>
 
+			{/* Add Expense Form */}
+			{showAddForm ? (
+				<div className="bg-white dark:bg-slate-800 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-slate-700">
+					<h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Add Custom Monthly Expense</h3>
+					<form onSubmit={handleAddExpense} className="space-y-4">
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+							<div>
+								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+									Expense Name *
+								</label>
+								<input
+									type="text"
+									value={newExpenseForm.description}
+									onChange={(e) => setNewExpenseForm({...newExpenseForm, description: e.target.value})}
+									placeholder="e.g., Mortgage, Netflix, Car Payment"
+									className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+									required
+								/>
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+									Amount ($) *
+								</label>
+								<input
+									type="number"
+									step="0.01"
+									min="0.01"
+									value={newExpenseForm.amount}
+									onChange={(e) => setNewExpenseForm({...newExpenseForm, amount: e.target.value})}
+									placeholder="0.00"
+									className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+									required
+								/>
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+									Frequency
+								</label>
+								<select
+									value={newExpenseForm.frequency}
+									onChange={(e) => setNewExpenseForm({...newExpenseForm, frequency: e.target.value})}
+									className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-white">
+									<option value="weekly">Weekly</option>
+									<option value="biweekly">Biweekly</option>
+									<option value="monthly">Monthly</option>
+									<option value="quarterly">Quarterly</option>
+									<option value="annual">Annual</option>
+								</select>
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+									Category
+								</label>
+								<select
+									value={newExpenseForm.category}
+									onChange={(e) => setNewExpenseForm({...newExpenseForm, category: e.target.value})}
+									className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-white">
+									{allCategories.map((cat) => (
+										<option key={cat} value={cat}>{cat}</option>
+									))}
+								</select>
+							</div>
+						</div>
+						<div className="flex gap-2 justify-end">
+							<button
+								type="button"
+								onClick={() => setShowAddForm(false)}
+								className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-900 dark:text-white rounded-lg text-sm font-medium transition-colors">
+								Cancel
+							</button>
+							<button
+								type="submit"
+								disabled={saving}
+								className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors">
+								{saving ? "Adding..." : "Add Expense"}
+							</button>
+						</div>
+					</form>
+				</div>
+			) : (
+				<button
+					onClick={() => setShowAddForm(true)}
+					className="w-full px-4 py-3 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 rounded-lg font-medium transition-colors">
+					+ Add Custom Monthly Expense
+				</button>
+			)}
+
 			{/* Expenses List */}
 			{expenses.length > 0 ? (
 				<>
@@ -278,9 +462,16 @@ export default function ExpensesPage() {
 															placeholder="Vendor name..."
 														/>
 													) : (
-														<p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
-															{expense.descriptionOverride || expense.description}
-														</p>
+														<div className="flex items-center gap-2">
+															<p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
+																{expense.descriptionOverride || expense.description}
+															</p>
+															{expense.isCustom && (
+																<span className="inline-block px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded whitespace-nowrap">
+																	Custom
+																</span>
+															)}
+														</div>
 													)}
 												</td>
 												<td className="px-6 py-4">

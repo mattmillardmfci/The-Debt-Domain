@@ -365,8 +365,7 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 			const words = cleaned.split(/\s+/);
 			// Filter out common transfer-related words that don't identify the merchant
 			const filteredWords = words.filter(
-				(word) =>
-					!["ACH", "XFER", "EXT", "TRNSFR", "INST", "TRANSFER", "PAYPAL"].includes(word)
+				(word) => !["ACH", "XFER", "EXT", "TRNSFR", "INST", "TRANSFER", "PAYPAL"].includes(word),
 			);
 
 			// Take first 3-4 meaningful words which usually identify the merchant
@@ -1095,6 +1094,73 @@ export async function updateRecurringExpenseOverride(
 		});
 	} catch (error) {
 		console.error("Error updating recurring expense override:", error);
+		throw error;
+	}
+}
+
+/**
+ * Save a custom recurring expense (user-created, not auto-detected)
+ */
+export async function saveCustomRecurringExpense(
+	userId: string,
+	expense: {
+		description: string;
+		amount: number;
+		frequency: string;
+		category: string;
+		lastOccurrence: Date;
+	},
+) {
+	try {
+		const ref = collection(db, "users", userId, "customRecurringExpenses");
+		const docId = `${expense.description}-${expense.amount}`.replace(/\s+/g, "-");
+		await setDoc(doc(ref, docId), {
+			...expense,
+			lastOccurrence: Timestamp.fromDate(expense.lastOccurrence),
+			createdAt: Timestamp.now(),
+		});
+	} catch (error) {
+		console.error("Error saving custom recurring expense:", error);
+		throw error;
+	}
+}
+
+/**
+ * Get all custom recurring expenses
+ */
+export async function getCustomRecurringExpenses(userId: string): Promise<RecurringDebtPattern[]> {
+	try {
+		const ref = collection(db, "users", userId, "customRecurringExpenses");
+		const snapshot = await getDocs(ref);
+		return snapshot.docs.map((doc) => {
+			const data = doc.data();
+			return {
+				description: data.description,
+				amount: data.amount,
+				category: data.category,
+				count: 0, // Custom expenses don't have transaction count
+				avgAmount: data.amount,
+				totalAmount: data.amount,
+				lastOccurrence: data.lastOccurrence.toDate(),
+				estimatedFrequency: data.frequency,
+			};
+		});
+	} catch (error) {
+		console.error("Error getting custom recurring expenses:", error);
+		return [];
+	}
+}
+
+/**
+ * Delete a custom recurring expense
+ */
+export async function deleteCustomRecurringExpense(userId: string, description: string, amount: number) {
+	try {
+		const ref = collection(db, "users", userId, "customRecurringExpenses");
+		const docId = `${description}-${amount}`.replace(/\s+/g, "-");
+		await deleteDoc(doc(ref, docId));
+	} catch (error) {
+		console.error("Error deleting custom recurring expense:", error);
 		throw error;
 	}
 }
