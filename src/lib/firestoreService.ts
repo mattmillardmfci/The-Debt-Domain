@@ -1164,3 +1164,78 @@ export async function deleteCustomRecurringExpense(userId: string, description: 
 		throw error;
 	}
 }
+
+/**
+ * Find undetected recurring transaction patterns
+ * Looks for transactions with 2+ occurrences that weren't caught by detectRecurringDebts
+ * Returns grouped transactions by amount that could be marked as recurring
+ */
+export async function findUndetectedRecurringExpenses(userId: string): Promise<Array<{
+	description: string;
+	amount: number;
+	count: number;
+	lastOccurrence: Date;
+	category?: string;
+	transactions: Partial<Transaction>[];
+}>> {
+	try {
+		const transactions = await getAllTransactions(userId);
+		const detectedExpenses = await detectRecurringDebts(userId);
+
+		// Filter for negative amounts (expenses)
+		const negativeTransactions = transactions.filter((t) => t.amount !== undefined && t.amount < 0);
+
+		// Create a set of already-detected amounts for quick lookup
+		const detectedAmounts = new Set(detectedExpenses.map((e) => Math.round(e.avgAmount * 100) / 100));
+
+		// Group by amount (rounded to nearest cent) and find patterns with 2+ occurrences
+		const amountGroups = new Map<number, Partial<Transaction>[]>();
+		negativeTransactions.forEach((t) => {
+			const roundedAmount = Math.round(Math.abs(t.amount || 0) * 100) / 100;
+			if (!amountGroups.has(roundedAmount)) {
+				amountGroups.set(roundedAmount, []);
+			}
+			amountGroups.get(roundedAmount)!.push(t);
+		});
+
+		// Find groups with 2+ transactions that aren't already detected
+		const undetected: Array<{
+			description: string;
+			amount: number;
+			count: number;
+			lastOccurrence: Date;
+			category?: string;
+			transactions: Partial<Transaction>[];
+		}> = [];
+
+		amountGroups.forEach((txns, amount) => {
+			if (txns.length >= 2 && !detectedAmounts.has(amount)) {
+				// Use the most recent transaction's description as the main description
+				const mostRecent = txns.sort(
+					(a, b) => ((b.date instanceof Date ? b.date.getTime() : 0) - (a.date instanceof Date ? a.date.getTime() : 0))
+				)[0];
+
+				const lastOccurrence = txns
+					.map((t) => (t.date instanceof Date ? t.date : new Date(t.date || 0)))
+					.sort((a, b) => b.getTime() - a.getTime())[0];
+
+				undetected.push({
+					description: mostRecent?.description || "Unknown",
+					amount,
+					count: txns.length,
+					lastOccurrence,
+					category: mostRecent?.category || "Other",
+					transactions: txns,
+				});
+			}
+		});
+
+		// Sort by most recent first
+		undetected.sort((a, b) => b.lastOccurrence.getTime() - a.lastOccurrence.getTime());
+
+		return undetected;
+	} catch (error) {
+		console.error("Error finding undetected recurring expenses:", error);
+		return [];
+	}
+}

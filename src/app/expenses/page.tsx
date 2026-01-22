@@ -12,6 +12,7 @@ import {
 	saveCustomRecurringExpense,
 	getCustomRecurringExpenses,
 	deleteCustomRecurringExpense,
+	findUndetectedRecurringExpenses,
 } from "@/lib/firestoreService";
 
 interface RecurringExpense {
@@ -41,12 +42,14 @@ export default function ExpensesPage() {
 	const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
 	const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 	const [showAddForm, setShowAddForm] = useState(false);
-	const [newExpenseForm, setNewExpenseForm] = useState({
-		description: "",
-		amount: "",
-		frequency: "monthly",
-		category: "Housing",
-	});
+	const [undetectedExpenses, setUndetectedExpenses] = useState<Array<{
+		description: string;
+		amount: number;
+		count: number;
+		lastOccurrence: Date;
+		category?: string;
+	}>>([]);
+	const [selectedUndetectedIndex, setSelectedUndetectedIndex] = useState<number | null>(null);
 	const [allCategories] = useState([
 		"Groceries",
 		"Restaurants",
@@ -109,7 +112,7 @@ export default function ExpensesPage() {
 		setDeletingIndex(index);
 		try {
 			const expense = expenses[index];
-			
+
 			if (expense.isCustom) {
 				// Delete custom expense
 				await deleteCustomRecurringExpense(user.uid, expense.description, expense.amount);
@@ -138,39 +141,34 @@ export default function ExpensesPage() {
 		}
 	};
 
-	const handleAddExpense = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!user?.uid || !newExpenseForm.description.trim() || !newExpenseForm.amount) {
-			alert("Please fill in all fields");
+	const handleAddExpense = async () => {
+		if (!user?.uid || selectedUndetectedIndex === null) {
+			alert("Please select an expense");
 			return;
 		}
 
 		setSaving(true);
 		try {
-			const amount = parseFloat(newExpenseForm.amount);
-			if (isNaN(amount) || amount <= 0) {
-				alert("Please enter a valid amount");
-				return;
-			}
+			const selected = undetectedExpenses[selectedUndetectedIndex];
 
 			// Save to custom recurring expenses
 			await saveCustomRecurringExpense(user.uid, {
-				description: newExpenseForm.description.trim(),
-				amount,
-				frequency: newExpenseForm.frequency,
-				category: newExpenseForm.category,
-				lastOccurrence: new Date(),
+				description: selected.description,
+				amount: selected.amount,
+				frequency: "monthly", // Default to monthly since we can't determine from transactions
+				category: selected.category || "Other",
+				lastOccurrence: selected.lastOccurrence,
 			});
 
 			// Add to local state
 			const newExpense: RecurringExpense = {
-				description: newExpenseForm.description.trim(),
-				amount,
-				frequency: newExpenseForm.frequency,
-				monthlyAmount: calculateMonthlyAmount(amount, newExpenseForm.frequency),
-				count: 0,
-				lastOccurrence: new Date(),
-				category: newExpenseForm.category,
+				description: selected.description,
+				amount: selected.amount,
+				frequency: "monthly",
+				monthlyAmount: selected.amount, // Already monthly
+				count: selected.count,
+				lastOccurrence: selected.lastOccurrence,
+				category: selected.category,
 				isCustom: true,
 			};
 
@@ -182,13 +180,12 @@ export default function ExpensesPage() {
 			const total = updated.reduce((sum, exp) => sum + exp.monthlyAmount, 0);
 			setTotalMonthlyExpenses(total);
 
+			// Remove from undetected list
+			const newUndetected = undetectedExpenses.filter((_, i) => i !== selectedUndetectedIndex);
+			setUndetectedExpenses(newUndetected);
+
 			// Reset form
-			setNewExpenseForm({
-				description: "",
-				amount: "",
-				frequency: "monthly",
-				category: "Housing",
-			});
+			setSelectedUndetectedIndex(null);
 			setShowAddForm(false);
 		} catch (error) {
 			console.error("Failed to add expense:", error);
@@ -216,9 +213,10 @@ export default function ExpensesPage() {
 
 		const loadExpenses = async () => {
 			try {
-				const [recurringDebts, customExpenses] = await Promise.all([
+				const [recurringDebts, customExpenses, undetected] = await Promise.all([
 					detectRecurringDebts(user.uid),
 					getCustomRecurringExpenses(user.uid),
+					findUndetectedRecurringExpenses(user.uid),
 				]);
 
 				// Combine detected and custom expenses
@@ -259,6 +257,7 @@ export default function ExpensesPage() {
 
 				setExpenses(allExpenses);
 				setTotalMonthlyExpenses(total);
+				setUndetectedExpenses(undetected);
 			} catch (error) {
 				console.error("Failed to load expenses:", error);
 			} finally {
@@ -322,90 +321,71 @@ export default function ExpensesPage() {
 			</div>
 
 			{/* Add Expense Form */}
-			{showAddForm ? (
-				<div className="bg-white dark:bg-slate-800 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-slate-700">
-					<h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Add Custom Monthly Expense</h3>
-					<form onSubmit={handleAddExpense} className="space-y-4">
-						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-									Expense Name *
-								</label>
-								<input
-									type="text"
-									value={newExpenseForm.description}
-									onChange={(e) => setNewExpenseForm({...newExpenseForm, description: e.target.value})}
-									placeholder="e.g., Mortgage, Netflix, Car Payment"
-									className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-									required
-								/>
-							</div>
-							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-									Amount ($) *
-								</label>
-								<input
-									type="number"
-									step="0.01"
-									min="0.01"
-									value={newExpenseForm.amount}
-									onChange={(e) => setNewExpenseForm({...newExpenseForm, amount: e.target.value})}
-									placeholder="0.00"
-									className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-									required
-								/>
-							</div>
-							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-									Frequency
-								</label>
-								<select
-									value={newExpenseForm.frequency}
-									onChange={(e) => setNewExpenseForm({...newExpenseForm, frequency: e.target.value})}
-									className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-white">
-									<option value="weekly">Weekly</option>
-									<option value="biweekly">Biweekly</option>
-									<option value="monthly">Monthly</option>
-									<option value="quarterly">Quarterly</option>
-									<option value="annual">Annual</option>
-								</select>
-							</div>
-							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-									Category
-								</label>
-								<select
-									value={newExpenseForm.category}
-									onChange={(e) => setNewExpenseForm({...newExpenseForm, category: e.target.value})}
-									className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-white">
-									{allCategories.map((cat) => (
-										<option key={cat} value={cat}>{cat}</option>
-									))}
-								</select>
-							</div>
+			{undetectedExpenses.length > 0 && (
+				showAddForm ? (
+					<div className="bg-white dark:bg-slate-800 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-slate-700">
+						<h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Add Detected Expense</h3>
+						<p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+							Select from expenses detected in your transactions:
+						</p>
+						<div className="space-y-3">
+							{undetectedExpenses.map((expense, index) => (
+								<button
+									key={`${expense.description}-${index}`}
+									onClick={() => setSelectedUndetectedIndex(index)}
+									className={`w-full p-4 rounded-lg border-2 transition-colors text-left ${
+										selectedUndetectedIndex === index
+											? "bg-blue-50 dark:bg-blue-900/20 border-blue-400 dark:border-blue-600"
+											: "bg-gray-50 dark:bg-slate-700 border-gray-200 dark:border-slate-600 hover:border-blue-300 dark:hover:border-blue-500"
+									}`}>
+									<div className="flex justify-between items-start gap-4">
+										<div>
+											<p className="font-medium text-gray-900 dark:text-white">
+												{expense.description}
+											</p>
+											<p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
+												{expense.count}x occurrence{expense.count !== 1 ? "s" : ""} • Last: {expense.lastOccurrence.toLocaleDateString()}
+											</p>
+										</div>
+										<div className="text-right flex-shrink-0">
+											<p className="font-semibold text-gray-900 dark:text-white">
+												{formatCurrency(expense.amount)}
+											</p>
+											{expense.category && (
+												<p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+													{expense.category}
+												</p>
+											)}
+										</div>
+									</div>
+								</button>
+							))}
 						</div>
-						<div className="flex gap-2 justify-end">
+						<div className="flex gap-2 justify-end mt-4">
 							<button
 								type="button"
-								onClick={() => setShowAddForm(false)}
+								onClick={() => {
+									setShowAddForm(false);
+									setSelectedUndetectedIndex(null);
+								}}
 								className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-900 dark:text-white rounded-lg text-sm font-medium transition-colors">
 								Cancel
 							</button>
 							<button
-								type="submit"
-								disabled={saving}
+								onClick={handleAddExpense}
+								disabled={saving || selectedUndetectedIndex === null}
 								className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors">
 								{saving ? "Adding..." : "Add Expense"}
 							</button>
 						</div>
-					</form>
-				</div>
-			) : (
-				<button
-					onClick={() => setShowAddForm(true)}
-					className="w-full px-4 py-3 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 rounded-lg font-medium transition-colors">
-					+ Add Custom Monthly Expense
-				</button>
+					</div>
+				) : (
+					<button
+						onClick={() => setShowAddForm(true)}
+						className="w-full px-4 py-3 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 rounded-lg font-medium transition-colors">
+						+ Add Detected Expense ({undetectedExpenses.length})
+					</button>
+				)
 			)}
 
 			{/* Expenses List */}
