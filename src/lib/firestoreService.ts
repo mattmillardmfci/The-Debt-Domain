@@ -352,10 +352,26 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 			if (!desc) return "Unknown";
 			// Remove extra spaces and convert to uppercase for comparison
 			const cleaned = desc.trim().toUpperCase();
+
+			// Special handling for PayPal transfers - extract the actual service name
+			// PayPal descriptions often include "PAYPAL INST XFER SPOTIFY*P3E5D5EP"
+			// We want to extract "SPOTIFY" from these
+			const paypalMatch = cleaned.match(/PAYPAL.*\*?([A-Z]+)/);
+			if (paypalMatch && paypalMatch[1]) {
+				return paypalMatch[1];
+			}
+
 			// Extract first few meaningful words (usually merchant name)
 			const words = cleaned.split(/\s+/);
-			// Take first 3-4 words which usually identify the merchant
-			return words.slice(0, 4).join(" ");
+			// Filter out common transfer-related words that don't identify the merchant
+			const filteredWords = words.filter(
+				(word) =>
+					!["ACH", "XFER", "EXT", "TRNSFR", "INST", "TRANSFER", "PAYPAL"].includes(word)
+			);
+
+			// Take first 3-4 meaningful words which usually identify the merchant
+			const meaningfulWords = filteredWords.slice(0, 4);
+			return meaningfulWords.length > 0 ? meaningfulWords.join(" ") : words.slice(0, 4).join(" ");
 		};
 
 		// NEW APPROACH: Group by CHARGE AMOUNT first, then verify vendor consistency
@@ -492,7 +508,7 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 
 				// Estimate frequency based on date gaps
 				let estimatedFrequency = "multiple";
-				if (transactions.length >= 3) {
+				if (transactions.length >= 2) {
 					const dates = transactions
 						.map((t) => (t.date instanceof Date ? t.date : new Date(t.date || 0)))
 						.sort((a, b) => a.getTime() - b.getTime());
@@ -510,17 +526,21 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 						else if (avgGap < 40) estimatedFrequency = "monthly";
 						else if (avgGap < 100) estimatedFrequency = "quarterly";
 						else estimatedFrequency = "annual";
+					} else if (transactions.length >= 2) {
+						// With 2+ transactions but no gap data, assume monthly
+						// This handles cases with minimal transaction history
+						estimatedFrequency = "monthly";
 					}
 				}
 
 				// Only include patterns that are at least biweekly or more frequent
 				// (exclude quarterly/annual as they're not true "monthly expenses")
 				if (estimatedFrequency === "weekly" || estimatedFrequency === "biweekly" || estimatedFrequency === "monthly") {
-					// Filter out expenses that haven't occurred in the last 4 months
+					// Filter out expenses that haven't occurred in the last 6 months
 					const now = new Date();
-					const fourMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 4, now.getDate());
+					const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
 
-					if (lastOccurrence >= fourMonthsAgo) {
+					if (lastOccurrence >= sixMonthsAgo) {
 						patterns.push({
 							description,
 							category,
