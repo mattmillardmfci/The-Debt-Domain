@@ -910,7 +910,9 @@ export default function ExpensesPage() {
 								</div>
 								<div>
 									<p className="font-medium text-gray-900 dark:text-white">Desktop: Edit in Table</p>
-									<p className="text-xs text-gray-600 dark:text-gray-400">Hover over descriptions to see the edit icon. Click to rename all matching expenses.</p>
+									<p className="text-xs text-gray-600 dark:text-gray-400">
+										Hover over descriptions to see the edit icon. Click to rename all matching expenses.
+									</p>
 								</div>
 							</div>
 
@@ -920,7 +922,9 @@ export default function ExpensesPage() {
 								</div>
 								<div>
 									<p className="font-medium text-gray-900 dark:text-white">Mobile: Swipe to Edit/Delete</p>
-									<p className="text-xs text-gray-600 dark:text-gray-400">Swipe left on any card to reveal edit and delete options. Swipe right to close.</p>
+									<p className="text-xs text-gray-600 dark:text-gray-400">
+										Swipe left on any card to reveal edit and delete options. Swipe right to close.
+									</p>
 								</div>
 							</div>
 
@@ -930,7 +934,9 @@ export default function ExpensesPage() {
 								</div>
 								<div>
 									<p className="font-medium text-gray-900 dark:text-white">Detected Expenses</p>
-									<p className="text-xs text-gray-600 dark:text-gray-400">Expand "Detected Recurring Expenses" to add more transactions to your monthly budget.</p>
+									<p className="text-xs text-gray-600 dark:text-gray-400">
+										Expand "Detected Recurring Expenses" to add more transactions to your monthly budget.
+									</p>
 								</div>
 							</div>
 
@@ -940,7 +946,9 @@ export default function ExpensesPage() {
 								</div>
 								<div>
 									<p className="font-medium text-gray-900 dark:text-white">Non-Destructive</p>
-									<p className="text-xs text-gray-600 dark:text-gray-400">Deleting an expense just removes it from this page—it won't affect your transaction history.</p>
+									<p className="text-xs text-gray-600 dark:text-gray-400">
+										Deleting an expense just removes it from this page—it won't affect your transaction history.
+									</p>
 								</div>
 							</div>
 						</div>

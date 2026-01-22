@@ -2,7 +2,7 @@
 
 // Force deployment to Vercel
 import { useAuth } from "@/contexts/AuthContext";
-import { TrendingUp, TrendingDown, AlertCircle, Plus, Info } from "lucide-react";
+import { TrendingUp, TrendingDown, AlertCircle, Plus, Info, X } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import {
@@ -24,7 +24,7 @@ interface DashboardMetrics {
 }
 
 export default function DashboardPage() {
-	const { user } = useAuth();
+	const { user, updateDisplayName } = useAuth();
 	const [metrics, setMetrics] = useState<DashboardMetrics>({
 		monthlyIncome: 0,
 		monthlyExpenses: 0,
@@ -38,6 +38,9 @@ export default function DashboardPage() {
 	const [isLoading, setIsLoading] = useState(true);
 	const [showIncomeTooltip, setShowIncomeTooltip] = useState(false);
 	const [showExpensesTooltip, setShowExpensesTooltip] = useState(false);
+	const [showNameModal, setShowNameModal] = useState(false);
+	const [nameInput, setNameInput] = useState("");
+	const [savingName, setSavingName] = useState(false);
 
 	useEffect(() => {
 		if (!user?.uid) {
@@ -151,6 +154,54 @@ export default function DashboardPage() {
 
 		loadMetrics();
 	}, [user?.uid]);
+
+	// Check if user needs to provide their name
+	useEffect(() => {
+		if (!user || !user.uid) return;
+
+		// Check if user hasn't provided a real name (still has default "User" or empty)
+		const needsName = !user.displayName || user.displayName === "User" || user.displayName.trim() === "";
+		
+		// Check localStorage to see if we've already shown this modal
+		const hasSeenNameModal = localStorage.getItem(`nameModalSeen_${user.uid}`);
+
+		if (needsName && !hasSeenNameModal) {
+			setShowNameModal(true);
+		}
+	}, [user?.uid, user?.displayName]);
+
+	const handleSaveName = async () => {
+		const trimmedName = nameInput.trim();
+		if (!trimmedName) {
+			alert("Please enter your name");
+			return;
+		}
+
+		setSavingName(true);
+		try {
+			await updateDisplayName(trimmedName);
+			// Mark this modal as seen in localStorage
+			if (user?.uid) {
+				localStorage.setItem(`nameModalSeen_${user.uid}`, "true");
+			}
+			setShowNameModal(false);
+			setNameInput("");
+		} catch (err) {
+			console.error("Failed to update name:", err);
+			alert("Failed to save name. Please try again.");
+		} finally {
+			setSavingName(false);
+		}
+	};
+
+	const handleSkipName = () => {
+		// Mark this modal as seen so we don't show it again
+		if (user?.uid) {
+			localStorage.setItem(`nameModalSeen_${user.uid}`, "true");
+		}
+		setShowNameModal(false);
+		setNameInput("");
+	};
 
 	return (
 		<div className="space-y-8">
@@ -320,6 +371,60 @@ export default function DashboardPage() {
 						</Link>
 					</div>
 				</>
+			)}
+
+			{/* Name Onboarding Modal */}
+			{showNameModal && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+					<div className="bg-white dark:bg-slate-800 rounded-lg p-8 w-full max-w-md mx-4 shadow-lg">
+						<div className="flex items-center justify-between mb-4">
+							<h2 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome!</h2>
+							<button
+								onClick={handleSkipName}
+								className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+								<X className="w-5 h-5" />
+							</button>
+						</div>
+
+						<p className="text-gray-600 dark:text-gray-400 mb-6">
+							We'd like to personalize your experience. What's your name?
+						</p>
+
+						{user?.email && (
+							<p className="text-sm text-gray-500 dark:text-gray-500 mb-4">
+								Logged in as: <span className="font-medium">{user.email}</span>
+							</p>
+						)}
+
+						<input
+							type="text"
+							value={nameInput}
+							onChange={(e) => setNameInput(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") {
+									handleSaveName();
+								}
+							}}
+							placeholder="Enter your name"
+							className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-slate-700 dark:text-white mb-6"
+							autoFocus
+						/>
+
+						<div className="flex gap-3">
+							<button
+								onClick={handleSkipName}
+								className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors font-medium">
+								Skip for Now
+							</button>
+							<button
+								onClick={handleSaveName}
+								disabled={savingName}
+								className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-gray-400 transition-colors font-medium">
+								{savingName ? "Saving..." : "Save & Continue"}
+							</button>
+						</div>
+					</div>
+				</div>
 			)}
 		</div>
 	);
