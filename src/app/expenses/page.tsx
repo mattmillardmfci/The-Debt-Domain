@@ -42,13 +42,15 @@ export default function ExpensesPage() {
 	const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
 	const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 	const [showAddForm, setShowAddForm] = useState(false);
-	const [undetectedExpenses, setUndetectedExpenses] = useState<Array<{
-		description: string;
-		amount: number;
-		count: number;
-		lastOccurrence: Date;
-		category?: string;
-	}>>([]);
+	const [undetectedExpenses, setUndetectedExpenses] = useState<
+		Array<{
+			description: string;
+			amount: number;
+			count: number;
+			lastOccurrence: Date;
+			category?: string;
+		}>
+	>([]);
 	const [selectedUndetectedIndex, setSelectedUndetectedIndex] = useState<number | null>(null);
 	const [allCategories] = useState([
 		"Groceries",
@@ -321,8 +323,8 @@ export default function ExpensesPage() {
 			</div>
 
 			{/* Add Expense Form */}
-			{undetectedExpenses.length > 0 && (
-				showAddForm ? (
+			{undetectedExpenses.length > 0 &&
+				(showAddForm ? (
 					<div className="bg-white dark:bg-slate-800 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-slate-700">
 						<h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Add Detected Expense</h3>
 						<p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -340,21 +342,16 @@ export default function ExpensesPage() {
 									}`}>
 									<div className="flex justify-between items-start gap-4">
 										<div>
-											<p className="font-medium text-gray-900 dark:text-white">
-												{expense.description}
-											</p>
+											<p className="font-medium text-gray-900 dark:text-white">{expense.description}</p>
 											<p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
-												{expense.count}x occurrence{expense.count !== 1 ? "s" : ""} • Last: {expense.lastOccurrence.toLocaleDateString()}
+												{expense.count}x occurrence{expense.count !== 1 ? "s" : ""} • Last:{" "}
+												{expense.lastOccurrence.toLocaleDateString()}
 											</p>
 										</div>
 										<div className="text-right flex-shrink-0">
-											<p className="font-semibold text-gray-900 dark:text-white">
-												{formatCurrency(expense.amount)}
-											</p>
+											<p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(expense.amount)}</p>
 											{expense.category && (
-												<p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-													{expense.category}
-												</p>
+												<p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{expense.category}</p>
 											)}
 										</div>
 									</div>
@@ -385,8 +382,7 @@ export default function ExpensesPage() {
 						className="w-full px-4 py-3 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 rounded-lg font-medium transition-colors">
 						+ Add Detected Expense ({undetectedExpenses.length})
 					</button>
-				)
-			)}
+				))}
 
 			{/* Expenses List */}
 			{expenses.length > 0 ? (

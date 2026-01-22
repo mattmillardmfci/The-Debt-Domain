@@ -1170,14 +1170,16 @@ export async function deleteCustomRecurringExpense(userId: string, description: 
  * Looks for transactions with 2+ occurrences that weren't caught by detectRecurringDebts
  * Returns grouped transactions by amount that could be marked as recurring
  */
-export async function findUndetectedRecurringExpenses(userId: string): Promise<Array<{
-	description: string;
-	amount: number;
-	count: number;
-	lastOccurrence: Date;
-	category?: string;
-	transactions: Partial<Transaction>[];
-}>> {
+export async function findUndetectedRecurringExpenses(userId: string): Promise<
+	Array<{
+		description: string;
+		amount: number;
+		count: number;
+		lastOccurrence: Date;
+		category?: string;
+		transactions: Partial<Transaction>[];
+	}>
+> {
 	try {
 		const transactions = await getAllTransactions(userId);
 		const detectedExpenses = await detectRecurringDebts(userId);
@@ -1212,7 +1214,7 @@ export async function findUndetectedRecurringExpenses(userId: string): Promise<A
 			if (txns.length >= 2 && !detectedAmounts.has(amount)) {
 				// Use the most recent transaction's description as the main description
 				const mostRecent = txns.sort(
-					(a, b) => ((b.date instanceof Date ? b.date.getTime() : 0) - (a.date instanceof Date ? a.date.getTime() : 0))
+					(a, b) => (b.date instanceof Date ? b.date.getTime() : 0) - (a.date instanceof Date ? a.date.getTime() : 0),
 				)[0];
 
 				const lastOccurrence = txns
@@ -1221,7 +1223,7 @@ export async function findUndetectedRecurringExpenses(userId: string): Promise<A
 
 				undetected.push({
 					description: mostRecent?.description || "Unknown",
-					amount,
+					amount: -amount, // Negate back to negative for expenses
 					count: txns.length,
 					lastOccurrence,
 					category: mostRecent?.category || "Other",
