@@ -184,19 +184,20 @@ export default function DashboardPage() {
 				let displayExpenses = lastMonthTotal > 0 ? lastMonthTotal : monthlyExpensesAbsolute;
 
 				// Calculate savings rate based on last month's actual data
-				const savingsRate = displayIncome > 0 ? Math.round(((displayIncome - displayExpenses) / displayIncome) * 100) : 0;
+				const savingsRate =
+					displayIncome > 0 ? Math.round(((displayIncome - displayExpenses) / displayIncome) * 100) : 0;
 
 				// For chart, calculate actual monthly values from transactions for each month
 				const now = new Date();
 				const chartDataPoints: ChartData[] = [];
-				
+
 				for (let i = 5; i >= 0; i--) {
 					const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
 					const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
-					
+
 					let monthIncome = 0;
 					let monthExpenses = 0;
-					
+
 					transactions.forEach((t) => {
 						const txDate = t.date instanceof Date ? t.date : new Date(t.date as any);
 						if (txDate >= monthStart && txDate <= monthEnd) {
@@ -208,7 +209,7 @@ export default function DashboardPage() {
 							}
 						}
 					});
-					
+
 					chartDataPoints.push({
 						month: monthStart.toLocaleString("default", { month: "short" }),
 						income: Math.round(monthIncome * 100) / 100,
@@ -476,10 +477,7 @@ export default function DashboardPage() {
 											className={`${bgColor} rounded-lg p-4 border border-gray-200 dark:border-slate-600 cursor-pointer hover:shadow-lg transition-shadow`}
 											onClick={() => setSelectedCategory(cat.category)}>
 											<div className="flex items-start justify-between mb-3">
-												<div>
-													<h4 className="font-medium text-gray-900 dark:text-white text-sm">{cat.category}</h4>
-													<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">This month</p>
-												</div>
+												<h4 className="font-medium text-gray-900 dark:text-white text-sm">{cat.category}</h4>
 												{cat.trend !== 0 && (
 													<div className={`flex items-center gap-1 ${trendColor}`}>
 														{trendUp ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownLeft className="w-4 h-4" />}
@@ -488,16 +486,21 @@ export default function DashboardPage() {
 												)}
 											</div>
 
-											<p className="text-2xl font-bold text-gray-900 dark:text-white">${cat.currentMonth.toFixed(2)}</p>
+											<p className="text-3xl font-bold text-gray-900 dark:text-white">${cat.average.toFixed(2)}</p>
+											<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Average</p>
 
-											<div className="mt-3 space-y-1 text-xs text-gray-600 dark:text-gray-400">
+											<div className="mt-3 space-y-2 text-xs text-gray-600 dark:text-gray-400">
+												<div className="flex justify-between">
+													<span>This month:</span>
+													<span className="font-medium text-gray-900 dark:text-white">${cat.currentMonth.toFixed(2)}</span>
+												</div>
 												<div className="flex justify-between">
 													<span>Last month:</span>
-													<span className="font-medium">${cat.lastMonth.toFixed(2)}</span>
+													<span className="font-medium text-gray-900 dark:text-white">${cat.lastMonth.toFixed(2)}</span>
 												</div>
 												<div className="flex justify-between">
 													<span>Average:</span>
-													<span className="font-medium">${cat.average.toFixed(2)}</span>
+													<span className="font-medium text-gray-900 dark:text-white">${cat.average.toFixed(2)}</span>
 												</div>
 											</div>
 										</div>
