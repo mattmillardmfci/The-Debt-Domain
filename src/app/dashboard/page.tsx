@@ -150,11 +150,7 @@ export default function DashboardPage() {
 					incomeBreakdownLines.push(`${pattern.description} (${pattern.frequency}): $${monthlyImpact.toFixed(2)}/mo`);
 				});
 
-				// Calculate savings rate
-				const netIncome = monthlyIncome - monthlyExpensesAbsolute;
-				const savingsRate = monthlyIncome > 0 ? Math.round((netIncome / monthlyIncome) * 100) : 0;
-
-				// Process category spending
+				// Process category spending FIRST to get actual monthly data
 				const categoryMap = new Map<string, { current: number; last: number; count: number; total: number }>();
 
 				transactions.forEach((t) => {
@@ -178,6 +174,49 @@ export default function DashboardPage() {
 					data.count += 1;
 				});
 
+				// Calculate actual monthly totals from transactions
+				const lastMonthTotal = Array.from(categoryMap.values()).reduce((sum, cat) => sum + cat.last, 0);
+				const currentMonthTotal = Array.from(categoryMap.values()).reduce((sum, cat) => sum + cat.current, 0);
+
+				// Use LAST MONTH as the baseline for monthly income/expenses (not current incomplete month)
+				// For the metric cards, display last month's actual spending
+				let displayIncome = lastMonthTotal > 0 ? lastMonthTotal : monthlyIncome;
+				let displayExpenses = lastMonthTotal > 0 ? lastMonthTotal : monthlyExpensesAbsolute;
+
+				// Calculate savings rate based on last month's actual data
+				const savingsRate = displayIncome > 0 ? Math.round(((displayIncome - displayExpenses) / displayIncome) * 100) : 0;
+
+				// For chart, calculate actual monthly values from transactions for each month
+				const now = new Date();
+				const chartDataPoints: ChartData[] = [];
+				
+				for (let i = 5; i >= 0; i--) {
+					const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+					const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+					
+					let monthIncome = 0;
+					let monthExpenses = 0;
+					
+					transactions.forEach((t) => {
+						const txDate = t.date instanceof Date ? t.date : new Date(t.date as any);
+						if (txDate >= monthStart && txDate <= monthEnd) {
+							const amount = Math.abs((t.amount || 0) / 100);
+							if ((t.amount || 0) > 0) {
+								monthIncome += amount;
+							} else {
+								monthExpenses += amount;
+							}
+						}
+					});
+					
+					chartDataPoints.push({
+						month: monthStart.toLocaleString("default", { month: "short" }),
+						income: Math.round(monthIncome * 100) / 100,
+						expenses: Math.round(monthExpenses * 100) / 100,
+						savings: Math.max(0, Math.round((monthIncome - monthExpenses) * 100) / 100),
+					});
+				}
+
 				const categorySpendingData: CategorySpending[] = Array.from(categoryMap.entries())
 					.map(([cat, data]) => ({
 						category: cat,
@@ -189,25 +228,12 @@ export default function DashboardPage() {
 					.sort((a, b) => b.currentMonth - a.currentMonth)
 					.slice(0, 8);
 
-				// Create chart data
-				const now = new Date();
-				const chartDataPoints: ChartData[] = [];
-				for (let i = 5; i >= 0; i--) {
-					const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-					chartDataPoints.push({
-						month: d.toLocaleString("default", { month: "short" }),
-						income: monthlyIncome,
-						expenses: monthlyExpensesAbsolute,
-						savings: Math.max(0, monthlyIncome - monthlyExpensesAbsolute),
-					});
-				}
-
 				setCategorySpending(categorySpendingData);
 				setChartData(chartDataPoints);
 
 				setMetrics({
-					monthlyIncome: Math.round(monthlyIncome * 100) / 100,
-					monthlyExpenses: Math.round(monthlyExpensesAbsolute * 100) / 100,
+					monthlyIncome: Math.round(displayIncome * 100) / 100,
+					monthlyExpenses: Math.round(displayExpenses * 100) / 100,
 					savingsRate: savingsRate,
 					totalDebt: Math.round(totalDebt / 100),
 					netWorth: Math.round(netWorth),
@@ -315,7 +341,9 @@ export default function DashboardPage() {
 					{/* Top Metrics Grid */}
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 						{/* Monthly Income */}
-						<div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-900/10 rounded-lg p-6 border border-emerald-200 dark:border-emerald-800">
+						<Link
+							href="/income"
+							className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-900/10 rounded-lg p-6 border border-emerald-200 dark:border-emerald-800 hover:shadow-lg hover:border-emerald-300 dark:hover:border-emerald-600 transition-all cursor-pointer">
 							<div className="flex items-center justify-between mb-3">
 								<span className="text-sm font-medium text-emerald-900 dark:text-emerald-300">Monthly Income</span>
 								<ArrowDownLeft className="w-4 h-4 text-emerald-600" />
@@ -323,11 +351,13 @@ export default function DashboardPage() {
 							<p className="text-3xl font-bold text-emerald-900 dark:text-emerald-100">
 								${metrics.monthlyIncome.toLocaleString("en-US", { maximumFractionDigits: 0 })}
 							</p>
-							<p className="text-xs text-emerald-700 dark:text-emerald-300 mt-2">Based on detected patterns</p>
-						</div>
+							<p className="text-xs text-emerald-700 dark:text-emerald-300 mt-2">Last month actual</p>
+						</Link>
 
 						{/* Monthly Expenses */}
-						<div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/10 rounded-lg p-6 border border-red-200 dark:border-red-800">
+						<Link
+							href="/expenses"
+							className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/10 rounded-lg p-6 border border-red-200 dark:border-red-800 hover:shadow-lg hover:border-red-300 dark:hover:border-red-600 transition-all cursor-pointer">
 							<div className="flex items-center justify-between mb-3">
 								<span className="text-sm font-medium text-red-900 dark:text-red-300">Monthly Expenses</span>
 								<ArrowUpRight className="w-4 h-4 text-red-600" />
@@ -338,7 +368,7 @@ export default function DashboardPage() {
 							<p className="text-xs text-red-700 dark:text-red-300 mt-2">
 								{Math.round((metrics.monthlyExpenses / metrics.monthlyIncome) * 100)}% of income
 							</p>
-						</div>
+						</Link>
 
 						{/* Savings Rate */}
 						<div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
