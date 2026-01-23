@@ -10,6 +10,7 @@ import {
 	saveCustomCategory,
 	deleteCustomCategory,
 	updateCustomCategory,
+	getTransactions,
 } from "@/lib/firestoreService";
 
 const COLORS = [
@@ -46,6 +47,7 @@ const COMMON_AUTO_CATEGORIES = [
 export default function CategoriesPage() {
 	const { user } = useAuth();
 	const [categories, setCategories] = useState<(Partial<CustomCategory> & { id: string })[]>([]);
+	const [transactionCategories, setTransactionCategories] = useState<string[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [showForm, setShowForm] = useState(false);
 	const [editingId, setEditingId] = useState<string | null>(null);
@@ -65,6 +67,13 @@ export default function CategoriesPage() {
 			try {
 				const data = await getCustomCategories(user.uid);
 				setCategories(data);
+
+				// Load transaction categories
+				const allTransactions = await getTransactions(user.uid);
+				const categoriesFromTransactions = Array.from(
+					new Set(allTransactions.map((t) => t.category || "Other"))
+				);
+				setTransactionCategories(categoriesFromTransactions);
 			} catch (err) {
 				console.error("Failed to load categories:", err);
 			} finally {
@@ -228,6 +237,25 @@ export default function CategoriesPage() {
 					))}
 				</div>
 			</div>
+
+			{/* Transaction Categories */}
+			{transactionCategories.length > 0 && (
+				<div className="mt-8">
+					<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Transaction Categories</h2>
+					<p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+						Categories found in your transactions
+					</p>
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+						{transactionCategories.map((category) => (
+							<div
+								key={category}
+								className="bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-900/30 dark:to-amber-800/30 rounded-lg border border-amber-200 dark:border-amber-700 p-4 text-center">
+								<span className="font-medium text-gray-900 dark:text-white text-sm">{category}</span>
+							</div>
+						))}
+					</div>
+				</div>
+			)}
 
 			{/* Custom Categories Section */}
 			<div className="mt-8">

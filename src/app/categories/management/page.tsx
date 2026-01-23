@@ -54,13 +54,11 @@ export default function CategoryManagementPage() {
 				const allTransactions = await getTransactions(user.uid);
 
 				// Get all unique categories from transactions
-				const categoriesFromTransactions = Array.from(
-					new Set(allTransactions.map((t) => t.category || "Other"))
-				);
+				const categoriesFromTransactions = Array.from(new Set(allTransactions.map((t) => t.category || "Other")));
 
 				// Merge all categories: common + custom + those found in transactions
 				const merged = Array.from(
-					new Set([...COMMON_CATEGORIES, ...customCategoryNames, ...categoriesFromTransactions])
+					new Set([...COMMON_CATEGORIES, ...customCategoryNames, ...categoriesFromTransactions]),
 				);
 				setAllCategories(merged);
 
