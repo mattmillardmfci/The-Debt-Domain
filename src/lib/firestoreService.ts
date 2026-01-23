@@ -1005,6 +1005,9 @@ export async function deleteAllUserData(userId: string) {
 			getBudgetsRef(userId),
 			getCategoriesRef(userId),
 			getIncomeRef(userId),
+			collection(db, "users", userId, "customRecurringExpenses"),
+			collection(db, "users", userId, "ignoredRecurringExpenses"),
+			collection(db, "users", userId, "recurringExpenseOverrides"),
 		];
 
 		// Fetch all collections in parallel instead of sequentially

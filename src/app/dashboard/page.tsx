@@ -456,9 +456,7 @@ export default function DashboardPage() {
 										className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
 										<div className="flex items-start justify-between mb-4">
 											<div>
-												<p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-													{cat.category}
-												</p>
+												<p className="text-sm font-medium text-gray-600 dark:text-gray-400">{cat.category}</p>
 												<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
 													$
 													{cat.currentMonth.toLocaleString("en-US", {
