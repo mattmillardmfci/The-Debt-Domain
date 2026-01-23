@@ -169,7 +169,7 @@ export default function DashboardPage() {
 					if (entry.frequency !== "once") {
 						monthlyIncome += monthlyImpact;
 						incomeBreakdownLines.push(
-							`${entry.description || entry.source || "Manual Income"} (${entry.frequency}): $${monthlyImpact.toFixed(2)}/mo`
+							`${entry.description || entry.source || "Manual Income"} (${entry.frequency}): $${monthlyImpact.toFixed(2)}/mo`,
 						);
 					}
 				});
@@ -403,7 +403,9 @@ export default function DashboardPage() {
 							<p className="text-3xl font-bold text-emerald-900 dark:text-emerald-100">
 								${metrics.monthlyIncome.toLocaleString("en-US", { maximumFractionDigits: 2 })}
 							</p>
-							<p className="text-xs text-emerald-700 dark:text-emerald-300 mt-2">From {incomeSourceCount} income sources</p>
+							<p className="text-xs text-emerald-700 dark:text-emerald-300 mt-2">
+								From {incomeSourceCount} income sources
+							</p>
 						</Link>
 
 						{/* Monthly Expenses */}
