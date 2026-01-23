@@ -343,6 +343,7 @@ export interface RecurringDebtPattern {
 export async function detectRecurringDebts(userId: string): Promise<RecurringDebtPattern[]> {
 	try {
 		const transactions = await getAllTransactions(userId);
+		const ignoredExpenses = await getIgnoredRecurringExpenses(userId);
 
 		// Filter for negative amounts (expenses/payments)
 		const negativeTransactions = transactions.filter((t) => t.amount !== undefined && t.amount < 0);
@@ -554,8 +555,17 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 			}
 		});
 
+		// Filter out ignored expenses
+		const filteredPatterns = patterns.filter((pattern) => {
+			return !ignoredExpenses.some(
+				(ignored) =>
+					ignored.description === pattern.description &&
+					Math.abs(ignored.amount - pattern.avgAmount) < 0.01, // Allow for floating point rounding
+			);
+		});
+
 		// Sort by frequency (most recent first)
-		return patterns.sort((a, b) => b.lastOccurrence.getTime() - a.lastOccurrence.getTime());
+		return filteredPatterns.sort((a, b) => b.lastOccurrence.getTime() - a.lastOccurrence.getTime());
 	} catch (error) {
 		console.error("Error detecting recurring debts:", error);
 		return [];
@@ -1069,6 +1079,26 @@ export async function saveIgnoredRecurringExpense(
 	} catch (error) {
 		console.error("Error saving ignored recurring expense:", error);
 		throw error;
+	}
+}
+
+/**
+ * Get all ignored recurring expenses
+ */
+export async function getIgnoredRecurringExpenses(userId: string): Promise<Array<{ description: string; amount: number }>> {
+	try {
+		const ref = collection(db, "users", userId, "ignoredRecurringExpenses");
+		const snapshot = await getDocs(ref);
+		return snapshot.docs.map((doc) => {
+			const data = doc.data();
+			return {
+				description: data.description,
+				amount: data.amount,
+			};
+		});
+	} catch (error) {
+		console.error("Error getting ignored recurring expenses:", error);
+		return [];
 	}
 }
 
