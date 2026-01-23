@@ -40,6 +40,8 @@ const VENDOR_DATABASE: Record<string, TransactionCategory> = {
 	caseys: "Gas/Fuel",
 	"casey's": "Gas/Fuel",
 	"break time": "Gas/Fuel",
+	"64 fastlane": "Gas/Fuel",
+	fastlane: "Gas/Fuel",
 
 	// Restaurants
 	mcdonalds: "Restaurants",

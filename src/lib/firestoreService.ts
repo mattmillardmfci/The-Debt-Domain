@@ -348,6 +348,20 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 		// Filter for negative amounts (expenses/payments)
 		const negativeTransactions = transactions.filter((t) => t.amount !== undefined && t.amount < 0);
 
+		// Extract account/reference number from description (e.g., AMEX account, etc.)
+		const extractAccountNumber = (desc: string): string => {
+			const cleaned = desc.trim().toUpperCase();
+			// Try to extract account number from common patterns
+			// AMEX: "AMEX EPAYMENT ACH PMT A8552 0005000040" -> "0005000040"
+			// DISCOVER: "DISCOVER E-PAYMENT 2963 3510020270" -> "3510020270"
+			// Look for numeric patterns that look like account numbers
+			const matches = cleaned.match(/([0-9]{7,})/g);
+			if (matches && matches.length > 0) {
+				return matches[matches.length - 1]; // Return last longest number
+			}
+			return "";
+		};
+
 		// Normalize description: extract the meaningful part (first 3-4 words usually identify the merchant)
 		const normalizeDescription = (desc: string): string => {
 			if (!desc) return "Unknown";
@@ -374,12 +388,15 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 			return meaningfulWords.length > 0 ? meaningfulWords.join(" ") : words.slice(0, 4).join(" ");
 		};
 
-		// NEW APPROACH: Group by CHARGE AMOUNT first, then verify vendor consistency
+		// NEW APPROACH: Group by MERCHANT + ACCOUNT first, then by amount tolerance
 		// This prevents grouping different purchases from the same vendor
 		// (e.g., different pharmacy items with different costs)
+		// and separates different credit cards with same merchant
 
 		interface ChargeGroup {
-			amount: number; // in cents (absolute value)
+			merchant: string;
+			account: string;
+			amounts: number[]; // in cents (absolute value)
 			vendors: Set<string>; // normalized vendor names
 			transactions: Partial<Transaction>[];
 		}
@@ -387,21 +404,25 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 		// Round amounts to nearest 5 cents to handle minor variation (e.g., $9.12 vs $9.13)
 		const roundAmount = (amount: number): number => Math.round(Math.abs(amount) / 5) * 5;
 
-		// Group by rounded charge amount
-		const chargeGroups = new Map<number, ChargeGroup>();
+		// Group by merchant + account, allowing for amount variation
+		const chargeGroups = new Map<string, ChargeGroup>();
 		negativeTransactions.forEach((t) => {
-			const roundedAmount = roundAmount(t.amount || 0);
 			const normalizedDesc = normalizeDescription(t.description || "Unknown");
+			const account = extractAccountNumber(t.description || "");
+			const groupKey = `${normalizedDesc}|${account}`;
 
-			if (!chargeGroups.has(roundedAmount)) {
-				chargeGroups.set(roundedAmount, {
-					amount: roundedAmount,
+			if (!chargeGroups.has(groupKey)) {
+				chargeGroups.set(groupKey, {
+					merchant: normalizedDesc,
+					account,
+					amounts: [],
 					vendors: new Set(),
 					transactions: [],
 				});
 			}
 
-			const group = chargeGroups.get(roundedAmount)!;
+			const group = chargeGroups.get(groupKey)!;
+			group.amounts.push(Math.abs(t.amount || 0));
 			group.vendors.add(normalizedDesc);
 			group.transactions.push(t);
 		});
@@ -411,84 +432,27 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 		chargeGroups.forEach((chargeGroup) => {
 			if (chargeGroup.transactions.length >= 2) {
 				const transactions = chargeGroup.transactions;
-				const amounts = transactions.map((t) => t.amount || 0).filter((a) => a !== 0);
+				const amounts = chargeGroup.amounts;
 				const totalAmount = amounts.reduce((a, b) => a + b, 0);
 				// Convert from cents to dollars by dividing by 100
 				const avgAmount = amounts.length > 0 ? totalAmount / amounts.length / 100 : 0;
 				const totalAmountDollars = totalAmount / 100;
 
-				// IMPROVED VALIDATION: For same-amount charges, require VERY consistent vendor names
-				// (within reasonable normalization tolerance)
-				// This catches cases like "AMAZON PRIME" vs "AMAZON PRIME PMTS Amzn.com/bill"
-				const vendors = Array.from(chargeGroup.vendors);
-
-				// If we have multiple different vendor names for the same charge amount,
-				// try to find a common base (e.g., "AMAZON" appears in both)
-				let mainVendor = vendors[0];
-				if (vendors.length > 1) {
-					// Check if all vendors share a common word (the main merchant name)
-					const allWords = vendors.flatMap((v) => v.split(/\s+/));
-					const wordCounts = new Map<string, number>();
-					allWords.forEach((word) => {
-						wordCounts.set(word, (wordCounts.get(word) || 0) + 1);
-					});
-
-					// Find the most common word that appears in multiple vendors
-					let commonWord = "";
-					let maxCount = 0;
-					wordCounts.forEach((count, word) => {
-						if (count >= Math.ceil(vendors.length / 2) && word.length > 2 && count > maxCount) {
-							commonWord = word;
-							maxCount = count;
-						}
-					});
-
-					// If we found a common word (likely the main merchant), validate it
-					if (commonWord) {
-						mainVendor = commonWord;
-						// Verify that all vendors contain the main word
-						const allVendorsHaveCommonWord = vendors.every((v) => v.includes(commonWord));
-						if (!allVendorsHaveCommonWord) {
-							// Vendors don't share a common merchant name - likely different charges
-							return;
-						}
-					} else {
-						// Multiple different vendors for same amount - likely different charges
-						// Skip this unless they're very similar
-						const firstVendor = vendors[0];
-						const allSimilar = vendors.every((v) => {
-							const similarity = (a: string, b: string) => {
-								const aParts = a.split(/\s+/);
-								const bParts = b.split(/\s+/);
-								const common = aParts.filter((part) => bParts.includes(part)).length;
-								return common > 0;
-							};
-							return similarity(firstVendor, v);
-						});
-
-						if (!allSimilar) {
-							// Vendors are too different - skip this charge group
-							return;
-						}
-					}
-				}
-
-				// Calculate coefficient of variation to ensure amount consistency
-				// (should be very low since we grouped by amount, but check for rounding variance)
+				// For varying amounts (like AMEX), allow higher tolerance
+				// Calculate if these could be monthly payments with varying amounts
 				const mean = Math.abs(avgAmount);
 				if (mean > 0) {
-					const variance =
-						amounts.reduce((sum, amount) => {
-							const absDollars = Math.abs(amount / 100);
-							return sum + Math.pow(absDollars - mean, 2);
-						}, 0) / amounts.length;
+					const variance = amounts.reduce((sum, amount) => {
+						const absDollars = Math.abs(amount / 100);
+						return sum + Math.pow(absDollars - mean, 2);
+					}, 0) / amounts.length;
 					const stdDev = Math.sqrt(variance);
 					const coefficientOfVariation = stdDev / mean;
 
-					// For charge-based grouping, amounts should be nearly identical
-					// Use stricter threshold (10%) than vendor-based (30%)
-					if (coefficientOfVariation > 0.1) {
-						// Skip this pattern - amounts vary too much for same charge
+					// For charge-based grouping with account separation, allow higher variation
+					// to capture monthly charges with varying amounts (like credit card payments)
+					if (coefficientOfVariation > 0.5) {
+						// Skip this pattern - amounts vary too much even for monthly
 						return;
 					}
 				}
@@ -506,7 +470,7 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 					.map((t) => (t.date instanceof Date ? t.date : new Date(t.date || 0)))
 					.sort((a, b) => b.getTime() - a.getTime())[0];
 
-				// Estimate frequency based on date gaps
+				// Estimate frequency based on date gaps - IMPROVED for monthly detection
 				let estimatedFrequency = "multiple";
 				if (transactions.length >= 2) {
 					const dates = transactions
@@ -521,11 +485,37 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 
 					if (gaps.length > 0) {
 						const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
-						if (avgGap < 10) estimatedFrequency = "weekly";
-						else if (avgGap < 20) estimatedFrequency = "biweekly";
-						else if (avgGap < 40) estimatedFrequency = "monthly";
-						else if (avgGap < 100) estimatedFrequency = "quarterly";
-						else estimatedFrequency = "annual";
+						const minGap = Math.min(...gaps);
+						const maxGap = Math.max(...gaps);
+						const gapStdDev = Math.sqrt(
+							gaps.reduce((sum, gap) => sum + Math.pow(gap - avgGap, 2), 0) / gaps.length,
+						);
+
+						// IMPROVED: Detect monthly (28-31 day cycles) more intelligently
+						// Look for patterns where gaps average 28-35 days
+						if (avgGap < 10) {
+							estimatedFrequency = "weekly";
+						} else if (avgGap < 18) {
+							estimatedFrequency = "biweekly";
+						} else if (avgGap >= 25 && avgGap <= 35) {
+							// Strong monthly signal: gaps averaging 25-35 days
+							// This captures credit card payments, subscription renewals, etc.
+							estimatedFrequency = "monthly";
+						} else if (avgGap < 40) {
+							// Uncertain range (18-25 or 35-40): use gap consistency as tiebreaker
+							// If gaps are very consistent, likely a fixed schedule
+							if (gapStdDev < 5) {
+								// Very consistent gaps suggest monthly
+								estimatedFrequency = "monthly";
+							} else {
+								// High variance suggests irregular, default to biweekly
+								estimatedFrequency = "biweekly";
+							}
+						} else if (avgGap < 100) {
+							estimatedFrequency = "quarterly";
+						} else {
+							estimatedFrequency = "annual";
+						}
 					} else if (transactions.length >= 2) {
 						// With 2+ transactions but no gap data, assume monthly
 						// This handles cases with minimal transaction history

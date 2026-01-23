@@ -24,6 +24,13 @@ interface DashboardMetrics {
 	expensesBreakdown: string; // For tooltip
 }
 
+interface CategorySpending {
+	category: string;
+	currentMonth: number;
+	lastMonth: number;
+	average: number;
+}
+
 export default function DashboardPage() {
 	const { user, updateDisplayName } = useAuth();
 	const [metrics, setMetrics] = useState<DashboardMetrics>({
@@ -42,6 +49,7 @@ export default function DashboardPage() {
 	const [showNameModal, setShowNameModal] = useState(false);
 	const [nameInput, setNameInput] = useState("");
 	const [savingName, setSavingName] = useState(false);
+	const [categorySpending, setCategorySpending] = useState<CategorySpending[]>([]);
 
 	useEffect(() => {
 		if (!user?.uid) {
@@ -152,6 +160,46 @@ export default function DashboardPage() {
 				});
 				const savingsRate =
 					monthlyIncome > 0 ? Math.round(((monthlyIncome - monthlyExpensesAbsolute) / monthlyIncome) * 100) : 0;
+
+				// Calculate category spending for current month and last month
+				const now = new Date();
+				const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+				const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+				const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+
+				const categoryMap = new Map<string, { currentMonth: number; lastMonth: number; allTime: number[] }>();
+
+				transactions.forEach((t) => {
+					if (t.amount && t.amount < 0) {
+						const transDate = t.date instanceof Date ? t.date : new Date(t.date || 0);
+						const category = t.category || "Other";
+						const amount = Math.abs(t.amount) / 100; // Convert from cents to dollars
+
+						if (!categoryMap.has(category)) {
+							categoryMap.set(category, { currentMonth: 0, lastMonth: 0, allTime: [] });
+						}
+
+						const catData = categoryMap.get(category)!;
+						catData.allTime.push(amount);
+
+						if (transDate >= currentMonthStart) {
+							catData.currentMonth += amount;
+						} else if (transDate >= lastMonthStart && transDate <= lastMonthEnd) {
+							catData.lastMonth += amount;
+						}
+					}
+				});
+
+				const categorySpendingData: CategorySpending[] = Array.from(categoryMap.entries())
+					.map(([category, data]) => ({
+						category,
+						currentMonth: Math.round(data.currentMonth * 100) / 100,
+						lastMonth: Math.round(data.lastMonth * 100) / 100,
+						average: Math.round((data.allTime.reduce((a, b) => a + b, 0) / data.allTime.length) * 100) / 100,
+					}))
+					.sort((a, b) => b.currentMonth - a.currentMonth);
+
+				setCategorySpending(categorySpendingData);
 
 				setMetrics({
 					monthlyIncome: Math.round(monthlyIncome * 100) / 100,
@@ -396,6 +444,33 @@ export default function DashboardPage() {
 							<p className="text-sm text-gray-600 dark:text-gray-400">Create your debt payoff strategy</p>
 						</Link>
 					</div>
+
+					{/* Category Breakdown */}
+					{categorySpending.length > 0 && (
+						<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
+							<h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Spending by Category</h2>
+							<div className="space-y-4">
+								{categorySpending.map((cat) => (
+									<div key={cat.category} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
+										<div className="flex-1">
+											<p className="font-medium text-gray-900 dark:text-white">{cat.category}</p>
+											<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+												This Month: <span className="font-semibold text-gray-700 dark:text-gray-300">${cat.currentMonth.toFixed(2)}</span> | Last Month: <span className="font-semibold text-gray-700 dark:text-gray-300">${cat.lastMonth.toFixed(2)}</span> | Average: <span className="font-semibold text-gray-700 dark:text-gray-300">${cat.average.toFixed(2)}</span>
+											</p>
+										</div>
+										<div className="text-right ml-4">
+											<p className="text-lg font-bold text-gray-900 dark:text-white">
+												${cat.currentMonth.toLocaleString("en-US", {
+													minimumFractionDigits: 2,
+													maximumFractionDigits: 2,
+												})}
+											</p>
+										</div>
+									</div>
+								))}
+							</div>
+						</div>
+					)}
 				</>
 			)}
 
