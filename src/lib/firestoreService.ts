@@ -558,9 +558,7 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 		// Filter out ignored expenses
 		const filteredPatterns = patterns.filter((pattern) => {
 			return !ignoredExpenses.some(
-				(ignored) =>
-					ignored.description === pattern.description &&
-					Math.abs(ignored.amount - pattern.avgAmount) < 0.01, // Allow for floating point rounding
+				(ignored) => ignored.description === pattern.description && Math.abs(ignored.amount - pattern.avgAmount) < 0.01, // Allow for floating point rounding
 			);
 		});
 
@@ -1085,7 +1083,9 @@ export async function saveIgnoredRecurringExpense(
 /**
  * Get all ignored recurring expenses
  */
-export async function getIgnoredRecurringExpenses(userId: string): Promise<Array<{ description: string; amount: number }>> {
+export async function getIgnoredRecurringExpenses(
+	userId: string,
+): Promise<Array<{ description: string; amount: number }>> {
 	try {
 		const ref = collection(db, "users", userId, "ignoredRecurringExpenses");
 		const snapshot = await getDocs(ref);

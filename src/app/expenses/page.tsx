@@ -14,6 +14,7 @@ import {
 	getCustomRecurringExpenses,
 	findUndetectedRecurringExpenses,
 	bulkRenameRecurringExpenseDescription,
+	getCustomCategories,
 } from "@/lib/firestoreService";
 
 interface RecurringExpense {
@@ -71,7 +72,7 @@ export default function ExpensesPage() {
 	const [touchStart, setTouchStart] = useState(0);
 	const [touchEnd, setTouchEnd] = useState(0);
 	const [showInstructions, setShowInstructions] = useState(false);
-	const [allCategories] = useState(COMMON_CATEGORIES);
+	const [allCategories, setAllCategories] = useState<string[]>(COMMON_CATEGORIES);
 
 	const handleEditClick = (index: number, expense: RecurringExpense) => {
 		setEditingIndex(index);
@@ -321,11 +322,17 @@ export default function ExpensesPage() {
 
 		const loadExpenses = async () => {
 			try {
-				const [recurringDebts, customExpenses, undetected] = await Promise.all([
+				const [recurringDebts, customExpenses, undetected, customCats] = await Promise.all([
 					detectRecurringDebts(user.uid),
 					getCustomRecurringExpenses(user.uid),
 					findUndetectedRecurringExpenses(user.uid),
+					getCustomCategories(user.uid),
 				]);
+
+				// Load custom categories and merge with common categories
+				const customCategoryNames = customCats.map((c) => c.name || "").filter((n) => n);
+				const merged = Array.from(new Set([...COMMON_CATEGORIES, ...customCategoryNames]));
+				setAllCategories(merged);
 
 				// Combine detected and custom expenses
 				const allExpenses = [
