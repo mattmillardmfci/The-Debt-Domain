@@ -5,6 +5,8 @@ import { CustomCategory } from "@/types";
 import { Plus, Trash2, Edit2 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAlert } from "@/contexts/AlertContext";
+import ConfirmModal from "@/components/ConfirmModal";
 import {
 	getCustomCategories,
 	saveCustomCategory,
@@ -46,11 +48,17 @@ const COMMON_AUTO_CATEGORIES = [
 
 export default function CategoriesPage() {
 	const { user } = useAuth();
+	const { showError } = useAlert();
 	const [categories, setCategories] = useState<(Partial<CustomCategory> & { id: string })[]>([]);
 	const [transactionCategories, setTransactionCategories] = useState<string[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [showForm, setShowForm] = useState(false);
 	const [editingId, setEditingId] = useState<string | null>(null);
+	const [deleting, setDeleting] = useState(false);
+	const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; categoryId: string | null }>({
+		isOpen: false,
+		categoryId: null,
+	});
 	const [formData, setFormData] = useState<Partial<CustomCategory>>({
 		name: "",
 		color: COLORS[0],
@@ -70,9 +78,7 @@ export default function CategoriesPage() {
 
 				// Load transaction categories
 				const allTransactions = await getTransactions(user.uid);
-				const categoriesFromTransactions = Array.from(
-					new Set(allTransactions.map((t) => t.category || "Other"))
-				);
+				const categoriesFromTransactions = Array.from(new Set(allTransactions.map((t) => t.category || "Other")));
 				setTransactionCategories(categoriesFromTransactions);
 			} catch (err) {
 				console.error("Failed to load categories:", err);
@@ -86,12 +92,12 @@ export default function CategoriesPage() {
 
 	const handleSaveCategory = async () => {
 		if (!formData.name) {
-			alert("Please enter a category name");
+			showError("Please enter a category name");
 			return;
 		}
 
 		if (!user?.uid) {
-			alert("You must be logged in");
+			showError("You must be logged in");
 			return;
 		}
 
@@ -109,21 +115,27 @@ export default function CategoriesPage() {
 			setShowForm(false);
 		} catch (err) {
 			console.error("Failed to save category:", err);
-			alert("Failed to save category. Please try again.");
+			showError("Failed to save category. Please try again.");
 		}
 	};
 
-	const handleDeleteCategory = async (id: string) => {
-		if (!user?.uid) return;
+	const handleDeleteCategory = (id: string) => {
+		setDeleteModal({ isOpen: true, categoryId: id });
+	};
 
-		if (!confirm("Delete this category?")) return;
+	const handleConfirmDelete = async () => {
+		if (!user?.uid || !deleteModal.categoryId) return;
 
+		setDeleting(true);
 		try {
-			await deleteCustomCategory(user.uid, id);
-			setCategories(categories.filter((c) => c.id !== id));
+			await deleteCustomCategory(user.uid, deleteModal.categoryId);
+			setCategories(categories.filter((c) => c.id !== deleteModal.categoryId));
+			setDeleteModal({ isOpen: false, categoryId: null });
 		} catch (err) {
 			console.error("Failed to delete category:", err);
-			alert("Failed to delete category.");
+			showError("Failed to delete category.");
+		} finally {
+			setDeleting(false);
 		}
 	};
 
@@ -242,9 +254,7 @@ export default function CategoriesPage() {
 			{transactionCategories.length > 0 && (
 				<div className="mt-8">
 					<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Transaction Categories</h2>
-					<p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-						Categories found in your transactions
-					</p>
+					<p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Categories found in your transactions</p>
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
 						{transactionCategories.map((category) => (
 							<div
@@ -299,6 +309,19 @@ export default function CategoriesPage() {
 					</div>
 				)}
 			</div>
+
+			{/* Delete Confirmation Modal */}
+			<ConfirmModal
+				isOpen={deleteModal.isOpen}
+				title="Delete Category"
+				message="Are you sure you want to delete this custom category? This action cannot be undone."
+				confirmText="Delete"
+				cancelText="Cancel"
+				isDangerous={true}
+				isLoading={deleting}
+				onConfirm={handleConfirmDelete}
+				onCancel={() => setDeleteModal({ isOpen: false, categoryId: null })}
+			/>
 		</div>
 	);
 }
