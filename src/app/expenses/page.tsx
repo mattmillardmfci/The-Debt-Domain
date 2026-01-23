@@ -1,11 +1,13 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { TrendingDown, AlertCircle, Edit2, X, Trash2, ChevronDown } from "lucide-react";
+import { useAlert } from "@/contexts/AlertContext";
+import { TrendingDown, AlertCircle, Edit2, X, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import React from "react";
 import { COMMON_CATEGORIES } from "@/lib/constants";
+import ConfirmModal from "@/components/ConfirmModal";
 import {
 	detectRecurringDebts,
 	saveIgnoredRecurringExpense,
@@ -34,6 +36,7 @@ interface RecurringExpense {
 
 export default function ExpensesPage() {
 	const { user } = useAuth();
+	const { showError, showSuccess } = useAlert();
 	const [expenses, setExpenses] = useState<RecurringExpense[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [totalMonthlyExpenses, setTotalMonthlyExpenses] = useState(0);
@@ -41,7 +44,11 @@ export default function ExpensesPage() {
 	const [editedCategory, setEditedCategory] = useState("");
 	const [editedDescription, setEditedDescription] = useState("");
 	const [saving, setSaving] = useState(false);
-	const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
+	const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; index: number | null }>({
+		isOpen: false,
+		index: null,
+	});
+	const [deleting, setDeleting] = useState(false);
 	const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 	const [undetectedExpenses, setUndetectedExpenses] = useState<
 		Array<{
@@ -106,16 +113,21 @@ export default function ExpensesPage() {
 			setEditingIndex(null);
 		} catch (error) {
 			console.error("Failed to save edit:", error);
-			alert("Failed to save changes");
+			showError("Failed to save changes");
 		} finally {
 			setSaving(false);
 		}
 	};
 
 	const handleDelete = async (index: number) => {
-		if (!user?.uid || deletingIndex !== null) return;
+		setDeleteModal({ isOpen: true, index });
+	};
 
-		setDeletingIndex(index);
+	const handleConfirmDelete = async () => {
+		if (!user?.uid || deleteModal.index === null) return;
+
+		setDeleting(true);
+		const index = deleteModal.index;
 		try {
 			const expense = expenses[index];
 
@@ -147,17 +159,20 @@ export default function ExpensesPage() {
 			// Recalculate total
 			const total = updated.reduce((sum, exp) => sum + exp.monthlyAmount, 0);
 			setTotalMonthlyExpenses(total);
+
+			setDeleteModal({ isOpen: false, index: null });
+			showSuccess("Expense removed successfully");
 		} catch (error) {
 			console.error("Failed to delete expense:", error);
-			alert("Failed to remove expense");
+			showError("Failed to remove expense");
 		} finally {
-			setDeletingIndex(null);
+			setDeleting(false);
 		}
 	};
 
 	const handleAddExpense = async (index: number) => {
 		if (!user?.uid) {
-			alert("Please log in");
+			showError("Please log in");
 			return;
 		}
 
@@ -167,7 +182,7 @@ export default function ExpensesPage() {
 		const isDuplicate = expenses.some((exp) => exp.description.toLowerCase() === selected.description.toLowerCase());
 
 		if (isDuplicate) {
-			alert(`"${selected.description}" is already in your monthly expenses.`);
+			showError(`"${selected.description}" is already in your monthly expenses.`);
 			return;
 		}
 
@@ -205,9 +220,10 @@ export default function ExpensesPage() {
 			// Remove from undetected list
 			const newUndetected = undetectedExpenses.filter((_, i) => i !== index);
 			setUndetectedExpenses(newUndetected);
+			showSuccess(`"${selected.description}" added to your monthly expenses!`);
 		} catch (error) {
 			console.error("Failed to add expense:", error);
-			alert("Failed to add expense");
+			showError("Failed to add expense");
 		} finally {
 			setSaving(false);
 		}
@@ -242,9 +258,10 @@ export default function ExpensesPage() {
 				),
 			);
 			setRenameModal({ isOpen: false, oldDescription: "", newDescription: "", count: 0 });
+			showSuccess("Expenses renamed successfully");
 		} catch (err) {
 			console.error("Failed to rename expenses:", err);
-			alert("Failed to rename expenses. Please try again.");
+			showError("Failed to rename expenses. Please try again.");
 		} finally {
 			setRenaming(false);
 		}
@@ -298,9 +315,10 @@ export default function ExpensesPage() {
 				description: mobileEditDescription,
 			};
 			setExpenses(updated);
+			showSuccess("Changes saved successfully");
 		} catch (error) {
 			console.error("Failed to save edit:", error);
-			alert("Failed to save changes");
+			showError("Failed to save changes");
 		}
 	};
 
@@ -635,9 +653,8 @@ export default function ExpensesPage() {
 																</button>
 																<button
 																	onClick={() => handleDelete(index)}
-																	disabled={deletingIndex !== null}
-																	className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 min-h-8 min-w-8 flex items-center justify-center">
-																	<Trash2 className="w-4 h-4" />
+																	className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-800 dark:text-red-300 rounded font-medium">
+																	Delete
 																</button>
 															</>
 														)}
@@ -783,9 +800,8 @@ export default function ExpensesPage() {
 												</button>
 												<button
 													onClick={() => handleDelete(index)}
-													disabled={deletingIndex !== null}
-													className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50">
-													<Trash2 className="w-5 h-5" />
+													className="px-3 py-1 text-xs bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-800 dark:text-red-300 rounded font-medium">
+													Delete
 												</button>
 											</div>
 										)}
@@ -953,6 +969,19 @@ export default function ExpensesPage() {
 					</div>
 				</div>
 			)}
+
+			{/* Delete Confirmation Modal */}
+			<ConfirmModal
+				isOpen={deleteModal.isOpen}
+				title="Delete Expense"
+				message="Are you sure you want to remove this expense from your monthly list? This action cannot be undone."
+				confirmText="Delete"
+				cancelText="Cancel"
+				isDangerous={true}
+				isLoading={deleting}
+				onConfirm={handleConfirmDelete}
+				onCancel={() => setDeleteModal({ isOpen: false, index: null })}
+			/>
 		</div>
 	);
 }

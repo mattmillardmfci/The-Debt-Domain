@@ -1040,7 +1040,17 @@ export async function deleteUserProfile(userId: string) {
 		// Then delete the authentication account
 		const currentUser = auth.currentUser;
 		if (currentUser && currentUser.uid === userId) {
-			await currentUser.delete();
+			try {
+				await currentUser.delete();
+			} catch (authError: any) {
+				// Check for requires-recent-login error
+				if (authError.code === "auth/requires-recent-login") {
+					throw new Error(
+						"REQUIRES_REAUTHENTICATION: Please log out and log back in, then try deleting your account again.",
+					);
+				}
+				throw authError;
+			}
 		}
 	} catch (error) {
 		console.error("Error deleting user profile:", error);

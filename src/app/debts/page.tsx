@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { Debt } from "@/types";
-import { Plus, Trash2, Edit2, TrendingDown } from "lucide-react";
+import { Plus, Edit2, TrendingDown } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAlert } from "@/contexts/AlertContext";
 import {
 	getDebts,
 	saveDebt,
@@ -13,14 +14,21 @@ import {
 	detectRecurringDebts,
 	RecurringDebtPattern,
 } from "@/lib/firestoreService";
+import ConfirmModal from "@/components/ConfirmModal";
 
 export default function DebtsPage() {
 	const { user } = useAuth();
+	const { showError, showSuccess } = useAlert();
 	const [debts, setDebts] = useState<(Partial<Debt> & { id: string })[]>([]);
 	const [recurringDebts, setRecurringDebts] = useState<RecurringDebtPattern[]>([]);
 	const [showForm, setShowForm] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [editingId, setEditingId] = useState<string | null>(null);
+	const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; debtId: string | null }>({
+		isOpen: false,
+		debtId: null,
+	});
+	const [deleting, setDeleting] = useState(false);
 	const [formData, setFormData] = useState<Partial<Debt>>({
 		type: "credit-card",
 		balance: 0,
@@ -63,12 +71,12 @@ export default function DebtsPage() {
 
 	const handleAddDebt = async () => {
 		if (!formData.name || formData.balance === undefined) {
-			alert("Please fill in all required fields");
+			showError("Please fill in all required fields");
 			return;
 		}
 
 		if (!user?.uid) {
-			alert("You must be logged in to add a debt");
+			showError("You must be logged in to add a debt");
 			return;
 		}
 
@@ -119,27 +127,32 @@ export default function DebtsPage() {
 			setShowForm(false);
 		} catch (err) {
 			console.error("Failed to save debt:", err);
-			alert("Failed to save debt. Please try again.");
+			showError("Failed to save debt. Please try again.");
 		}
 	};
 
 	const handleDeleteDebt = async (id: string) => {
-		if (!user?.uid) return;
+		setDeleteModal({ isOpen: true, debtId: id });
+	};
 
-		if (!confirm("Are you sure you want to delete this debt?")) {
-			return;
-		}
+	const handleConfirmDeleteDebt = async () => {
+		if (!user?.uid || !deleteModal.debtId) return;
 
+		setDeleting(true);
 		try {
-			await deleteDebt(user.uid, id);
-			setDebts(debts.filter((d) => d.id !== id));
+			await deleteDebt(user.uid, deleteModal.debtId);
+			setDebts(debts.filter((d) => d.id !== deleteModal.debtId));
 
 			// Reload recurring debts to show any that were hidden by this debt
 			const recurringData = await detectRecurringDebts(user.uid);
 			setRecurringDebts(recurringData);
+			setDeleteModal({ isOpen: false, debtId: null });
+			showSuccess("Debt deleted successfully");
 		} catch (err) {
 			console.error("Failed to delete debt:", err);
-			alert("Failed to delete debt. Please try again.");
+			showError("Failed to delete debt. Please try again.");
+		} finally {
+			setDeleting(false);
 		}
 	};
 
@@ -171,7 +184,7 @@ export default function DebtsPage() {
 
 	const handleCreateDebtFromRecurring = async (pattern: RecurringDebtPattern) => {
 		if (!user?.uid) {
-			alert("You must be logged in");
+			showError("You must be logged in");
 			return;
 		}
 
@@ -189,10 +202,10 @@ export default function DebtsPage() {
 			setDebts([...debts, { ...newDebt, id: docId }]);
 			// Remove from recurring list
 			setRecurringDebts(recurringDebts.filter((r) => r.description !== pattern.description));
-			alert(`Created debt "${pattern.description}". Adjust the balance if needed.`);
+			showSuccess(`Created debt "${pattern.description}". Adjust the balance if needed.`);
 		} catch (err) {
 			console.error("Failed to create debt from recurring:", err);
-			alert("Failed to create debt. Please try again.");
+			showError("Failed to create debt. Please try again.");
 		}
 	};
 
@@ -454,8 +467,8 @@ export default function DebtsPage() {
 											</button>
 											<button
 												onClick={() => handleDeleteDebt(debt.id)}
-												className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors inline-block">
-												<Trash2 className="w-4 h-4" />
+												className="px-3 py-1 text-xs bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-800 dark:text-red-300 rounded font-medium inline-block">
+												Delete
 											</button>
 										</td>
 									</tr>
@@ -539,6 +552,19 @@ export default function DebtsPage() {
 					</div>
 				</div>
 			)}
+
+			{/* Delete Debt Confirmation Modal */}
+			<ConfirmModal
+				isOpen={deleteModal.isOpen}
+				title="Delete Debt"
+				message="Are you sure you want to delete this debt? This action cannot be undone."
+				confirmText="Delete"
+				cancelText="Cancel"
+				isDangerous={true}
+				isLoading={deleting}
+				onConfirm={handleConfirmDeleteDebt}
+				onCancel={() => setDeleteModal({ isOpen: false, debtId: null })}
+			/>
 		</div>
 	);
 }

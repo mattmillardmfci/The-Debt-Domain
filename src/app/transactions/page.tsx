@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, Trash2, Edit2, Edit3, X } from "lucide-react";
+import { Plus, Edit2, Edit3, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Transaction, TransactionCategory } from "@/types";
 import {
@@ -14,11 +14,14 @@ import {
 	saveCustomRecurringExpense,
 } from "@/lib/firestoreService";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAlert } from "@/contexts/AlertContext";
 import { QueryDocumentSnapshot } from "firebase/firestore";
 import { COMMON_CATEGORIES } from "@/lib/constants";
+import ConfirmModal from "@/components/ConfirmModal";
 
 export default function TransactionsPage() {
 	const { user } = useAuth();
+	const { showError, showSuccess } = useAlert();
 	const [transactions, setTransactions] = useState<(Partial<Transaction> & { id: string })[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [loadingMore, setLoadingMore] = useState(false);
@@ -42,6 +45,11 @@ export default function TransactionsPage() {
 	const [renaming, setRenaming] = useState(false);
 	const [allCategories, setAllCategories] = useState<string[]>(COMMON_CATEGORIES);
 	const [addTransactionModal, setAddTransactionModal] = useState(false);
+	const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; transactionId: string | null }>({
+		isOpen: false,
+		transactionId: null,
+	});
+	const [deleting, setDeleting] = useState(false);
 	const [newTransaction, setNewTransaction] = useState({
 		date: new Date().toISOString().split("T")[0],
 		description: "",
@@ -100,18 +108,23 @@ export default function TransactionsPage() {
 	};
 
 	const handleDeleteTransaction = async (transactionId: string) => {
-		if (!user?.uid) return;
+		setDeleteModal({ isOpen: true, transactionId });
+	};
 
-		if (!confirm("Are you sure you want to delete this transaction?")) {
-			return;
-		}
+	const handleConfirmDelete = async () => {
+		if (!user?.uid || !deleteModal.transactionId) return;
 
+		setDeleting(true);
 		try {
-			await deleteTransaction(user.uid, transactionId);
-			setTransactions(transactions.filter((t) => t.id !== transactionId));
+			await deleteTransaction(user.uid, deleteModal.transactionId);
+			setTransactions(transactions.filter((t) => t.id !== deleteModal.transactionId));
+			setDeleteModal({ isOpen: false, transactionId: null });
+			showSuccess("Transaction deleted successfully");
 		} catch (err) {
 			console.error("Failed to delete transaction:", err);
-			alert("Failed to delete transaction. Please try again.");
+			showError("Failed to delete transaction. Please try again.");
+		} finally {
+			setDeleting(false);
 		}
 	};
 
@@ -127,7 +140,7 @@ export default function TransactionsPage() {
 			setEditingId(null);
 		} catch (err) {
 			console.error("Failed to update category:", err);
-			alert("Failed to update category. Please try again.");
+			showError("Failed to update category. Please try again.");
 		} finally {
 			setSaving(false);
 		}
@@ -156,9 +169,10 @@ export default function TransactionsPage() {
 				),
 			);
 			setRenameModal({ isOpen: false, oldDescription: "", newDescription: "", count: 0 });
+			showSuccess("Transactions renamed successfully");
 		} catch (err) {
 			console.error("Failed to rename transactions:", err);
-			alert("Failed to rename transactions. Please try again.");
+			showError("Failed to rename transactions. Please try again.");
 		} finally {
 			setRenaming(false);
 		}
@@ -166,7 +180,7 @@ export default function TransactionsPage() {
 
 	const handleAddTransaction = async () => {
 		if (!user?.uid || !newTransaction.description.trim() || !newTransaction.amount) {
-			alert("Please fill in all fields");
+			showError("Please fill in all fields");
 			return;
 		}
 
@@ -202,9 +216,10 @@ export default function TransactionsPage() {
 			setTransactions(result.transactions);
 			setLastDoc(result.lastDoc);
 			setHasMore(result.hasMore);
+			showSuccess("Transaction added successfully");
 		} catch (err) {
 			console.error("Failed to save transaction:", err);
-			alert("Failed to save transaction. Please try again.");
+			showError("Failed to save transaction. Please try again.");
 		} finally {
 			setSavingTransaction(false);
 		}
@@ -212,7 +227,7 @@ export default function TransactionsPage() {
 
 	const handleAddToMonthlyExpenses = async (transaction: Partial<Transaction> & { id: string }) => {
 		if (!user?.uid) {
-			alert("Please log in");
+			showError("Please log in");
 			return;
 		}
 
@@ -229,10 +244,10 @@ export default function TransactionsPage() {
 				lastOccurrence: transaction.date instanceof Date ? transaction.date : new Date(transaction.date || ""),
 			});
 
-			alert(`"${transaction.description}" added to your monthly expenses!`);
+			showSuccess(`"${transaction.description}" added to your monthly expenses!`);
 		} catch (err) {
 			console.error("Failed to add to monthly expenses:", err);
-			alert("Failed to add expense. Please try again.");
+			showError("Failed to add expense. Please try again.");
 		} finally {
 			setAddingToExpenses(null);
 		}
@@ -392,8 +407,8 @@ export default function TransactionsPage() {
 										</button>
 										<button
 											onClick={() => handleDeleteTransaction(t.id)}
-											className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors min-h-10 min-w-10 flex items-center justify-center">
-											<Trash2 className="w-4 h-4" />
+											className="px-3 py-1 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-800 dark:text-red-300 rounded-full text-xs font-medium">
+											Delete
 										</button>
 									</div>
 								</td>
@@ -485,8 +500,8 @@ export default function TransactionsPage() {
 									</button>
 									<button
 										onClick={() => handleDeleteTransaction(t.id)}
-										className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors min-h-10 min-w-10 flex items-center justify-center">
-										<Trash2 className="w-4 h-4" />
+										className="px-3 py-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-800 dark:text-red-300 rounded text-xs font-medium min-h-10 flex-1">
+										Delete
 									</button>
 								</div>
 							</div>
@@ -691,6 +706,19 @@ export default function TransactionsPage() {
 					</div>
 				</div>
 			)}
+
+			{/* Delete Confirmation Modal */}
+			<ConfirmModal
+				isOpen={deleteModal.isOpen}
+				title="Delete Transaction"
+				message="Are you sure you want to delete this transaction? This action cannot be undone."
+				confirmText="Delete"
+				cancelText="Cancel"
+				isDangerous={true}
+				isLoading={deleting}
+				onConfirm={handleConfirmDelete}
+				onCancel={() => setDeleteModal({ isOpen: false, transactionId: null })}
+			/>
 		</div>
 	);
 }
