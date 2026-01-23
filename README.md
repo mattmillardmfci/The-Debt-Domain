@@ -287,7 +287,7 @@ MIT License - see [LICENSE](LICENSE)
 
 - **Bugs**: GitHub Issues
 - **Features**: GitHub Discussions
-- **Contact**: support@financead visor.dev
+- **Contact**: support@financeadvisor.dev
 
 ## 🙏 Acknowledgments
 

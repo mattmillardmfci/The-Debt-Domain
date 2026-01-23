@@ -464,7 +464,7 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 				)[0];
 				const category = mostRecentTransaction?.category || "Other";
 				// Use the most recent (original) description for display
-				const description = mostRecentTransaction?.description || mainVendor;
+				const description = mostRecentTransaction?.description || chargeGroup.merchant;
 
 				// Get last occurrence date
 				const lastOccurrence = transactions

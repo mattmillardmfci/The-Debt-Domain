@@ -1,10 +1,25 @@
 "use client";
 
-// Force deployment to Vercel
 import { useAuth } from "@/contexts/AuthContext";
-import { TrendingUp, TrendingDown, AlertCircle, Plus, Info, X } from "lucide-react";
+import { useAlert } from "@/contexts/AlertContext";
+import { TrendingUp, TrendingDown, AlertCircle, Plus, Info, X, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import {
+	BarChart,
+	Bar,
+	LineChart,
+	Line,
+	XAxis,
+	YAxis,
+	CartesianGrid,
+	Tooltip,
+	Legend,
+	ResponsiveContainer,
+	PieChart,
+	Pie,
+	Cell,
+} from "recharts";
 import {
 	getTransactions,
 	getDebts,
@@ -19,9 +34,9 @@ interface DashboardMetrics {
 	monthlyExpenses: number;
 	savingsRate: number;
 	totalDebt: number;
-	budgetUsage: number;
-	incomeBreakdown: string; // For tooltip
-	expensesBreakdown: string; // For tooltip
+	netWorth: number;
+	incomeBreakdown: string;
+	expensesBreakdown: string;
 }
 
 interface CategorySpending {
@@ -29,27 +44,38 @@ interface CategorySpending {
 	currentMonth: number;
 	lastMonth: number;
 	average: number;
+	trend: number;
+}
+
+interface ChartData {
+	month: string;
+	income: number;
+	expenses: number;
+	savings: number;
 }
 
 export default function DashboardPage() {
 	const { user, updateDisplayName } = useAuth();
+	const { showSuccess, showError } = useAlert();
 	const [metrics, setMetrics] = useState<DashboardMetrics>({
 		monthlyIncome: 0,
 		monthlyExpenses: 0,
 		savingsRate: 0,
 		totalDebt: 0,
-		budgetUsage: 0,
+		netWorth: 0,
 		incomeBreakdown: "",
 		expensesBreakdown: "",
 	});
 	const [hasData, setHasData] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
-	const [showIncomeTooltip, setShowIncomeTooltip] = useState(false);
-	const [showExpensesTooltip, setShowExpensesTooltip] = useState(false);
 	const [showNameModal, setShowNameModal] = useState(false);
 	const [nameInput, setNameInput] = useState("");
 	const [savingName, setSavingName] = useState(false);
 	const [categorySpending, setCategorySpending] = useState<CategorySpending[]>([]);
+	const [chartData, setChartData] = useState<ChartData[]>([]);
+	const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+	const COLORS = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"];
 
 	useEffect(() => {
 		if (!user?.uid) {
@@ -58,7 +84,6 @@ export default function DashboardPage() {
 			return;
 		}
 
-		// Fetch data from Firestore and calculate metrics
 		const loadMetrics = async () => {
 			try {
 				const [transactions, debts, incomeEntries, incomePatterns, recurringDebts, customExpenses] = await Promise.all([
@@ -73,15 +98,16 @@ export default function DashboardPage() {
 				// Calculate total debt
 				const totalDebt = debts.reduce((sum, d) => sum + (d.balance || 0), 0);
 
-				// Calculate monthly expenses from both detected recurring debts and custom recurring expenses
+				// Calculate net worth
+				const totalAssets = incomeEntries.reduce((sum, i) => sum + (i.amount || 0), 0);
+				const netWorth = totalAssets - totalDebt / 100;
+
+				// Calculate monthly expenses
 				let monthlyExpensesAbsolute = 0;
 				let expensesBreakdownLines: string[] = [];
 
-				// Process detected recurring debts
 				recurringDebts.forEach((debt) => {
 					let monthlyImpact = debt.avgAmount;
-
-					// Calculate monthly impact based on frequency
 					if (debt.estimatedFrequency === "weekly") {
 						monthlyImpact = debt.avgAmount * (52 / 12);
 					} else if (debt.estimatedFrequency === "biweekly") {
@@ -96,121 +122,99 @@ export default function DashboardPage() {
 
 					monthlyExpensesAbsolute += monthlyImpact;
 					expensesBreakdownLines.push(
-						`${debt.description} (${debt.estimatedFrequency}): $${debt.avgAmount.toFixed(2)} per occurrence × frequency = $${monthlyImpact.toFixed(2)}/mo`,
+						`${debt.description} (${debt.estimatedFrequency}): $${debt.avgAmount.toFixed(2)} → $${monthlyImpact.toFixed(2)}/mo`,
 					);
 				});
 
-				// Process custom recurring expenses
-				customExpenses.forEach((custom) => {
-					let monthlyImpact = custom.avgAmount;
-
-					// Calculate monthly impact based on frequency
-					if (custom.estimatedFrequency === "weekly") {
-						monthlyImpact = custom.avgAmount * (52 / 12);
-					} else if (custom.estimatedFrequency === "biweekly") {
-						monthlyImpact = custom.avgAmount * (26 / 12);
-					} else if (custom.estimatedFrequency === "monthly") {
-						monthlyImpact = custom.avgAmount;
-					} else if (custom.estimatedFrequency === "quarterly") {
-						monthlyImpact = custom.avgAmount / 3;
-					} else if (custom.estimatedFrequency === "annual") {
-						monthlyImpact = custom.avgAmount / 12;
-					}
-
-					monthlyExpensesAbsolute += monthlyImpact;
-					expensesBreakdownLines.push(
-						`${custom.description} (${custom.estimatedFrequency}): $${custom.avgAmount.toFixed(2)} per occurrence × frequency = $${monthlyImpact.toFixed(2)}/mo`,
-					);
+				customExpenses.forEach((expense) => {
+					const amount = expense.avgAmount || 0;
+					monthlyExpensesAbsolute += amount;
+					expensesBreakdownLines.push(`${expense.description}: $${amount.toFixed(2)}/mo`);
 				});
 
-				// Calculate monthly income from income entries + detected income patterns
+				// Calculate monthly income
 				let monthlyIncome = 0;
 				let incomeBreakdownLines: string[] = [];
 
-				// From manual income entries
-				incomeEntries.forEach((income) => {
-					const amountInDollars = (income.amount || 0) / 100; // Convert from cents
-					let monthlyAmount = 0;
-					if (income.frequency === "monthly") {
-						monthlyAmount = amountInDollars;
-					} else if (income.frequency === "yearly") {
-						monthlyAmount = amountInDollars / 12;
-					} else if (income.frequency === "biweekly") {
-						monthlyAmount = amountInDollars * (26 / 12);
-					} else if (income.frequency === "semi-monthly") {
-						monthlyAmount = amountInDollars * 2;
-					} else if (income.frequency === "weekly") {
-						monthlyAmount = amountInDollars * (52 / 12);
-					}
-
-					if (income.frequency !== "once") {
-						monthlyIncome += monthlyAmount;
-						incomeBreakdownLines.push(
-							`${income.description || "Manual Income"} (${income.frequency}): $${amountInDollars.toFixed(2)} × frequency multiplier = $${monthlyAmount.toFixed(2)}/mo`,
-						);
-					}
-				});
-
-				// From detected recurring income patterns
 				incomePatterns.forEach((pattern) => {
-					monthlyIncome += pattern.monthlyAmount; // Already in dollars
-					incomeBreakdownLines.push(
-						`${pattern.description} (${pattern.frequency}): $${pattern.amount.toFixed(2)} per occurrence × frequency = $${pattern.monthlyAmount.toFixed(2)}/mo`,
-					);
+					let monthlyImpact = pattern.amount;
+					if (pattern.frequency === "weekly") {
+						monthlyImpact = pattern.amount * (52 / 12);
+					} else if (pattern.frequency === "biweekly") {
+						monthlyImpact = pattern.amount * (26 / 12);
+					} else if (pattern.frequency === "monthly") {
+						monthlyImpact = pattern.amount;
+					}
+
+					monthlyIncome += monthlyImpact;
+					incomeBreakdownLines.push(`${pattern.description} (${pattern.frequency}): $${monthlyImpact.toFixed(2)}/mo`);
 				});
-				const savingsRate =
-					monthlyIncome > 0 ? Math.round(((monthlyIncome - monthlyExpensesAbsolute) / monthlyIncome) * 100) : 0;
 
-				// Calculate category spending for current month and last month
-				const now = new Date();
-				const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-				const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-				const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+				// Calculate savings rate
+				const netIncome = monthlyIncome - monthlyExpensesAbsolute;
+				const savingsRate = monthlyIncome > 0 ? Math.round((netIncome / monthlyIncome) * 100) : 0;
 
-				const categoryMap = new Map<string, { currentMonth: number; lastMonth: number; allTime: number[] }>();
+				// Process category spending
+				const categoryMap = new Map<string, { current: number; last: number; count: number; total: number }>();
 
 				transactions.forEach((t) => {
-					if (t.amount && t.amount < 0) {
-						const transDate = t.date instanceof Date ? t.date : new Date(t.date || 0);
-						const category = t.category || "Other";
-						const amount = Math.abs(t.amount) / 100; // Convert from cents to dollars
+					const cat = (t.category as string) || "Other";
+					const amount = (t.amount || 0) / 100;
+					const txDate = t.date instanceof Date ? t.date : new Date(t.date as any);
+					const now = new Date();
+					const isCurrentMonth = txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
+					const isLastMonth =
+						(txDate.getMonth() === now.getMonth() - 1 || (now.getMonth() === 0 && txDate.getMonth() === 11)) &&
+						(txDate.getFullYear() === now.getFullYear() || txDate.getFullYear() === now.getFullYear() - 1);
 
-						if (!categoryMap.has(category)) {
-							categoryMap.set(category, { currentMonth: 0, lastMonth: 0, allTime: [] });
-						}
-
-						const catData = categoryMap.get(category)!;
-						catData.allTime.push(amount);
-
-						if (transDate >= currentMonthStart) {
-							catData.currentMonth += amount;
-						} else if (transDate >= lastMonthStart && transDate <= lastMonthEnd) {
-							catData.lastMonth += amount;
-						}
+					if (!categoryMap.has(cat)) {
+						categoryMap.set(cat, { current: 0, last: 0, count: 0, total: 0 });
 					}
+
+					const data = categoryMap.get(cat)!;
+					if (isCurrentMonth) data.current += amount;
+					if (isLastMonth) data.last += amount;
+					data.total += amount;
+					data.count += 1;
 				});
 
 				const categorySpendingData: CategorySpending[] = Array.from(categoryMap.entries())
-					.map(([category, data]) => ({
-						category,
-						currentMonth: Math.round(data.currentMonth * 100) / 100,
-						lastMonth: Math.round(data.lastMonth * 100) / 100,
-						average: Math.round((data.allTime.reduce((a, b) => a + b, 0) / data.allTime.length) * 100) / 100,
+					.map(([cat, data]) => ({
+						category: cat,
+						currentMonth: data.current,
+						lastMonth: data.last,
+						average: data.total / Math.max(1, Math.ceil(data.count / 30)),
+						trend: data.last > 0 ? Math.round(((data.current - data.last) / data.last) * 100) : 0,
 					}))
-					.sort((a, b) => b.currentMonth - a.currentMonth);
+					.sort((a, b) => b.currentMonth - a.currentMonth)
+					.slice(0, 8);
+
+				// Create chart data
+				const now = new Date();
+				const chartDataPoints: ChartData[] = [];
+				for (let i = 5; i >= 0; i--) {
+					const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+					chartDataPoints.push({
+						month: d.toLocaleString("default", { month: "short" }),
+						income: monthlyIncome,
+						expenses: monthlyExpensesAbsolute,
+						savings: Math.max(0, monthlyIncome - monthlyExpensesAbsolute),
+					});
+				}
 
 				setCategorySpending(categorySpendingData);
+				setChartData(chartDataPoints);
 
 				setMetrics({
 					monthlyIncome: Math.round(monthlyIncome * 100) / 100,
 					monthlyExpenses: Math.round(monthlyExpensesAbsolute * 100) / 100,
 					savingsRate: savingsRate,
 					totalDebt: Math.round(totalDebt / 100),
-					budgetUsage: 0, // TODO: Integrate with budgets
+					netWorth: Math.round(netWorth),
 					incomeBreakdown:
 						incomeBreakdownLines.length > 0
 							? incomeBreakdownLines.join("\n")
-							: "No income sources found. Add income entries or upload transactions.",
+							: "No income sources found. Add income entries to track earnings.",
 					expensesBreakdown:
 						expensesBreakdownLines.length > 0
 							? expensesBreakdownLines.join("\n")
@@ -233,10 +237,7 @@ export default function DashboardPage() {
 	useEffect(() => {
 		if (!user || !user.uid) return;
 
-		// Check if user hasn't provided a real name (still has default "User" or empty)
 		const needsName = !user.displayName || user.displayName === "User" || user.displayName.trim() === "";
-
-		// Check localStorage to see if we've already shown this modal
 		const hasSeenNameModal = localStorage.getItem(`nameModalSeen_${user.uid}`);
 
 		if (needsName && !hasSeenNameModal) {
@@ -247,42 +248,42 @@ export default function DashboardPage() {
 	const handleSaveName = async () => {
 		const trimmedName = nameInput.trim();
 		if (!trimmedName) {
-			alert("Please enter your name");
+			showError("Please enter your name");
 			return;
 		}
 
 		setSavingName(true);
 		try {
 			await updateDisplayName(trimmedName);
-			// Mark this modal as seen in localStorage
 			if (user?.uid) {
 				localStorage.setItem(`nameModalSeen_${user.uid}`, "true");
 			}
 			setShowNameModal(false);
 			setNameInput("");
+			showSuccess("Name saved successfully!");
 		} catch (err) {
 			console.error("Failed to update name:", err);
-			alert("Failed to save name. Please try again.");
+			showError("Failed to save name. Please try again.");
 		} finally {
 			setSavingName(false);
 		}
 	};
 
 	const handleSkipName = () => {
-		// Mark this modal as seen so we don't show it again
 		if (user?.uid) {
 			localStorage.setItem(`nameModalSeen_${user.uid}`, "true");
 		}
 		setShowNameModal(false);
-		setNameInput("");
 	};
 
 	return (
-		<div className="space-y-8">
+		<div className="space-y-8 pb-8">
 			{/* Header */}
 			<div>
-				<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome, {user?.displayName || "User"}!</h1>
-				<p className="text-gray-600 dark:text-gray-400 mt-2">Here's your financial overview</p>
+				<h1 className="text-4xl font-bold text-gray-900 dark:text-white">
+					Welcome back, {user?.displayName || "User"}! 👋
+				</h1>
+				<p className="text-gray-600 dark:text-gray-400 mt-2">Your financial overview at a glance</p>
 			</div>
 
 			{/* Loading State */}
@@ -299,273 +300,254 @@ export default function DashboardPage() {
 					<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
 						Get Started with Your Financial Dashboard
 					</h2>
-					<p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
-						Upload your bank statements to analyze your spending, build budgets, and create a debt payoff plan.
+					<p className="text-gray-600 dark:text-gray-400 mb-6">
+						Upload a bank statement to analyze your spending and get personalized insights.
 					</p>
 					<Link
 						href="/transactions/upload"
 						className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
 						<Plus className="w-5 h-5" />
-						Upload Bank Statement
+						Upload Your First Statement
 					</Link>
 				</div>
 			) : (
 				<>
-					{/* Metrics Grid */}
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+					{/* Top Metrics Grid */}
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 						{/* Monthly Income */}
-						<Link
-							href="/income"
-							className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg hover:border-green-300 dark:hover:border-green-600 transition-all cursor-pointer relative"
-							onMouseEnter={() => setShowIncomeTooltip(true)}
-							onMouseLeave={() => setShowIncomeTooltip(false)}
-							onTouchStart={() => setShowIncomeTooltip(!showIncomeTooltip)}>
-							<div className="flex items-center justify-between">
-								<div className="flex-1">
-									<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Income</p>
-									<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-										$
-										{metrics.monthlyIncome.toLocaleString("en-US", {
-											minimumFractionDigits: 2,
-											maximumFractionDigits: 2,
-										})}
-									</p>
-								</div>
-								<div className="flex flex-col items-center gap-2">
-									<TrendingUp className="w-8 h-8 text-green-600" />
-									<Info className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-								</div>
+						<div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-900/10 rounded-lg p-6 border border-emerald-200 dark:border-emerald-800">
+							<div className="flex items-center justify-between mb-3">
+								<span className="text-sm font-medium text-emerald-900 dark:text-emerald-300">Monthly Income</span>
+								<ArrowDownLeft className="w-4 h-4 text-emerald-600" />
 							</div>
-
-							{/* Tooltip */}
-							{showIncomeTooltip && (
-								<div className="absolute bottom-full left-0 right-0 mb-2 bg-gray-900 dark:bg-gray-800 text-white text-xs p-3 rounded border border-gray-700 z-50 whitespace-pre-wrap">
-									<div className="font-semibold mb-2">How Monthly Income is Calculated:</div>
-									<div className="text-gray-200">{metrics.incomeBreakdown}</div>
-									<div className="text-gray-400 text-xs mt-2 italic">Frequency multipliers:</div>
-									<div className="text-gray-400 text-xs">
-										Weekly: ×4.33 | Biweekly: ×2.17 | Semi-monthly: ×2 | Monthly: ×1 | Yearly: ÷12
-									</div>
-								</div>
-							)}
-						</Link>
+							<p className="text-3xl font-bold text-emerald-900 dark:text-emerald-100">
+								${metrics.monthlyIncome.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+							</p>
+							<p className="text-xs text-emerald-700 dark:text-emerald-300 mt-2">Based on detected patterns</p>
+						</div>
 
 						{/* Monthly Expenses */}
-						<Link
-							href="/expenses"
-							className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg hover:border-red-300 dark:hover:border-red-600 transition-all cursor-pointer relative"
-							onMouseEnter={() => setShowExpensesTooltip(true)}
-							onMouseLeave={() => setShowExpensesTooltip(false)}
-							onTouchStart={() => setShowExpensesTooltip(!showExpensesTooltip)}>
-							<div className="flex items-center justify-between">
-								<div className="flex-1">
-									<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Expenses</p>
-									<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-										$
-										{metrics.monthlyExpenses.toLocaleString("en-US", {
-											minimumFractionDigits: 2,
-											maximumFractionDigits: 2,
-										})}
-									</p>
-								</div>
-								<div className="flex flex-col items-center gap-2">
-									<TrendingDown className="w-8 h-8 text-red-600" />
-									<Info className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-								</div>
+						<div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/10 rounded-lg p-6 border border-red-200 dark:border-red-800">
+							<div className="flex items-center justify-between mb-3">
+								<span className="text-sm font-medium text-red-900 dark:text-red-300">Monthly Expenses</span>
+								<ArrowUpRight className="w-4 h-4 text-red-600" />
 							</div>
-
-							{/* Tooltip */}
-							{showExpensesTooltip && (
-								<div className="absolute bottom-full left-0 right-0 mb-2 bg-gray-900 dark:bg-gray-800 text-white text-xs p-3 rounded border border-gray-700 z-50 whitespace-pre-wrap">
-									<div className="font-semibold mb-2">How Monthly Expenses are Calculated:</div>
-									<div className="text-gray-200">{metrics.expensesBreakdown}</div>
-									<div className="text-gray-400 text-xs mt-2 italic">Frequency multipliers:</div>
-									<div className="text-gray-400 text-xs">
-										Weekly: ×4.33 | Biweekly: ×2.17 | Monthly: ×1 | Quarterly: ÷3 | Annual: ÷12
-									</div>
-								</div>
-							)}
-						</Link>
-
-						{/* Total Debt */}
-						<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
-							<div className="flex items-center justify-between">
-								<div>
-									<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Debt</p>
-									<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-										${metrics.totalDebt.toLocaleString()}
-									</p>
-								</div>
-								<AlertCircle className="w-8 h-8 text-orange-600" />
-							</div>
+							<p className="text-3xl font-bold text-red-900 dark:text-red-100">
+								${metrics.monthlyExpenses.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+							</p>
+							<p className="text-xs text-red-700 dark:text-red-300 mt-2">
+								{Math.round((metrics.monthlyExpenses / metrics.monthlyIncome) * 100)}% of income
+							</p>
 						</div>
 
 						{/* Savings Rate */}
-						<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
-							<div className="flex items-center justify-between">
-								<div>
-									<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Savings Rate</p>
-									<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{metrics.savingsRate}%</p>
-								</div>
-								<TrendingUp className="w-8 h-8 text-emerald-600" />
+						<div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
+							<div className="flex items-center justify-between mb-3">
+								<span className="text-sm font-medium text-blue-900 dark:text-blue-300">Savings Rate</span>
+								<TrendingUp className="w-4 h-4 text-blue-600" />
 							</div>
+							<p className="text-3xl font-bold text-blue-900 dark:text-blue-100">{metrics.savingsRate}%</p>
+							<p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+								$
+								{Math.max(0, metrics.monthlyIncome - metrics.monthlyExpenses).toLocaleString("en-US", {
+									maximumFractionDigits: 0,
+								})}
+								/mo
+							</p>
+						</div>
+
+						{/* Total Debt */}
+						<div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/10 rounded-lg p-6 border border-purple-200 dark:border-purple-800">
+							<div className="flex items-center justify-between mb-3">
+								<span className="text-sm font-medium text-purple-900 dark:text-purple-300">Total Debt</span>
+								<AlertCircle className="w-4 h-4 text-purple-600" />
+							</div>
+							<p className="text-3xl font-bold text-purple-900 dark:text-purple-100">
+								${metrics.totalDebt.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+							</p>
+							<p className="text-xs text-purple-700 dark:text-purple-300 mt-2">
+								{metrics.savingsRate > 0
+									? `~${Math.round(metrics.totalDebt / Math.max(metrics.monthlyIncome - metrics.monthlyExpenses, 1))} months to pay off`
+									: "Add savings to pay down"}
+							</p>
 						</div>
 					</div>
 
+					{/* Charts Section */}
+					<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+						{/* Income vs Expenses Trend */}
+						<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
+							<h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">6-Month Trend</h3>
+							<ResponsiveContainer width="100%" height={300}>
+								<BarChart data={chartData}>
+									<CartesianGrid strokeDasharray="3 3" stroke="rgba(100, 100, 100, 0.1)" />
+									<XAxis dataKey="month" stroke="#999" />
+									<YAxis stroke="#999" />
+									<Tooltip
+										contentStyle={{
+											backgroundColor: "#1f2937",
+											border: "1px solid #374151",
+											borderRadius: "6px",
+										}}
+										labelStyle={{ color: "#fff" }}
+									/>
+									<Legend />
+									<Bar dataKey="income" fill="#10b981" radius={[8, 8, 0, 0]} />
+									<Bar dataKey="expenses" fill="#ef4444" radius={[8, 8, 0, 0]} />
+									<Bar dataKey="savings" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+								</BarChart>
+							</ResponsiveContainer>
+						</div>
+
+						{/* Category Breakdown */}
+						<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
+							<h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Spending by Category</h3>
+							{categorySpending.length > 0 ? (
+								<ResponsiveContainer width="100%" height={300}>
+									<PieChart>
+										<Pie
+											data={categorySpending.slice(0, 6).map((cat) => ({
+												name: cat.category,
+												value: parseFloat(cat.currentMonth.toFixed(2)),
+											}))}
+											cx="50%"
+											cy="50%"
+											labelLine={false}
+											label={({ name, value }) => `${name}: $${value}`}
+											outerRadius={80}
+											fill="#8884d8"
+											dataKey="value">
+											{categorySpending.slice(0, 6).map((entry, index) => (
+												<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+											))}
+										</Pie>
+										<Tooltip formatter={(value) => `$${typeof value === "number" ? value.toFixed(2) : "0.00"}`} />
+									</PieChart>
+								</ResponsiveContainer>
+							) : (
+								<div className="flex items-center justify-center h-64 text-gray-400">No spending data</div>
+							)}
+						</div>
+					</div>
+
+					{/* Category Comparison Cards */}
+					{categorySpending.length > 0 && (
+						<div>
+							<h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Category Breakdown</h3>
+							<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+								{categorySpending.map((cat, idx) => {
+									const trendUp = cat.trend > 0;
+									const trendColor = trendUp ? "text-red-600" : "text-emerald-600";
+									const bgColor = `bg-slate-50 dark:bg-slate-700/50`;
+
+									return (
+										<div
+											key={idx}
+											className={`${bgColor} rounded-lg p-4 border border-gray-200 dark:border-slate-600 cursor-pointer hover:shadow-lg transition-shadow`}
+											onClick={() => setSelectedCategory(cat.category)}>
+											<div className="flex items-start justify-between mb-3">
+												<div>
+													<h4 className="font-medium text-gray-900 dark:text-white text-sm">{cat.category}</h4>
+													<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">This month</p>
+												</div>
+												{cat.trend !== 0 && (
+													<div className={`flex items-center gap-1 ${trendColor}`}>
+														{trendUp ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownLeft className="w-4 h-4" />}
+														<span className="text-xs font-medium">{Math.abs(cat.trend)}%</span>
+													</div>
+												)}
+											</div>
+
+											<p className="text-2xl font-bold text-gray-900 dark:text-white">${cat.currentMonth.toFixed(2)}</p>
+
+											<div className="mt-3 space-y-1 text-xs text-gray-600 dark:text-gray-400">
+												<div className="flex justify-between">
+													<span>Last month:</span>
+													<span className="font-medium">${cat.lastMonth.toFixed(2)}</span>
+												</div>
+												<div className="flex justify-between">
+													<span>Average:</span>
+													<span className="font-medium">${cat.average.toFixed(2)}</span>
+												</div>
+											</div>
+										</div>
+									);
+								})}
+							</div>
+						</div>
+					)}
+
 					{/* Quick Actions */}
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 						<Link
 							href="/transactions/upload"
-							className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg transition-shadow cursor-pointer">
+							className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600 transition-all cursor-pointer">
 							<div className="flex items-center gap-3 mb-3">
 								<Plus className="w-5 h-5 text-blue-600" />
 								<h3 className="font-semibold text-gray-900 dark:text-white">Upload Statement</h3>
 							</div>
-							<p className="text-sm text-gray-600 dark:text-gray-400">Add a new bank statement for analysis</p>
+							<p className="text-sm text-gray-600 dark:text-gray-400">Import new transaction data</p>
 						</Link>
 
 						<Link
 							href="/debts"
-							className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg transition-shadow cursor-pointer">
+							className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg hover:border-orange-300 dark:hover:border-orange-600 transition-all cursor-pointer">
 							<div className="flex items-center gap-3 mb-3">
 								<AlertCircle className="w-5 h-5 text-orange-600" />
 								<h3 className="font-semibold text-gray-900 dark:text-white">Manage Debts</h3>
 							</div>
-							<p className="text-sm text-gray-600 dark:text-gray-400">Track and manage your debts</p>
+							<p className="text-sm text-gray-600 dark:text-gray-400">Review payoff strategies</p>
 						</Link>
 
 						<Link
 							href="/payoff-plan"
-							className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg transition-shadow cursor-pointer">
+							className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg hover:border-emerald-300 dark:hover:border-emerald-600 transition-all cursor-pointer">
 							<div className="flex items-center gap-3 mb-3">
-								<TrendingUp className="w-5 h-5 text-green-600" />
+								<TrendingUp className="w-5 h-5 text-emerald-600" />
 								<h3 className="font-semibold text-gray-900 dark:text-white">Payoff Plan</h3>
 							</div>
-							<p className="text-sm text-gray-600 dark:text-gray-400">Create your debt payoff strategy</p>
+							<p className="text-sm text-gray-600 dark:text-gray-400">Create debt strategy</p>
 						</Link>
 					</div>
-
-					{/* Category Breakdown */}
-					{categorySpending.length > 0 && (
-						<div>
-							<h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Spending by Category</h2>
-							<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-								{categorySpending.map((cat) => (
-									<div
-										key={cat.category}
-										className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
-										<div className="flex items-start justify-between mb-4">
-											<div>
-												<p className="text-sm font-medium text-gray-600 dark:text-gray-400">{cat.category}</p>
-												<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-													$
-													{cat.currentMonth.toLocaleString("en-US", {
-														minimumFractionDigits: 2,
-														maximumFractionDigits: 2,
-													})}
-												</p>
-											</div>
-										</div>
-
-										<div className="space-y-2 text-sm">
-											<div className="flex justify-between">
-												<span className="text-gray-600 dark:text-gray-400">This Month:</span>
-												<span className="font-semibold text-gray-900 dark:text-white">
-													$
-													{cat.currentMonth.toLocaleString("en-US", {
-														minimumFractionDigits: 2,
-														maximumFractionDigits: 2,
-													})}
-												</span>
-											</div>
-											<div className="flex justify-between">
-												<span className="text-gray-600 dark:text-gray-400">Last Month:</span>
-												<span className="font-semibold text-gray-900 dark:text-white">
-													$
-													{cat.lastMonth.toLocaleString("en-US", {
-														minimumFractionDigits: 2,
-														maximumFractionDigits: 2,
-													})}
-												</span>
-											</div>
-											<div className="flex justify-between">
-												<span className="text-gray-600 dark:text-gray-400">Average:</span>
-												<span className="font-semibold text-gray-900 dark:text-white">
-													$
-													{cat.average.toLocaleString("en-US", {
-														minimumFractionDigits: 2,
-														maximumFractionDigits: 2,
-													})}
-												</span>
-											</div>
-
-											{cat.currentMonth > cat.lastMonth && (
-												<div className="pt-2 text-xs text-red-600 dark:text-red-400">
-													↑ {(((cat.currentMonth - cat.lastMonth) / cat.lastMonth) * 100).toFixed(0)}% vs last month
-												</div>
-											)}
-											{cat.currentMonth < cat.lastMonth && (
-												<div className="pt-2 text-xs text-green-600 dark:text-green-400">
-													↓ {(((cat.lastMonth - cat.currentMonth) / cat.lastMonth) * 100).toFixed(0)}% vs last month
-												</div>
-											)}
-										</div>
-									</div>
-								))}
-							</div>
-						</div>
-					)}
 				</>
 			)}
 
-			{/* Name Onboarding Modal */}
+			{/* Name Modal */}
 			{showNameModal && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-					<div className="bg-white dark:bg-slate-800 rounded-lg p-8 w-full max-w-md mx-4 shadow-lg">
+				<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-md w-full border border-gray-200 dark:border-slate-700">
 						<div className="flex items-center justify-between mb-4">
-							<h2 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome!</h2>
-							<button
-								onClick={handleSkipName}
-								className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+							<h3 className="text-lg font-bold text-gray-900 dark:text-white">What's your name?</h3>
+							<button onClick={handleSkipName} className="text-gray-400 hover:text-gray-600">
 								<X className="w-5 h-5" />
 							</button>
 						</div>
 
-						<p className="text-gray-600 dark:text-gray-400 mb-6">
-							We'd like to personalize your experience. What's your name?
-						</p>
-
-						{user?.email && (
-							<p className="text-sm text-gray-500 dark:text-gray-500 mb-4">
-								Logged in as: <span className="font-medium">{user.email}</span>
-							</p>
-						)}
+						<p className="text-sm text-gray-600 dark:text-gray-400 mb-4">We'd love to know who we're helping!</p>
 
 						<input
 							type="text"
 							value={nameInput}
 							onChange={(e) => setNameInput(e.target.value)}
-							onKeyDown={(e) => {
-								if (e.key === "Enter") {
-									handleSaveName();
-								}
-							}}
 							placeholder="Enter your name"
-							className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-slate-700 dark:text-white mb-6"
-							autoFocus
+							className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white mb-4 focus:outline-none focus:ring-2 focus:ring-blue-600"
+							onKeyPress={(e) => {
+								if (e.key === "Enter") handleSaveName();
+							}}
 						/>
 
 						<div className="flex gap-3">
 							<button
 								onClick={handleSkipName}
-								className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors font-medium">
-								Skip for Now
+								disabled={savingName}
+								className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 font-medium transition-colors disabled:opacity-50">
+								Skip
 							</button>
 							<button
 								onClick={handleSaveName}
-								disabled={savingName}
-								className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-gray-400 transition-colors font-medium">
-								{savingName ? "Saving..." : "Save & Continue"}
+								disabled={savingName || !nameInput.trim()}
+								className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors disabled:opacity-50">
+								{savingName ? "Saving..." : "Save"}
 							</button>
 						</div>
 					</div>
