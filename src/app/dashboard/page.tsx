@@ -183,11 +183,11 @@ export default function DashboardPage() {
 				const currentMonthTotal = Array.from(categoryMap.values()).reduce((sum, cat) => sum + cat.current, 0);
 
 				// Use LAST MONTH as the baseline for monthly income/expenses (not current incomplete month)
-				// For the metric cards, display last month's actual spending
-				let displayIncome = lastMonthTotal > 0 ? lastMonthTotal : monthlyIncome;
-				let displayExpenses = lastMonthTotal > 0 ? lastMonthTotal : monthlyExpensesAbsolute;
+				// For the metric cards, display configured income/expenses from the /income page
+				let displayIncome = monthlyIncome;
+				let displayExpenses = monthlyExpensesAbsolute;
 
-				// Calculate savings rate based on last month's actual data
+				// Calculate savings rate based on configured amounts
 				const savingsRate =
 					displayIncome > 0 ? Math.round(((displayIncome - displayExpenses) / displayIncome) * 100) : 0;
 
