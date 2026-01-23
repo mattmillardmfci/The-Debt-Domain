@@ -430,7 +430,9 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 		// Filter for recurring (2+ occurrences) and calculate stats
 		const patterns: RecurringDebtPattern[] = [];
 		chargeGroups.forEach((chargeGroup) => {
-			if (chargeGroup.transactions.length >= 2) {
+			// Require at least 3 occurrences for something to be considered truly recurring
+			// (2 occurrences is likely just a coincidence or occasional transaction)
+			if (chargeGroup.transactions.length >= 3) {
 				const transactions = chargeGroup.transactions;
 				const amounts = chargeGroup.amounts;
 				const totalAmount = amounts.reduce((a, b) => a + b, 0);
