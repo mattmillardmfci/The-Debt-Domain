@@ -50,10 +50,19 @@ export default function CategoryManagementPage() {
 				// Load custom categories
 				const customCats = await getCustomCategories(user.uid);
 				const customCategoryNames = customCats.map((c) => c.name || "").filter((n) => n);
-				const merged = Array.from(new Set([...COMMON_CATEGORIES, ...customCategoryNames]));
-				setAllCategories(merged);
 
 				const allTransactions = await getTransactions(user.uid);
+
+				// Get all unique categories from transactions
+				const categoriesFromTransactions = Array.from(
+					new Set(allTransactions.map((t) => t.category || "Other"))
+				);
+
+				// Merge all categories: common + custom + those found in transactions
+				const merged = Array.from(
+					new Set([...COMMON_CATEGORIES, ...customCategoryNames, ...categoriesFromTransactions])
+				);
+				setAllCategories(merged);
 
 				// Group by category
 				const grouped: Record<string, (Partial<Transaction> & { id: string })[]> = {};
