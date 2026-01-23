@@ -145,6 +145,18 @@ export default function CategoriesPage() {
 		setShowForm(true);
 	};
 
+	const handleEditAutoCategory = (autoCategoryName: string) => {
+		// Check if already customized
+		const existing = categories.find((c) => c.name === autoCategoryName || c.name?.startsWith(`${autoCategoryName} (custom)`));
+		if (existing) {
+			handleEditCategory(existing);
+		} else {
+			// Start new custom override
+			setFormData({ name: autoCategoryName, color: COLORS[0] });
+			setShowForm(true);
+		}
+	};
+
 	const handleCancelEdit = () => {
 		setEditingId(null);
 		setFormData({ name: "", color: COLORS[0] });
@@ -237,14 +249,20 @@ export default function CategoriesPage() {
 			<div className="mt-8">
 				<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Auto-Categorized Categories</h2>
 				<p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-					Transactions are automatically categorized into these categories based on vendor matching
+					Transactions are automatically categorized into these categories based on vendor matching. Click the edit icon to customize the name.
 				</p>
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-					{COMMON_AUTO_CATEGORIES.map((category) => (
+					{COMMON_AUTO_CATEGORIES.filter((cat) => !categories.some((c) => c.name === cat)).map((category) => (
 						<div
 							key={category}
-							className="bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-700 dark:to-slate-600 rounded-lg border border-gray-200 dark:border-slate-500 p-4 text-center">
-							<span className="font-medium text-gray-900 dark:text-white text-sm">{category}</span>
+							className="bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-700 dark:to-slate-600 rounded-lg border border-gray-200 dark:border-slate-500 p-4 flex items-center justify-between group">
+							<span className="font-medium text-gray-900 dark:text-white text-sm flex-1">{category}</span>
+							<button
+								onClick={() => handleEditAutoCategory(category)}
+								className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded opacity-0 group-hover:opacity-100 transition-all"
+								title="Customize this category name">
+								<Edit2 className="w-4 h-4" />
+							</button>
 						</div>
 					))}
 				</div>
@@ -271,7 +289,7 @@ export default function CategoriesPage() {
 			<div className="mt-8">
 				<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Custom Categories</h2>
 				<p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-					Categories you created for more detailed organization
+					Categories you created or customized for your personal organization
 				</p>
 
 				{/* Categories List */}
