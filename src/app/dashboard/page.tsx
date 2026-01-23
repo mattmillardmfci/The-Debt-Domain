@@ -11,6 +11,7 @@ import {
 	getIncome,
 	detectIncomePatterns,
 	detectRecurringDebts,
+	getCustomRecurringExpenses,
 } from "@/lib/firestoreService";
 
 interface DashboardMetrics {
@@ -52,21 +53,23 @@ export default function DashboardPage() {
 		// Fetch data from Firestore and calculate metrics
 		const loadMetrics = async () => {
 			try {
-				const [transactions, debts, incomeEntries, incomePatterns, recurringDebts] = await Promise.all([
+				const [transactions, debts, incomeEntries, incomePatterns, recurringDebts, customExpenses] = await Promise.all([
 					getTransactions(user.uid),
 					getDebts(user.uid),
 					getIncome(user.uid),
 					detectIncomePatterns(user.uid),
 					detectRecurringDebts(user.uid),
+					getCustomRecurringExpenses(user.uid),
 				]);
 
 				// Calculate total debt
 				const totalDebt = debts.reduce((sum, d) => sum + (d.balance || 0), 0);
 
-				// Calculate monthly expenses from recurring debt patterns (same as expenses page)
+				// Calculate monthly expenses from both detected recurring debts and custom recurring expenses
 				let monthlyExpensesAbsolute = 0;
 				let expensesBreakdownLines: string[] = [];
 
+				// Process detected recurring debts
 				recurringDebts.forEach((debt) => {
 					let monthlyImpact = debt.avgAmount;
 
@@ -86,6 +89,29 @@ export default function DashboardPage() {
 					monthlyExpensesAbsolute += monthlyImpact;
 					expensesBreakdownLines.push(
 						`${debt.description} (${debt.estimatedFrequency}): $${debt.avgAmount.toFixed(2)} per occurrence × frequency = $${monthlyImpact.toFixed(2)}/mo`,
+					);
+				});
+
+				// Process custom recurring expenses
+				customExpenses.forEach((custom) => {
+					let monthlyImpact = custom.avgAmount;
+
+					// Calculate monthly impact based on frequency
+					if (custom.estimatedFrequency === "weekly") {
+						monthlyImpact = custom.avgAmount * (52 / 12);
+					} else if (custom.estimatedFrequency === "biweekly") {
+						monthlyImpact = custom.avgAmount * (26 / 12);
+					} else if (custom.estimatedFrequency === "monthly") {
+						monthlyImpact = custom.avgAmount;
+					} else if (custom.estimatedFrequency === "quarterly") {
+						monthlyImpact = custom.avgAmount / 3;
+					} else if (custom.estimatedFrequency === "annual") {
+						monthlyImpact = custom.avgAmount / 12;
+					}
+
+					monthlyExpensesAbsolute += monthlyImpact;
+					expensesBreakdownLines.push(
+						`${custom.description} (${custom.estimatedFrequency}): $${custom.avgAmount.toFixed(2)} per occurrence × frequency = $${monthlyImpact.toFixed(2)}/mo`,
 					);
 				});
 
@@ -161,7 +187,7 @@ export default function DashboardPage() {
 
 		// Check if user hasn't provided a real name (still has default "User" or empty)
 		const needsName = !user.displayName || user.displayName === "User" || user.displayName.trim() === "";
-		
+
 		// Check localStorage to see if we've already shown this modal
 		const hasSeenNameModal = localStorage.getItem(`nameModalSeen_${user.uid}`);
 
