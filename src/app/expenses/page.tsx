@@ -5,6 +5,7 @@ import { TrendingDown, AlertCircle, Edit2, X, Trash2, ChevronDown } from "lucide
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import React from "react";
+import { COMMON_CATEGORIES } from "@/lib/constants";
 import {
 	detectRecurringDebts,
 	saveIgnoredRecurringExpense,
@@ -70,23 +71,7 @@ export default function ExpensesPage() {
 	const [touchStart, setTouchStart] = useState(0);
 	const [touchEnd, setTouchEnd] = useState(0);
 	const [showInstructions, setShowInstructions] = useState(false);
-	const [allCategories] = useState([
-		"Groceries",
-		"Restaurants",
-		"Gas/Fuel",
-		"Utilities",
-		"Entertainment",
-		"Shopping",
-		"Healthcare",
-		"Transportation",
-		"Housing",
-		"Insurance",
-		"Subscription",
-		"Phone/Internet",
-		"Fitness",
-		"Software",
-		"Other",
-	]);
+	const [allCategories] = useState(COMMON_CATEGORIES);
 
 	const handleEditClick = (index: number, expense: RecurringExpense) => {
 		setEditingIndex(index);

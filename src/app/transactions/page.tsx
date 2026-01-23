@@ -15,22 +15,7 @@ import {
 } from "@/lib/firestoreService";
 import { useAuth } from "@/contexts/AuthContext";
 import { QueryDocumentSnapshot } from "firebase/firestore";
-
-const COMMON_CATEGORIES = [
-	"Groceries",
-	"Restaurants",
-	"Gas/Fuel",
-	"Utilities",
-	"Entertainment",
-	"Shopping",
-	"Healthcare",
-	"Transportation",
-	"Housing",
-	"Insurance",
-	"Salary",
-	"Transfer",
-	"Other",
-];
+import { COMMON_CATEGORIES } from "@/lib/constants";
 
 export default function TransactionsPage() {
 	const { user } = useAuth();
