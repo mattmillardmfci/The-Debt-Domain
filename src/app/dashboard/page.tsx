@@ -19,6 +19,7 @@ import {
 	PieChart,
 	Pie,
 	Cell,
+	ReferenceLine,
 } from "recharts";
 import {
 	getTransactions,
@@ -151,7 +152,10 @@ export default function DashboardPage() {
 				});
 
 				// Process category spending FIRST to get actual monthly data
-				const categoryMap = new Map<string, { current: number; last: number; count: number; total: number }>();
+				const categoryMap = new Map<
+					string,
+					{ current: number; last: number; count: number; total: number; monthlyTotals: number[] }
+				>();
 
 				transactions.forEach((t) => {
 					const cat = (t.category as string) || "Other";
@@ -164,7 +168,7 @@ export default function DashboardPage() {
 						(txDate.getFullYear() === now.getFullYear() || txDate.getFullYear() === now.getFullYear() - 1);
 
 					if (!categoryMap.has(cat)) {
-						categoryMap.set(cat, { current: 0, last: 0, count: 0, total: 0 });
+						categoryMap.set(cat, { current: 0, last: 0, count: 0, total: 0, monthlyTotals: [] });
 					}
 
 					const data = categoryMap.get(cat)!;
@@ -190,6 +194,7 @@ export default function DashboardPage() {
 				// For chart, calculate actual monthly values from transactions for each month
 				const now = new Date();
 				const chartDataPoints: ChartData[] = [];
+				const monthlyByCategoryMap = new Map<string, number[]>(); // Track monthly totals per category
 
 				for (let i = 5; i >= 0; i--) {
 					const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -201,11 +206,21 @@ export default function DashboardPage() {
 					transactions.forEach((t) => {
 						const txDate = t.date instanceof Date ? t.date : new Date(t.date as any);
 						if (txDate >= monthStart && txDate <= monthEnd) {
-							const amount = Math.abs((t.amount || 0) / 100);
-							if ((t.amount || 0) > 0) {
-								monthIncome += amount;
+							const cat = (t.category as string) || "Other";
+							const amount = (t.amount || 0) / 100;
+
+							// Track monthly totals per category
+							if (!monthlyByCategoryMap.has(cat)) {
+								monthlyByCategoryMap.set(cat, [0, 0, 0, 0, 0, 0]);
+							}
+							const monthlyArray = monthlyByCategoryMap.get(cat)!;
+							monthlyArray[5 - i] += amount;
+
+							const absAmount = Math.abs(amount);
+							if (amount > 0) {
+								monthIncome += absAmount;
 							} else {
-								monthExpenses += amount;
+								monthExpenses += absAmount;
 							}
 						}
 					});
@@ -214,18 +229,26 @@ export default function DashboardPage() {
 						month: monthStart.toLocaleString("default", { month: "short" }),
 						income: Math.round(monthIncome * 100) / 100,
 						expenses: Math.round(monthExpenses * 100) / 100,
-						savings: Math.max(0, Math.round((monthIncome - monthExpenses) * 100) / 100),
+						savings: Math.round((monthIncome - monthExpenses) * 100) / 100,
 					});
 				}
 
 				const categorySpendingData: CategorySpending[] = Array.from(categoryMap.entries())
-					.map(([cat, data]) => ({
-						category: cat,
-						currentMonth: data.current,
-						lastMonth: data.last,
-						average: data.total / Math.max(1, Math.ceil(data.count / 30)),
-						trend: data.last > 0 ? Math.round(((data.current - data.last) / data.last) * 100) : 0,
-					}))
+					.map(([cat, data]) => {
+						// Calculate average from 6-month data
+						const monthlyTotals = monthlyByCategoryMap.get(cat) || [0, 0, 0, 0, 0, 0];
+						const validMonths = monthlyTotals.filter(total => total !== 0).length || 1;
+						const sixMonthSum = monthlyTotals.reduce((a, b) => a + b, 0);
+						const average = sixMonthSum / Math.max(1, validMonths);
+
+						return {
+							category: cat,
+							currentMonth: data.current,
+							lastMonth: data.last,
+							average: average,
+							trend: data.last > 0 ? Math.round(((data.current - data.last) / data.last) * 100) : 0,
+						};
+					})
 					.sort((a, b) => b.currentMonth - a.currentMonth)
 					.slice(0, 8);
 
@@ -423,6 +446,7 @@ export default function DashboardPage() {
 										labelStyle={{ color: "#fff" }}
 									/>
 									<Legend />
+									<ReferenceLine y={0} stroke="rgba(255, 255, 255, 0.3)" strokeDasharray="3 3" />
 									<Bar dataKey="income" fill="#10b981" radius={[8, 8, 0, 0]} />
 									<Bar dataKey="expenses" fill="#ef4444" radius={[8, 8, 0, 0]} />
 									<Bar dataKey="savings" fill="#3b82f6" radius={[8, 8, 0, 0]} />
@@ -492,7 +516,9 @@ export default function DashboardPage() {
 											<div className="mt-3 space-y-2 text-xs text-gray-600 dark:text-gray-400">
 												<div className="flex justify-between">
 													<span>This month:</span>
-													<span className="font-medium text-gray-900 dark:text-white">${cat.currentMonth.toFixed(2)}</span>
+													<span className="font-medium text-gray-900 dark:text-white">
+														${cat.currentMonth.toFixed(2)}
+													</span>
 												</div>
 												<div className="flex justify-between">
 													<span>Last month:</span>
