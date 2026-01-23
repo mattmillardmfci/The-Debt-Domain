@@ -72,6 +72,7 @@ export default function DashboardPage() {
 	const [showNameModal, setShowNameModal] = useState(false);
 	const [nameInput, setNameInput] = useState("");
 	const [savingName, setSavingName] = useState(false);
+	const [incomeSourceCount, setIncomeSourceCount] = useState(0);
 	const [categorySpending, setCategorySpending] = useState<CategorySpending[]>([]);
 	const [chartData, setChartData] = useState<ChartData[]>([]);
 	const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -149,6 +150,28 @@ export default function DashboardPage() {
 
 					monthlyIncome += monthlyImpact;
 					incomeBreakdownLines.push(`${pattern.description} (${pattern.frequency}): $${monthlyImpact.toFixed(2)}/mo`);
+				});
+
+				// Add manual income entries
+				incomeEntries.forEach((entry) => {
+					let monthlyImpact = entry.amount || 0;
+					if (entry.frequency === "yearly") {
+						monthlyImpact = monthlyImpact / 12;
+					} else if (entry.frequency === "biweekly") {
+						monthlyImpact = monthlyImpact * (26 / 12);
+					} else if (entry.frequency === "weekly") {
+						monthlyImpact = monthlyImpact * (52 / 12);
+					} else if (entry.frequency === "semi-monthly") {
+						monthlyImpact = monthlyImpact * 2;
+					}
+					// monthly frequency stays the same, once frequency is not included
+
+					if (entry.frequency !== "once") {
+						monthlyIncome += monthlyImpact;
+						incomeBreakdownLines.push(
+							`${entry.description || entry.source || "Manual Income"} (${entry.frequency}): $${monthlyImpact.toFixed(2)}/mo`
+						);
+					}
 				});
 
 				// Process category spending FIRST to get actual monthly data
@@ -256,6 +279,9 @@ export default function DashboardPage() {
 				setCategorySpending(categorySpendingData);
 				setChartData(chartDataPoints);
 
+				// Count total income sources (detected + manual)
+				const totalIncomeSources = incomePatterns.length + incomeEntries.filter((e) => e.frequency !== "once").length;
+
 				setMetrics({
 					monthlyIncome: Math.round(displayIncome * 100) / 100,
 					monthlyExpenses: Math.round(displayExpenses * 100) / 100,
@@ -272,6 +298,7 @@ export default function DashboardPage() {
 							: "No recurring expenses found. Upload transactions to detect patterns.",
 				});
 
+				setIncomeSourceCount(totalIncomeSources);
 				setHasData(transactions.length > 0);
 			} catch (err) {
 				console.error("Failed to load metrics:", err);
@@ -374,9 +401,9 @@ export default function DashboardPage() {
 								<ArrowDownLeft className="w-4 h-4 text-emerald-600" />
 							</div>
 							<p className="text-3xl font-bold text-emerald-900 dark:text-emerald-100">
-								${metrics.monthlyIncome.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+								${metrics.monthlyIncome.toLocaleString("en-US", { maximumFractionDigits: 2 })}
 							</p>
-							<p className="text-xs text-emerald-700 dark:text-emerald-300 mt-2">Last month actual</p>
+							<p className="text-xs text-emerald-700 dark:text-emerald-300 mt-2">From {incomeSourceCount} income sources</p>
 						</Link>
 
 						{/* Monthly Expenses */}
