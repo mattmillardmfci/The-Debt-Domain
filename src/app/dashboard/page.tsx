@@ -237,7 +237,7 @@ export default function DashboardPage() {
 					.map(([cat, data]) => {
 						// Calculate average from 6-month data
 						const monthlyTotals = monthlyByCategoryMap.get(cat) || [0, 0, 0, 0, 0, 0];
-						const validMonths = monthlyTotals.filter(total => total !== 0).length || 1;
+						const validMonths = monthlyTotals.filter((total) => total !== 0).length || 1;
 						const sixMonthSum = monthlyTotals.reduce((a, b) => a + b, 0);
 						const average = sixMonthSum / Math.max(1, validMonths);
 
@@ -249,7 +249,8 @@ export default function DashboardPage() {
 							trend: data.last > 0 ? Math.round(((data.current - data.last) / data.last) * 100) : 0,
 						};
 					})
-					.sort((a, b) => b.currentMonth - a.currentMonth)
+					.filter((cat) => cat.currentMonth < 0) // Only include spending/expense categories (negative values)
+					.sort((a, b) => Math.abs(b.currentMonth) - Math.abs(a.currentMonth)) // Sort by absolute value descending
 					.slice(0, 8);
 
 				setCategorySpending(categorySpendingData);
@@ -463,7 +464,7 @@ export default function DashboardPage() {
 										<Pie
 											data={categorySpending.slice(0, 6).map((cat) => ({
 												name: cat.category,
-												value: parseFloat(cat.currentMonth.toFixed(2)),
+												value: parseFloat(Math.abs(cat.currentMonth).toFixed(2)),
 											}))}
 											cx="50%"
 											cy="50%"
