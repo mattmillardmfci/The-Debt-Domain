@@ -80,11 +80,49 @@ export default function ExpensesPage() {
 	const [touchEnd, setTouchEnd] = useState(0);
 	const [showInstructions, setShowInstructions] = useState(false);
 	const [allCategories, setAllCategories] = useState<string[]>(COMMON_CATEGORIES);
+	const [editingCategoryIndex, setEditingCategoryIndex] = useState<number | null>(null);
+	const [editingCategoryValue, setEditingCategoryValue] = useState("");
 
 	const handleEditClick = (index: number, expense: RecurringExpense) => {
 		setEditingIndex(index);
 		setEditedCategory(expense.categoryOverride || expense.category || "Other");
 		setEditedDescription(expense.descriptionOverride || expense.description);
+	};
+
+	const handleEditCategoryClick = (index: number, expense: RecurringExpense) => {
+		setEditingCategoryIndex(index);
+		setEditingCategoryValue(expense.categoryOverride || expense.category || "Other");
+	};
+
+	const handleSaveCategoryEdit = async (index: number, expense: RecurringExpense) => {
+		if (!user?.uid || !editingCategoryValue.trim()) return;
+
+		setSaving(true);
+		try {
+			// Save the category override to Firestore
+			await updateRecurringExpenseOverride(user.uid, {
+				originalDescription: expense.description,
+				amount: expense.amount,
+				categoryOverride: editingCategoryValue,
+				descriptionOverride: expense.descriptionOverride || expense.description,
+			});
+
+			// Update the local expense
+			const updated = [...expenses];
+			updated[index] = {
+				...updated[index],
+				categoryOverride: editingCategoryValue,
+			};
+			setExpenses(updated);
+
+			setEditingCategoryIndex(null);
+			showSuccess("Category updated successfully");
+		} catch (error) {
+			console.error("Failed to update category:", error);
+			showError("Failed to update category");
+		} finally {
+			setSaving(false);
+		}
 	};
 
 	const handleSaveEdit = async (index: number, expense: RecurringExpense) => {
@@ -601,10 +639,42 @@ export default function ExpensesPage() {
 																</option>
 															))}
 														</select>
+													) : editingCategoryIndex === index ? (
+														<div className="flex items-center gap-2">
+															<select
+																value={editingCategoryValue}
+																onChange={(e) => setEditingCategoryValue(e.target.value)}
+																className="px-2 py-1 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded text-xs text-gray-900 dark:text-white">
+																{allCategories.map((cat) => (
+																	<option key={cat} value={cat}>
+																		{cat}
+																	</option>
+																))}
+															</select>
+															<button
+																onClick={() => handleSaveCategoryEdit(index, expense)}
+																disabled={saving}
+																className="px-2 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-xs rounded whitespace-nowrap">
+																Save
+															</button>
+															<button
+																onClick={() => setEditingCategoryIndex(null)}
+																className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded">
+																X
+															</button>
+														</div>
 													) : (
-														<span className="inline-block px-2 py-1 text-xs bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded">
-															{expense.categoryOverride || expense.category || "Other"}
-														</span>
+														<div className="flex items-center gap-2 group">
+															<span className="inline-block px-2 py-1 text-xs bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded">
+																{expense.categoryOverride || expense.category || "Other"}
+															</span>
+															<button
+																onClick={() => handleEditCategoryClick(index, expense)}
+																className="p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-all"
+																title="Edit category">
+																<Edit2 className="w-4 h-4" />
+															</button>
+														</div>
 													)}
 												</td>
 												<td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 capitalize">
