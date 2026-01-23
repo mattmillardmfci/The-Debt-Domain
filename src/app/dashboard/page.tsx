@@ -139,15 +139,8 @@ export default function DashboardPage() {
 				let incomeBreakdownLines: string[] = [];
 
 				incomePatterns.forEach((pattern) => {
-					let monthlyImpact = pattern.amount;
-					if (pattern.frequency === "weekly") {
-						monthlyImpact = pattern.amount * (52 / 12);
-					} else if (pattern.frequency === "biweekly") {
-						monthlyImpact = pattern.amount * (26 / 12);
-					} else if (pattern.frequency === "monthly") {
-						monthlyImpact = pattern.amount;
-					}
-
+					// Use the monthlyAmount already calculated by detectIncomePatterns
+					const monthlyImpact = pattern.monthlyAmount;
 					monthlyIncome += monthlyImpact;
 					incomeBreakdownLines.push(`${pattern.description} (${pattern.frequency}): $${monthlyImpact.toFixed(2)}/mo`);
 				});
