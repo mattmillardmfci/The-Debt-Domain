@@ -447,24 +447,70 @@ export default function DashboardPage() {
 
 					{/* Category Breakdown */}
 					{categorySpending.length > 0 && (
-						<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
-							<h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Spending by Category</h2>
-							<div className="space-y-4">
+						<div>
+							<h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Spending by Category</h2>
+							<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 								{categorySpending.map((cat) => (
-									<div key={cat.category} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
-										<div className="flex-1">
-											<p className="font-medium text-gray-900 dark:text-white">{cat.category}</p>
-											<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-												This Month: <span className="font-semibold text-gray-700 dark:text-gray-300">${cat.currentMonth.toFixed(2)}</span> | Last Month: <span className="font-semibold text-gray-700 dark:text-gray-300">${cat.lastMonth.toFixed(2)}</span> | Average: <span className="font-semibold text-gray-700 dark:text-gray-300">${cat.average.toFixed(2)}</span>
-											</p>
+									<div
+										key={cat.category}
+										className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
+										<div className="flex items-start justify-between mb-4">
+											<div>
+												<p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+													{cat.category}
+												</p>
+												<p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+													$
+													{cat.currentMonth.toLocaleString("en-US", {
+														minimumFractionDigits: 2,
+														maximumFractionDigits: 2,
+													})}
+												</p>
+											</div>
 										</div>
-										<div className="text-right ml-4">
-											<p className="text-lg font-bold text-gray-900 dark:text-white">
-												${cat.currentMonth.toLocaleString("en-US", {
-													minimumFractionDigits: 2,
-													maximumFractionDigits: 2,
-												})}
-											</p>
+
+										<div className="space-y-2 text-sm">
+											<div className="flex justify-between">
+												<span className="text-gray-600 dark:text-gray-400">This Month:</span>
+												<span className="font-semibold text-gray-900 dark:text-white">
+													$
+													{cat.currentMonth.toLocaleString("en-US", {
+														minimumFractionDigits: 2,
+														maximumFractionDigits: 2,
+													})}
+												</span>
+											</div>
+											<div className="flex justify-between">
+												<span className="text-gray-600 dark:text-gray-400">Last Month:</span>
+												<span className="font-semibold text-gray-900 dark:text-white">
+													$
+													{cat.lastMonth.toLocaleString("en-US", {
+														minimumFractionDigits: 2,
+														maximumFractionDigits: 2,
+													})}
+												</span>
+											</div>
+											<div className="flex justify-between">
+												<span className="text-gray-600 dark:text-gray-400">Average:</span>
+												<span className="font-semibold text-gray-900 dark:text-white">
+													$
+													{cat.average.toLocaleString("en-US", {
+														minimumFractionDigits: 2,
+														maximumFractionDigits: 2,
+													})}
+												</span>
+											</div>
+
+											{cat.currentMonth > cat.lastMonth && (
+												<div className="pt-2 text-xs text-red-600 dark:text-red-400">
+													↑ {(((cat.currentMonth - cat.lastMonth) / cat.lastMonth) * 100).toFixed(0)}% vs last month
+												</div>
+											)}
+											{cat.currentMonth < cat.lastMonth && (
+												<div className="pt-2 text-xs text-green-600 dark:text-green-400">
+													↓ {(((cat.lastMonth - cat.currentMonth) / cat.lastMonth) * 100).toFixed(0)}% vs last month
+												</div>
+											)}
 										</div>
 									</div>
 								))}

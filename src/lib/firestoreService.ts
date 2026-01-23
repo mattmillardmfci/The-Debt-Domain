@@ -442,10 +442,11 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 				// Calculate if these could be monthly payments with varying amounts
 				const mean = Math.abs(avgAmount);
 				if (mean > 0) {
-					const variance = amounts.reduce((sum, amount) => {
-						const absDollars = Math.abs(amount / 100);
-						return sum + Math.pow(absDollars - mean, 2);
-					}, 0) / amounts.length;
+					const variance =
+						amounts.reduce((sum, amount) => {
+							const absDollars = Math.abs(amount / 100);
+							return sum + Math.pow(absDollars - mean, 2);
+						}, 0) / amounts.length;
 					const stdDev = Math.sqrt(variance);
 					const coefficientOfVariation = stdDev / mean;
 
@@ -487,9 +488,7 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 						const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
 						const minGap = Math.min(...gaps);
 						const maxGap = Math.max(...gaps);
-						const gapStdDev = Math.sqrt(
-							gaps.reduce((sum, gap) => sum + Math.pow(gap - avgGap, 2), 0) / gaps.length,
-						);
+						const gapStdDev = Math.sqrt(gaps.reduce((sum, gap) => sum + Math.pow(gap - avgGap, 2), 0) / gaps.length);
 
 						// IMPROVED: Detect monthly (28-31 day cycles) more intelligently
 						// Look for patterns where gaps average 28-35 days
