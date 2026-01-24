@@ -151,6 +151,9 @@ export default function TransactionsPage() {
 		setLoadingMore(true);
 		try {
 			const result = await getTransactionsPaginated(user.uid, 50, lastDoc);
+			// Clear search when loading more so users see the newly loaded transactions
+			setSearchQuery("");
+			// Append new transactions to the full list
 			setTransactions((prev) => [...prev, ...result.transactions]);
 			setLastDoc(result.lastDoc);
 			setHasMore(result.hasMore);
