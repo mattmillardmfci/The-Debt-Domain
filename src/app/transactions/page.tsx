@@ -60,12 +60,24 @@ export default function TransactionsPage() {
 	const [addingToExpenses, setAddingToExpenses] = useState<string | null>(null);
 	const [viewMode, setViewMode] = useState<"list" | "by-month">("list");
 	const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
+	const [searchQuery, setSearchQuery] = useState("");
+
+	// Filter transactions based on search query
+	const filteredTransactions = transactions.filter((t) => {
+		if (!searchQuery.trim()) return true;
+		const query = searchQuery.toLowerCase();
+		return (
+			(t.description?.toLowerCase().includes(query) ?? false) ||
+			(t.category?.toLowerCase().includes(query) ?? false) ||
+			(((t.amount || 0) / 100).toFixed(2).includes(query) ?? false)
+		);
+	});
 
 	// Group transactions by month and category
 	const getGroupedTransactions = () => {
 		const grouped: { [month: string]: { [category: string]: (Partial<Transaction> & { id: string })[] } } = {};
 
-		transactions.forEach((t) => {
+		filteredTransactions.forEach((t) => {
 			const date = t.date instanceof Date ? t.date : new Date(t.date as any);
 			const monthKey = date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
 
@@ -356,6 +368,22 @@ export default function TransactionsPage() {
 				</div>
 			</div>
 
+			{/* Search Bar */}
+			<div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
+				<input
+					type="text"
+					placeholder="Search transactions by description, category, or amount..."
+					value={searchQuery}
+					onChange={(e) => setSearchQuery(e.target.value)}
+					className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+				/>
+				{searchQuery && (
+					<p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+						Showing {filteredTransactions.length} of {transactions.length} transactions
+					</p>
+				)}
+			</div>
+
 			{/* View Mode Toggle */}
 			<div className="flex gap-2 border-b border-gray-200 dark:border-slate-700">
 				<button
@@ -463,7 +491,7 @@ export default function TransactionsPage() {
 						</tr>
 					</thead>
 					<tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-						{transactions.map((t) => (
+					{filteredTransactions.map((t) => (
 							<tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-slate-700">
 								<td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
 									{t.date instanceof Date ? t.date.toLocaleDateString() : new Date(t.date as any).toLocaleDateString()}
@@ -550,7 +578,7 @@ export default function TransactionsPage() {
 			{/* Transaction Cards - Mobile (List View) */}
 			{viewMode === "list" && (
 				<div className="sm:hidden space-y-3">
-				{transactions.map((t) => (
+				{filteredTransactions.map((t) => (
 					<div
 						key={t.id}
 						className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
