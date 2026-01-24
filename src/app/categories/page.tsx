@@ -53,6 +53,7 @@ export default function CategoriesPage() {
 	const { showError, showSuccess } = useAlert();
 	const [categories, setCategories] = useState<(Partial<CustomCategory> & { id: string })[]>([]);
 	const [transactionCategories, setTransactionCategories] = useState<string[]>([]);
+	const [renamedAutoCategoriesMap, setRenamedAutoCategoriesMap] = useState<{ [oldName: string]: string }>({});
 	const [loading, setLoading] = useState(true);
 	const [showForm, setShowForm] = useState(false);
 	const [editingId, setEditingId] = useState<string | null>(null);
@@ -115,6 +116,12 @@ export default function CategoriesPage() {
 				if (oldCategoryName !== newCategoryName) {
 					// Bulk rename in all places
 					await bulkRenameCategoryEverywhere(user.uid, oldCategoryName, newCategoryName);
+					
+					// Track this auto-category rename
+					setRenamedAutoCategoriesMap({
+						...renamedAutoCategoriesMap,
+						[oldCategoryName]: newCategoryName,
+					});
 				}
 
 				// Update transaction categories in local state
@@ -288,9 +295,17 @@ export default function CategoriesPage() {
 					to customize the name.
 				</p>
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-					{COMMON_AUTO_CATEGORIES.filter(
-						(cat) => !categories.some((c) => c.description?.includes(`Customized from: ${cat}`)),
-					).map((category) => (
+				{COMMON_AUTO_CATEGORIES.filter((cat) => {
+					// Hide if it's been renamed
+					if (renamedAutoCategoriesMap[cat]) {
+						return false;
+					}
+					// Hide if it's been customized as a custom category
+					if (categories.some((c) => c.description?.includes(`Customized from: ${cat}`))) {
+						return false;
+					}
+					return true;
+				}).map((category) => (
 						<div
 							key={category}
 							className="bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-700 dark:to-slate-600 rounded-lg border border-gray-200 dark:border-slate-500 p-4 flex items-center justify-between group">
