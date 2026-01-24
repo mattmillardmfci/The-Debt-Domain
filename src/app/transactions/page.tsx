@@ -712,8 +712,8 @@ export default function TransactionsPage() {
 				</div>
 			)}
 
-			{/* Load More Button - Only in List View */}
-			{viewMode === "list" && (
+{/* Load More Button - Only in List View and when not searching */}
+		{viewMode === "list" && !searchQuery.trim() && (
 				<>
 					{hasMore && (
 						<div className="flex justify-center">
