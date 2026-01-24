@@ -348,40 +348,143 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 		// Filter for negative amounts (expenses/payments)
 		const negativeTransactions = transactions.filter((t) => t.amount !== undefined && t.amount < 0);
 
-		// Group by EXACT vendor description + EXACT amount (no rounding, no normalization)
+		// Helper: Normalize vendor description for fuzzy matching
+		const normalizeVendor = (desc: string): string => {
+			return desc
+				.toLowerCase()
+				.trim()
+				// Remove common patterns
+				.replace(/\s*(debit|credit|payment|withdrawal|transfer|purchase|refund)\s*/gi, " ")
+				// Remove trailing account numbers or reference numbers
+				.replace(/\s*[\d]{4,}\s*$/g, "")
+				// Remove extra spaces
+				.replace(/\s+/g, " ")
+				.trim();
+		};
+
+		// Helper: Calculate Levenshtein distance for fuzzy matching
+		const levenshteinDistance = (a: string, b: string): number => {
+			const aLen = a.length;
+			const bLen = b.length;
+			const dp: number[][] = Array(aLen + 1)
+				.fill(null)
+				.map(() => Array(bLen + 1).fill(0));
+
+			for (let i = 0; i <= aLen; i++) dp[i][0] = i;
+			for (let j = 0; j <= bLen; j++) dp[0][j] = j;
+
+			for (let i = 1; i <= aLen; i++) {
+				for (let j = 1; j <= bLen; j++) {
+					const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+					dp[i][j] = Math.min(dp[i][j - 1] + 1, dp[i + 1][j - 1] + 1, dp[i][j - 1] + cost);
+				}
+			}
+			return dp[aLen][bLen];
+		};
+
+		// Helper: Check if two vendor names are similar enough (>80% match)
+		const isVendorSimilar = (vendor1: string, vendor2: string): boolean => {
+			if (vendor1 === vendor2) return true;
+			const norm1 = normalizeVendor(vendor1);
+			const norm2 = normalizeVendor(vendor2);
+			if (norm1 === norm2) return true;
+
+			// Allow up to 30% character difference for fuzzy matching
+			const maxDistance = Math.max(norm1.length, norm2.length) * 0.2;
+			return levenshteinDistance(norm1, norm2) <= maxDistance;
+		};
+
+		// Helper: Detect if description is a check
+		const isCheckTransaction = (desc: string): boolean => {
+			const checkPatterns = [
+				/check\s*#/i,
+				/^chk\s*/i,
+				/^check$/i,
+				/^ck\s*/i,
+			];
+			return checkPatterns.some((pattern) => pattern.test(desc));
+		};
+
+		// Helper: Cluster amounts with tolerance (within 5%)
+		const clusterAmounts = (amounts: number[]): Map<number, number[]> => {
+			const clusters = new Map<number, number[]>();
+			const sortedAmounts = [...new Set(amounts)].sort((a, b) => a - b);
+
+			sortedAmounts.forEach((amount) => {
+				let found = false;
+				for (const [cluster] of clusters) {
+					if (Math.abs(amount - cluster) / Math.max(amount, cluster) < 0.05) {
+						// Within 5% tolerance
+						clusters.get(cluster)!.push(amount);
+						found = true;
+						break;
+					}
+				}
+				if (!found) {
+					clusters.set(amount, [amount]);
+				}
+			});
+
+			return clusters;
+		};
+
+		// Group transactions by fuzzy vendor matching and amount clustering
 		interface ChargeGroup {
 			description: string;
-			amount: number; // exact amount in cents
+			normalizedDescription: string;
+			amount: number; // median amount in cents
 			transactions: Partial<Transaction>[];
 		}
 
-		const chargeGroups = new Map<string, ChargeGroup>();
+		const chargeGroups: ChargeGroup[] = [];
+
 		negativeTransactions.forEach((t) => {
 			const description = (t.description || "Unknown").trim();
 			const amount = Math.abs(t.amount || 0);
-			const groupKey = `${description}|${amount}`;
 
-			if (!chargeGroups.has(groupKey)) {
-				chargeGroups.set(groupKey, {
+			// Try to find existing group with similar vendor
+			let foundGroup = chargeGroups.find(
+				(group) => isVendorSimilar(group.description, description) && Math.abs(group.amount - amount) / Math.max(group.amount, amount) < 0.05,
+			);
+
+			if (!foundGroup) {
+				foundGroup = {
 					description,
+					normalizedDescription: normalizeVendor(description),
 					amount,
 					transactions: [],
-				});
+				};
+				chargeGroups.push(foundGroup);
 			}
 
-			const group = chargeGroups.get(groupKey)!;
-			group.transactions.push(t);
+			foundGroup.transactions.push(t);
 		});
 
-		// Filter for recurring (3+ occurrences) with exact vendor + exact amount
+		// Filter and create patterns
 		const patterns: RecurringDebtPattern[] = [];
-		chargeGroups.forEach((chargeGroup) => {
-			// Require at least 3 occurrences for something to be considered truly recurring
-			if (chargeGroup.transactions.length >= 3) {
-				const transactions = chargeGroup.transactions;
-				const amountDollars = chargeGroup.amount / 100;
 
-				// Get the most recent category for this recurring transaction
+		chargeGroups.forEach((chargeGroup) => {
+			const txnCount = chargeGroup.transactions.length;
+
+			// Determine minimum threshold based on confidence
+			let minOccurrences = 3;
+
+			// Lower threshold for high-confidence patterns
+			const isCheck = isCheckTransaction(chargeGroup.description);
+			if (isCheck) {
+				// Checks with patterns like $300 weekly or $1200 monthly need just 2+ occurrences
+				minOccurrences = 2;
+			} else if (chargeGroup.normalizedDescription.toLowerCase().includes("spotify")) {
+				// Subscription services like Spotify with 10x occurrences should definitely match
+				minOccurrences = 2;
+			}
+
+			if (txnCount >= minOccurrences) {
+				const transactions = chargeGroup.transactions;
+				const amounts = transactions.map((t) => Math.abs(t.amount || 0) / 100);
+				const amountDollars = amounts.reduce((a, b) => a + b, 0) / amounts.length;
+
+				// Get the most recent category
 				const mostRecentTransaction = transactions.sort(
 					(a, b) => (b.date instanceof Date ? b.date.getTime() : 0) - (a.date instanceof Date ? a.date.getTime() : 0),
 				)[0];
@@ -394,7 +497,7 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 					.sort((a, b) => b.getTime() - a.getTime())[0];
 
 				// Estimate frequency based on date gaps
-				let estimatedFrequency = "multiple";
+				let estimatedFrequency = "monthly"; // default to monthly
 				if (transactions.length >= 2) {
 					const dates = transactions
 						.map((t) => (t.date instanceof Date ? t.date : new Date(t.date || 0)))
@@ -410,28 +513,36 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 						const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
 						const gapStdDev = Math.sqrt(gaps.reduce((sum, gap) => sum + Math.pow(gap - avgGap, 2), 0) / gaps.length);
 
-						// Detect frequency based on gap patterns
-						if (avgGap < 10) {
-							estimatedFrequency = "weekly";
-						} else if (avgGap < 18) {
-							estimatedFrequency = "biweekly";
-						} else if (avgGap >= 25 && avgGap <= 35) {
-							// Strong monthly signal: gaps averaging 25-35 days
-							estimatedFrequency = "monthly";
-						} else if (avgGap < 40) {
-							// Uncertain range: use gap consistency as tiebreaker
-							if (gapStdDev < 5) {
+						// Special handling for checks: look for weekly or monthly patterns
+						if (isCheck) {
+							if (avgGap <= 8) {
+								estimatedFrequency = "weekly";
+							} else if (avgGap >= 20 && avgGap <= 35) {
 								estimatedFrequency = "monthly";
 							} else {
 								estimatedFrequency = "biweekly";
 							}
-						} else if (avgGap < 100) {
-							estimatedFrequency = "quarterly";
 						} else {
-							estimatedFrequency = "annual";
+							// Detect frequency based on gap patterns
+							if (avgGap < 10) {
+								estimatedFrequency = "weekly";
+							} else if (avgGap < 18) {
+								estimatedFrequency = "biweekly";
+							} else if (avgGap >= 25 && avgGap <= 35) {
+								estimatedFrequency = "monthly";
+							} else if (avgGap < 40) {
+								// Uncertain range: use gap consistency as tiebreaker
+								if (gapStdDev < 5) {
+									estimatedFrequency = "monthly";
+								} else {
+									estimatedFrequency = "biweekly";
+								}
+							} else if (avgGap < 100) {
+								estimatedFrequency = "quarterly";
+							} else {
+								estimatedFrequency = "annual";
+							}
 						}
-					} else if (transactions.length >= 2) {
-						estimatedFrequency = "monthly";
 					}
 				}
 
