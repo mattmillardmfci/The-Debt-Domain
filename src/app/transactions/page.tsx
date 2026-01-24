@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { Transaction, TransactionCategory } from "@/types";
 import {
 	getTransactionsPaginated,
+	getAllTransactions,
 	deleteTransaction,
 	updateTransaction,
 	bulkRenameTransactionDescription,
@@ -143,6 +144,21 @@ export default function TransactionsPage() {
 
 		loadTransactions();
 	}, [user?.uid]);
+
+	// When switching to By Month view, load all transactions
+	useEffect(() => {
+		if (viewMode === "by-month" && user?.uid && transactions.length > 0) {
+			const loadAllForMonth = async () => {
+				try {
+					const allTransactions = await getAllTransactions(user.uid);
+					setTransactions(allTransactions);
+				} catch (err) {
+					console.error("Failed to load all transactions for by-month view:", err);
+				}
+			};
+			loadAllForMonth();
+		}
+	}, [viewMode, user?.uid]);
 
 	// Load more transactions
 	const handleLoadMore = async () => {
