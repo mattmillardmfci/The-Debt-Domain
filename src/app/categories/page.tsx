@@ -13,6 +13,7 @@ import {
 	deleteCustomCategory,
 	updateCustomCategory,
 	getTransactions,
+	updateTransaction,
 } from "@/lib/firestoreService";
 
 const COLORS = [
@@ -110,6 +111,25 @@ export default function CategoriesPage() {
 			};
 
 			if (editingId) {
+				// Check if this is updating an auto-category override
+				const existingCategory = categories.find((c) => c.id === editingId);
+				const wasAutoCategoryOverride = existingCategory?.description?.includes("Customized from:");
+				const oldCategoryName = existingCategory?.name;
+				const newCategoryName = formData.name;
+
+				// If name changed and this was an auto-category override, update all transactions
+				if (wasAutoCategoryOverride && oldCategoryName && newCategoryName && oldCategoryName !== newCategoryName) {
+					const transactions = await getTransactions(user.uid);
+					const transactionsToUpdate = transactions.filter((t) => t.category === oldCategoryName);
+
+					// Batch update all transactions with the old category name
+					for (const transaction of transactionsToUpdate) {
+						await updateTransaction(user.uid, transaction.id, {
+							category: newCategoryName as any,
+						});
+					}
+				}
+
 				await updateCustomCategory(user.uid, editingId, categoryData);
 				setCategories(categories.map((c) => (c.id === editingId ? { ...c, ...categoryData } : c)));
 				setEditingId(null);
