@@ -162,6 +162,7 @@ export interface CustomCategory {
 	name: string;
 	color: string;
 	icon?: string;
+	description?: string;
 	createdAt: Date;
 	updatedAt: Date;
 }

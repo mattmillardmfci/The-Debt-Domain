@@ -54,6 +54,7 @@ export default function CategoriesPage() {
 	const [loading, setLoading] = useState(true);
 	const [showForm, setShowForm] = useState(false);
 	const [editingId, setEditingId] = useState<string | null>(null);
+	const [editingAutoCategory, setEditingAutoCategory] = useState<string | null>(null);
 	const [deleting, setDeleting] = useState(false);
 	const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; categoryId: string | null }>({
 		isOpen: false,
@@ -102,13 +103,20 @@ export default function CategoriesPage() {
 		}
 
 		try {
+			const categoryData = {
+				...formData,
+				// Store which auto-category this overrides
+				...(editingAutoCategory && { description: `Customized from: ${editingAutoCategory}` }),
+			};
+
 			if (editingId) {
-				await updateCustomCategory(user.uid, editingId, formData);
-				setCategories(categories.map((c) => (c.id === editingId ? { ...c, ...formData } : c)));
+				await updateCustomCategory(user.uid, editingId, categoryData);
+				setCategories(categories.map((c) => (c.id === editingId ? { ...c, ...categoryData } : c)));
 				setEditingId(null);
+				setEditingAutoCategory(null);
 			} else {
-				const docId = await saveCustomCategory(user.uid, formData);
-				setCategories([...categories, { ...formData, id: docId }]);
+				const docId = await saveCustomCategory(user.uid, categoryData);
+				setCategories([...categories, { ...categoryData, id: docId }]);
 			}
 
 			setFormData({ name: "", color: COLORS[0] });
@@ -146,12 +154,15 @@ export default function CategoriesPage() {
 	};
 
 	const handleEditAutoCategory = (autoCategoryName: string) => {
-		// Check if already customized
-		const existing = categories.find((c) => c.name === autoCategoryName || c.name?.startsWith(`${autoCategoryName} (custom)`));
+		// Check if already customized (by looking for the override marker in description)
+		const existing = categories.find(
+			(c) => c.description?.includes(`Customized from: ${autoCategoryName}`),
+		);
 		if (existing) {
 			handleEditCategory(existing);
 		} else {
 			// Start new custom override
+			setEditingAutoCategory(autoCategoryName);
 			setFormData({ name: autoCategoryName, color: COLORS[0] });
 			setShowForm(true);
 		}
@@ -159,6 +170,7 @@ export default function CategoriesPage() {
 
 	const handleCancelEdit = () => {
 		setEditingId(null);
+		setEditingAutoCategory(null);
 		setFormData({ name: "", color: COLORS[0] });
 		setShowForm(false);
 	};
@@ -252,7 +264,9 @@ export default function CategoriesPage() {
 					Transactions are automatically categorized into these categories based on vendor matching. Click the edit icon to customize the name.
 				</p>
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-					{COMMON_AUTO_CATEGORIES.filter((cat) => !categories.some((c) => c.name === cat)).map((category) => (
+					{COMMON_AUTO_CATEGORIES.filter(
+						(cat) => !categories.some((c) => c.description?.includes(`Customized from: ${cat}`)),
+					).map((category) => (
 						<div
 							key={category}
 							className="bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-700 dark:to-slate-600 rounded-lg border border-gray-200 dark:border-slate-500 p-4 flex items-center justify-between group">
