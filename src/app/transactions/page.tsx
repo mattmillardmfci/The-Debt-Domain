@@ -73,11 +73,11 @@ export default function TransactionsPage() {
 		);
 	});
 
-	// Group transactions by month and category
+	// Group transactions by month and category (uses full transactions array, not filtered)
 	const getGroupedTransactions = () => {
 		const grouped: { [month: string]: { [category: string]: (Partial<Transaction> & { id: string })[] } } = {};
 
-		filteredTransactions.forEach((t) => {
+		transactions.forEach((t) => {
 			const date = t.date instanceof Date ? t.date : new Date(t.date as any);
 			const monthKey = date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
 
@@ -681,26 +681,22 @@ export default function TransactionsPage() {
 				</div>
 			)}
 
-			{/* Load More Button - Only in List View */}
-			{viewMode === "list" && (
-				<>
-					{hasMore && (
-						<div className="flex justify-center">
-							<button
-								onClick={handleLoadMore}
-								disabled={loadingMore}
-								className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors min-h-11">
-								{loadingMore ? "Loading more..." : "Load More Transactions"}
-							</button>
-						</div>
-					)}
+			{/* Load More Button */}
+			{hasMore && (
+				<div className="flex justify-center">
+					<button
+						onClick={handleLoadMore}
+						disabled={loadingMore}
+						className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors min-h-11">
+						{loadingMore ? "Loading more..." : "Load More Transactions"}
+					</button>
+				</div>
+			)}
 
-					{!hasMore && transactions.length > 0 && (
-						<p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-							You've loaded all {transactions.length} transactions
-						</p>
-					)}
-				</>
+			{!hasMore && transactions.length > 0 && (
+				<p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+					You've loaded all {transactions.length} transactions
+				</p>
 			)}
 
 			{/* Rename Modal */}
