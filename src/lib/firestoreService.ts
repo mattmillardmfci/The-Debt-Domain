@@ -402,34 +402,12 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 			return checkPatterns.some((pattern) => pattern.test(desc));
 		};
 
-		// Helper: Cluster amounts with tolerance (within 5%)
-		const clusterAmounts = (amounts: number[]): Map<number, number[]> => {
-			const clusters = new Map<number, number[]>();
-			const sortedAmounts = [...new Set(amounts)].sort((a, b) => a - b);
-
-			sortedAmounts.forEach((amount) => {
-				let found = false;
-				for (const [cluster] of clusters) {
-					if (Math.abs(amount - cluster) / Math.max(amount, cluster) < 0.05) {
-						// Within 5% tolerance
-						clusters.get(cluster)!.push(amount);
-						found = true;
-						break;
-					}
-				}
-				if (!found) {
-					clusters.set(amount, [amount]);
-				}
-			});
-
-			return clusters;
-		};
-
-		// Group transactions by fuzzy vendor matching and amount clustering
+		// Group transactions by vendor+amount combination
+		// This groups transactions with BOTH similar vendor names AND similar amounts
 		interface ChargeGroup {
 			description: string;
 			normalizedDescription: string;
-			amount: number; // median amount in cents
+			amount: number; // median amount in dollars
 			transactions: Partial<Transaction>[];
 		}
 
@@ -437,14 +415,14 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 
 		negativeTransactions.forEach((t) => {
 			const description = (t.description || "Unknown").trim();
-			const amount = Math.abs(t.amount || 0);
+			const amount = Math.abs(t.amount || 0) / 100; // Convert cents to dollars
 
-			// Try to find existing group with similar vendor
-			let foundGroup = chargeGroups.find(
-				(group) =>
-					isVendorSimilar(group.description, description) &&
-					Math.abs(group.amount - amount) / Math.max(group.amount, amount) < 0.05,
-			);
+			// Try to find existing group with BOTH similar vendor AND similar amount
+			let foundGroup = chargeGroups.find((group) => {
+				const vendorMatch = isVendorSimilar(group.description, description);
+				const amountMatch = Math.abs(group.amount - amount) / Math.max(Math.abs(group.amount), Math.abs(amount)) < 0.05; // Within 5%
+				return vendorMatch && amountMatch;
+			});
 
 			if (!foundGroup) {
 				foundGroup = {
@@ -472,9 +450,15 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 			const isCheck = isCheckTransaction(chargeGroup.description);
 			if (isCheck) {
 				// Checks with patterns like $300 weekly or $1200 monthly need just 2+ occurrences
+				// But ONLY if the amount is consistent (already checked in grouping)
 				minOccurrences = 2;
-			} else if (chargeGroup.normalizedDescription.toLowerCase().includes("spotify")) {
-				// Subscription services like Spotify with 10x occurrences should definitely match
+			} else if (
+				chargeGroup.normalizedDescription.toLowerCase().includes("spotify") ||
+				chargeGroup.normalizedDescription.toLowerCase().includes("netflix") ||
+				chargeGroup.normalizedDescription.toLowerCase().includes("subscription") ||
+				chargeGroup.normalizedDescription.toLowerCase().includes("membership")
+			) {
+				// Subscription services with consistent amounts
 				minOccurrences = 2;
 			}
 
