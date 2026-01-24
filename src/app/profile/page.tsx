@@ -3,15 +3,17 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useAlert } from "@/contexts/AlertContext";
 import { deleteAllTransactions, deleteAllUserData, deleteUserProfile } from "@/lib/firestoreService";
+import { exportUserData, downloadDataAsFile, parseExportFile, importUserData } from "@/lib/dataExport";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { AlertCircle, Check } from "lucide-react";
+import { useState, useRef } from "react";
+import { AlertCircle, Check, Download, Upload } from "lucide-react";
 import ConfirmModal from "@/components/ConfirmModal";
 
 export default function ProfilePage() {
 	const { user, updateDisplayName } = useAuth();
 	const { showError, showSuccess } = useAlert();
 	const router = useRouter();
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const [displayName, setDisplayName] = useState(user?.displayName || "");
 	const [isSaving, setIsSaving] = useState(false);
@@ -19,6 +21,8 @@ export default function ProfilePage() {
 	const [showDeleteAllData, setShowDeleteAllData] = useState(false);
 	const [showDeleteProfile, setShowDeleteProfile] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
+	const [isExporting, setIsExporting] = useState(false);
+	const [isImporting, setIsImporting] = useState(false);
 	const [successMessage, setSuccessMessage] = useState("");
 
 	const handleUpdateName = async () => {
@@ -33,6 +37,57 @@ export default function ProfilePage() {
 			showError("Failed to update name");
 		} finally {
 			setIsSaving(false);
+		}
+	};
+
+	const handleExportData = async () => {
+		if (!user?.uid) {
+			showError("You must be logged in");
+			return;
+		}
+
+		setIsExporting(true);
+		try {
+			const data = await exportUserData(user.uid);
+			const fileName = `financial-advisor-backup-${new Date().toISOString().split("T")[0]}.json`;
+			downloadDataAsFile(data, fileName);
+			showSuccess("Data exported successfully!");
+		} catch (error) {
+			console.error("Error exporting data:", error);
+			showError(error instanceof Error ? error.message : "Failed to export data");
+		} finally {
+			setIsExporting(false);
+		}
+	};
+
+	const handleImportClick = () => {
+		fileInputRef.current?.click();
+	};
+
+	const handleImportData = async (event: React.ChangeEvent<HTMLInputElement>) => {
+		if (!user?.uid) {
+			showError("You must be logged in");
+			return;
+		}
+
+		const file = event.target.files?.[0];
+		if (!file) return;
+
+		setIsImporting(true);
+		try {
+			const data = await parseExportFile(file);
+			await importUserData(user.uid, data);
+			showSuccess("Data imported successfully! Your settings and customizations have been restored.");
+			setSuccessMessage("Your data has been imported successfully!");
+		} catch (error) {
+			console.error("Error importing data:", error);
+			showError(error instanceof Error ? error.message : "Failed to import data");
+		} finally {
+			setIsImporting(false);
+			// Reset file input
+			if (fileInputRef.current) {
+				fileInputRef.current.value = "";
+			}
 		}
 	};
 
@@ -145,6 +200,61 @@ export default function ProfilePage() {
 						className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors">
 						{isSaving ? "Saving..." : "Update Name"}
 					</button>
+				</div>
+			</div>
+
+			{/* Danger Zone */}
+			<div className="space-y-4">
+				<h2 className="text-xl font-bold text-gray-900 dark:text-white">Data Management</h2>
+
+				{/* Export Data */}
+				<div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+					<div className="flex items-start gap-4">
+						<Download className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-1" />
+						<div className="flex-1">
+							<h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-1">Export Your Data</h3>
+							<p className="text-sm text-blue-800 dark:text-blue-200 mb-4">
+								Download a backup of all your custom categories, income entries, debts, budgets, and other personal
+								customizations. This file can be imported back to restore your settings.
+							</p>
+							<button
+								onClick={handleExportData}
+								disabled={isExporting}
+								className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors">
+								<Download className="w-4 h-4" />
+								{isExporting ? "Exporting..." : "Export Data"}
+							</button>
+						</div>
+					</div>
+				</div>
+
+				{/* Import Data */}
+				<div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+					<div className="flex items-start gap-4">
+						<Upload className="w-6 h-6 text-green-600 dark:text-green-400 flex-shrink-0 mt-1" />
+						<div className="flex-1">
+							<h3 className="text-lg font-semibold text-green-900 dark:text-green-100 mb-1">Import Data</h3>
+							<p className="text-sm text-green-800 dark:text-green-200 mb-4">
+								Restore your previously exported settings and customizations from a backup file. This will not affect
+								your existing transactions.
+							</p>
+							<button
+								onClick={handleImportClick}
+								disabled={isImporting}
+								className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium rounded-lg transition-colors">
+								<Upload className="w-4 h-4" />
+								{isImporting ? "Importing..." : "Import Data"}
+							</button>
+							<input
+								ref={fileInputRef}
+								type="file"
+								accept=".json"
+								onChange={handleImportData}
+								className="hidden"
+								disabled={isImporting}
+							/>
+						</div>
+					</div>
 				</div>
 			</div>
 
