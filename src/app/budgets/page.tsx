@@ -4,21 +4,8 @@ import { useState, useEffect } from "react";
 import { Budget, Transaction, TransactionCategory } from "@/types";
 import { Plus, Trash2, TrendingUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { saveBudget, deleteBudget, getTransactions } from "@/lib/firestoreService";
-
-const CATEGORIES: TransactionCategory[] = [
-	"Groceries",
-	"Gas/Fuel",
-	"Restaurants",
-	"Utilities",
-	"Insurance",
-	"Shopping",
-	"Entertainment",
-	"Transportation",
-	"Healthcare",
-	"Subscriptions",
-	"Other",
-];
+import { saveBudget, deleteBudget, getTransactions, getCustomCategories } from "@/lib/firestoreService";
+import { COMMON_CATEGORIES } from "@/lib/constants";
 
 interface CategoryBudget {
 	category: TransactionCategory;
@@ -39,6 +26,7 @@ export default function BudgetsPage() {
 	const [showForm, setShowForm] = useState(false);
 	const [selectedCategory, setSelectedCategory] = useState<TransactionCategory>("Groceries");
 	const [budgetAmount, setBudgetAmount] = useState("");
+	const [allCategories, setAllCategories] = useState<string[]>(COMMON_CATEGORIES);
 	const [spendingData, setSpendingData] = useState<Record<TransactionCategory, SpendingData>>(
 		{} as Record<TransactionCategory, SpendingData>,
 	);
@@ -52,12 +40,18 @@ export default function BudgetsPage() {
 
 		const loadData = async () => {
 			try {
+				// Load custom categories and merge with common categories
+				const customCats = await getCustomCategories(user.uid);
+				const customCategoryNames = customCats.map((c) => c.name || "").filter((n) => n);
+				const merged = Array.from(new Set([...COMMON_CATEGORIES, ...customCategoryNames]));
+				setAllCategories(merged);
+
 				// Load transactions to calculate spending
 				const txns = await getTransactions(user.uid);
 				setTransactions(txns);
 
 				// Calculate spending by category and month
-				calculateSpending(txns);
+				calculateSpending(txns, merged);
 			} catch (err) {
 				console.error("Failed to load data:", err);
 			} finally {
@@ -68,15 +62,15 @@ export default function BudgetsPage() {
 		loadData();
 	}, [user?.uid]);
 
-	const calculateSpending = (txns: (Partial<Transaction> & { id: string })[]) => {
+	const calculateSpending = (txns: (Partial<Transaction> & { id: string })[], categories: string[]) => {
 		const now = new Date();
 		const currentMonth = now.getMonth();
 		const currentYear = now.getFullYear();
 		const lastMonthDate = new Date(currentYear, currentMonth - 1);
 
-		const spending: Record<TransactionCategory, SpendingData> = {} as Record<TransactionCategory, SpendingData>;
+		const spending: Record<string, SpendingData> = {};
 
-		CATEGORIES.forEach((cat) => {
+		categories.forEach((cat) => {
 			const catTransactions = txns.filter((t) => t.category === cat);
 
 			// Current month
@@ -109,7 +103,7 @@ export default function BudgetsPage() {
 			};
 		});
 
-		setSpendingData(spending);
+		setSpendingData(spending as Record<TransactionCategory, SpendingData>);
 	};
 
 	const handleAddBudget = async () => {
@@ -189,10 +183,10 @@ export default function BudgetsPage() {
 								value={selectedCategory}
 								onChange={(e) => setSelectedCategory(e.target.value as TransactionCategory)}
 								className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500">
-								{CATEGORIES.map((cat) => (
+								{allCategories.map((cat) => (
 									<option key={cat} value={cat}>
 										{cat}
-										{categoryBudgets.find((b) => b.category === cat) ? " (has budget)" : ""}
+										{categoryBudgets.find((b) => b.category === cat as TransactionCategory) ? " (has budget)" : ""}
 									</option>
 								))}
 							</select>
