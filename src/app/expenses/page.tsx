@@ -7,7 +7,6 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import React from "react";
 import { COMMON_CATEGORIES } from "@/lib/constants";
-import ConfirmModal from "@/components/ConfirmModal";
 import {
 	detectRecurringDebts,
 	saveIgnoredRecurringExpense,
@@ -46,10 +45,6 @@ export default function ExpensesPage() {
 	const [editedCategory, setEditedCategory] = useState("");
 	const [editedDescription, setEditedDescription] = useState("");
 	const [saving, setSaving] = useState(false);
-	const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; index: number | null }>({
-		isOpen: false,
-		index: null,
-	});
 	const [deleting, setDeleting] = useState(false);
 	const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 	const [undetectedExpenses, setUndetectedExpenses] = useState<
@@ -157,21 +152,14 @@ export default function ExpensesPage() {
 	};
 
 	const handleDelete = async (index: number) => {
-		setDeleteModal({ isOpen: true, index });
-	};
-
-	const handleConfirmDelete = async () => {
-		if (!user?.uid || deleteModal.index === null) return;
+		if (!user?.uid) return;
 
 		setDeleting(true);
-		const index = deleteModal.index;
 		try {
 			const expense = expenses[index];
 
 			// Delete from custom recurring expenses collection
 			await deleteCustomRecurringExpense(user.uid, expense.description, expense.amount);
-
-			setDeleteModal({ isOpen: false, index: null });
 
 			// Reload all expenses from scratch to ensure consistency
 			// This re-fetches detected and custom expenses and properly deduplicates
@@ -271,9 +259,7 @@ export default function ExpensesPage() {
 
 				setUndetectedExpenses(filteredUndetected);
 
-				// Auto-expand the detected expenses section to show restored item
-				setShowDetectedExpenses(true);
-
+				// Do NOT auto-expand the detected expenses section
 				showSuccess("Expense removed successfully");
 			} catch (err) {
 				console.error("Failed to reload expenses after delete:", err);
@@ -1140,19 +1126,6 @@ export default function ExpensesPage() {
 					</div>
 				</div>
 			)}
-
-			{/* Delete Confirmation Modal */}
-			<ConfirmModal
-				isOpen={deleteModal.isOpen}
-				title="Delete Expense"
-				message="Are you sure you want to remove this expense from your monthly list? This action cannot be undone."
-				confirmText="Delete"
-				cancelText="Cancel"
-				isDangerous={true}
-				isLoading={deleting}
-				onConfirm={handleConfirmDelete}
-				onCancel={() => setDeleteModal({ isOpen: false, index: null })}
-			/>
 		</div>
 	);
 }
