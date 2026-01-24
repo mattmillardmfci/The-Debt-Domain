@@ -160,6 +160,21 @@ export default function TransactionsPage() {
 		}
 	}, [viewMode, user?.uid]);
 
+	// When search query is entered, load all transactions to search through
+	useEffect(() => {
+		if (searchQuery.trim() && user?.uid && viewMode === "list") {
+			const loadAllForSearch = async () => {
+				try {
+					const allTransactions = await getAllTransactions(user.uid);
+					setTransactions(allTransactions);
+				} catch (err) {
+					console.error("Failed to load all transactions for search:", err);
+				}
+			};
+			loadAllForSearch();
+		}
+	}, [searchQuery, user?.uid, viewMode]);
+
 	// Load more transactions
 	const handleLoadMore = async () => {
 		if (!user?.uid || !lastDoc || loadingMore) return;
