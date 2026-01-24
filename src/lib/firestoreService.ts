@@ -1147,6 +1147,7 @@ export async function saveCustomRecurringExpense(
 		frequency: string;
 		category: string;
 		lastOccurrence: Date;
+		count?: number; // Optional: preserve original detection count
 	},
 ) {
 	try {
@@ -1157,6 +1158,7 @@ export async function saveCustomRecurringExpense(
 		await setDoc(doc(ref, docId), {
 			...expense,
 			amount: roundedAmount,
+			count: expense.count || 0, // Store the count for later retrieval
 			lastOccurrence: Timestamp.fromDate(expense.lastOccurrence),
 			createdAt: Timestamp.now(),
 		});
@@ -1179,7 +1181,7 @@ export async function getCustomRecurringExpenses(userId: string): Promise<Recurr
 				description: data.description,
 				amount: data.amount,
 				category: data.category,
-				count: 0, // Custom expenses don't have transaction count
+				count: data.count || 0, // Return stored count from when it was originally detected
 				avgAmount: data.amount,
 				totalAmount: data.amount,
 				lastOccurrence: data.lastOccurrence.toDate(),
@@ -1198,11 +1200,29 @@ export async function getCustomRecurringExpenses(userId: string): Promise<Recurr
 export async function deleteCustomRecurringExpense(userId: string, description: string, amount: number) {
 	try {
 		const ref = collection(db, "users", userId, "customRecurringExpenses");
-		// The docId must match exactly how it was stored in saveCustomRecurringExpense
 		// Round to 2 decimal places to handle floating point issues
 		const roundedAmount = Math.round(amount * 100) / 100;
-		const docId = `${description}-${roundedAmount}`.replace(/\s+/g, "-");
-		await deleteDoc(doc(ref, docId));
+		
+		// First try to find by description and amount (handles renamed expenses)
+		const q = query(
+			ref,
+			where("description", "==", description),
+			where("amount", "==", roundedAmount)
+		);
+		const snapshot = await getDocs(q);
+		
+		if (snapshot.empty) {
+			// If not found, try the old docId format (for backwards compatibility)
+			const docId = `${description}-${roundedAmount}`.replace(/\s+/g, "-");
+			await deleteDoc(doc(ref, docId));
+		} else {
+			// Delete all matching documents (should only be one)
+			const batch = writeBatch(db);
+			snapshot.docs.forEach((docSnap) => {
+				batch.delete(docSnap.ref);
+			});
+			await batch.commit();
+		}
 	} catch (error) {
 		console.error("Error deleting custom recurring expense:", error);
 		throw error;

@@ -242,6 +242,7 @@ export default function TransactionsPage() {
 				frequency: "monthly",
 				category: (transaction.category as string) || "Other",
 				lastOccurrence: transaction.date instanceof Date ? transaction.date : new Date(transaction.date || ""),
+				count: 1, // Single transaction marked as recurring
 			});
 
 			showSuccess(`"${transaction.description}" added to your monthly expenses!`);

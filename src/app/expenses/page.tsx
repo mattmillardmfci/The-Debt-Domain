@@ -225,13 +225,14 @@ export default function ExpensesPage() {
 
 		setSaving(true);
 		try {
-			// Save to custom recurring expenses
+			// Save to custom recurring expenses with the count preserved
 			await saveCustomRecurringExpense(user.uid, {
 				description: selected.description,
 				amount: selected.amount,
 				frequency: "monthly",
 				category: selected.category || "Other",
 				lastOccurrence: selected.lastOccurrence,
+				count: selected.count, // Preserve the detection count
 			});
 
 			// Add to local state with correct count from undetected
@@ -389,8 +390,7 @@ export default function ExpensesPage() {
 				const merged = Array.from(new Set([...COMMON_CATEGORIES, ...customCategoryNames]));
 				setAllCategories(merged);
 
-				// Combine detected and custom expenses
-				// Custom expenses that came from detected now have their original count from when they were detected
+				// Combine detected and custom expenses, deduplicating by description
 				const allExpenses = [
 					...recurringDebts.map((debt) => {
 						const monthlyAmount = calculateMonthlyAmount(debt.avgAmount, debt.estimatedFrequency);
@@ -407,36 +407,46 @@ export default function ExpensesPage() {
 					}),
 					...customExpenses.map((custom) => {
 						const monthlyAmount = calculateMonthlyAmount(custom.avgAmount, custom.estimatedFrequency);
-						// Check if this custom expense was originally detected (has count > 0)
-						const matchingDetected = recurringDebts.find(
-							(debt) => debt.description.toLowerCase() === custom.description.toLowerCase(),
-						);
-						const originalCount = matchingDetected ? matchingDetected.count : 0;
+						// If count > 0, it came from a detected expense that was added
+						const isDetected = custom.count > 0;
 
 						return {
 							description: custom.description,
 							amount: custom.avgAmount,
 							frequency: custom.estimatedFrequency || "monthly",
 							monthlyAmount,
-							count: originalCount > 0 ? originalCount : 0,
+							count: custom.count, // Use the stored count
 							lastOccurrence: custom.lastOccurrence,
 							category: custom.category,
-							isCustom: originalCount === 0, // Only truly custom if it wasn't detected
+							isCustom: !isDetected, // Only truly custom if count is 0
 						};
 					}),
 				];
 
+				// Deduplicate by description, preferring custom expenses (they have user overrides/counts)
+				const expenseByDesc = new Map<string, RecurringExpense>();
+				allExpenses.forEach((exp) => {
+					const key = exp.description.toLowerCase();
+					const existing = expenseByDesc.get(key);
+					// Prefer custom expense (if added by user) or the one with higher count
+					if (!existing || (!existing.isCustom && exp.count > existing.count)) {
+						expenseByDesc.set(key, exp);
+					}
+				});
+
+				const dedupExpenses = Array.from(expenseByDesc.values());
+
 				// Sort by monthly amount (highest first)
-				allExpenses.sort((a, b) => b.monthlyAmount - a.monthlyAmount);
+				dedupExpenses.sort((a, b) => b.monthlyAmount - a.monthlyAmount);
 
 				// Calculate total (use absolute values for expenses)
-				const total = allExpenses.reduce((sum, expense) => sum + Math.abs(expense.monthlyAmount), 0);
+				const total = dedupExpenses.reduce((sum, expense) => sum + Math.abs(expense.monthlyAmount), 0);
 
-				setExpenses(allExpenses);
+				setExpenses(dedupExpenses);
 				setTotalMonthlyExpenses(total);
 
-				// Filter undetected expenses: exclude any already in allExpenses (by description match)
-				const addedDescriptions = new Set(allExpenses.map((exp) => exp.description.toLowerCase()));
+				// Filter undetected expenses: exclude any already in dedupExpenses (by description match)
+				const addedDescriptions = new Set(dedupExpenses.map((exp) => exp.description.toLowerCase()));
 				const filteredUndetected = undetected.filter((exp) => !addedDescriptions.has(exp.description.toLowerCase()));
 
 				setUndetectedExpenses(filteredUndetected);
