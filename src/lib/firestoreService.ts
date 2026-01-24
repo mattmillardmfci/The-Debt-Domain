@@ -1167,9 +1167,12 @@ export async function saveCustomRecurringExpense(
 ) {
 	try {
 		const ref = collection(db, "users", userId, "customRecurringExpenses");
-		const docId = `${expense.description}-${expense.amount}`.replace(/\s+/g, "-");
+		// Round to 2 decimal places to ensure consistency with delete operations
+		const roundedAmount = Math.round(expense.amount * 100) / 100;
+		const docId = `${expense.description}-${roundedAmount}`.replace(/\s+/g, "-");
 		await setDoc(doc(ref, docId), {
 			...expense,
+			amount: roundedAmount,
 			lastOccurrence: Timestamp.fromDate(expense.lastOccurrence),
 			createdAt: Timestamp.now(),
 		});
@@ -1211,7 +1214,10 @@ export async function getCustomRecurringExpenses(userId: string): Promise<Recurr
 export async function deleteCustomRecurringExpense(userId: string, description: string, amount: number) {
 	try {
 		const ref = collection(db, "users", userId, "customRecurringExpenses");
-		const docId = `${description}-${amount}`.replace(/\s+/g, "-");
+		// The docId must match exactly how it was stored in saveCustomRecurringExpense
+		// Round to 2 decimal places to handle floating point issues
+		const roundedAmount = Math.round(amount * 100) / 100;
+		const docId = `${description}-${roundedAmount}`.replace(/\s+/g, "-");
 		await deleteDoc(doc(ref, docId));
 	} catch (error) {
 		console.error("Error deleting custom recurring expense:", error);

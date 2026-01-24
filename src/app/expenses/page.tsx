@@ -170,14 +170,12 @@ export default function ExpensesPage() {
 		try {
 			const expense = expenses[index];
 
-			if (expense.isCustom) {
-				// Delete truly custom expense (manually created, not detected)
-				await deleteCustomRecurringExpense(user.uid, expense.description, Math.abs(expense.amount));
-			} else {
-				// For detected expenses that were added, delete from custom collection and move back to available
-				await deleteCustomRecurringExpense(user.uid, expense.description, Math.abs(expense.amount));
+			// Delete from custom recurring expenses collection (for both detected and truly custom)
+			// The amount in the database is stored with its original sign (negative for expenses)
+			await deleteCustomRecurringExpense(user.uid, expense.description, expense.amount);
 
-				// Re-add to undetected list so it shows as available again
+			// If this was a detected expense that was added, re-add it to undetected list
+			if (!expense.isCustom) {
 				const undetected = {
 					description: expense.description,
 					amount: expense.amount,
