@@ -17,6 +17,7 @@ import {
 	findUndetectedRecurringExpenses,
 	bulkRenameRecurringExpenseDescription,
 	getCustomCategories,
+	deleteCustomRecurringExpense,
 } from "@/lib/firestoreService";
 
 interface RecurringExpense {
@@ -170,8 +171,13 @@ export default function ExpensesPage() {
 			const expense = expenses[index];
 
 			if (expense.isCustom) {
-				// Move custom expense back to detected/undetected list
-				// Create an undetected expense object from the custom expense
+				// Delete truly custom expense (manually created, not detected)
+				await deleteCustomRecurringExpense(user.uid, expense.description, Math.abs(expense.amount));
+			} else {
+				// For detected expenses that were added, delete from custom collection and move back to available
+				await deleteCustomRecurringExpense(user.uid, expense.description, Math.abs(expense.amount));
+
+				// Re-add to undetected list so it shows as available again
 				const undetected = {
 					description: expense.description,
 					amount: expense.amount,
@@ -180,22 +186,14 @@ export default function ExpensesPage() {
 					category: expense.category,
 				};
 				setUndetectedExpenses([...undetectedExpenses, undetected]);
-			} else {
-				// Save to ignored recurring expenses for detected expenses
-				await saveIgnoredRecurringExpense(user.uid, {
-					description: expense.description,
-					amount: expense.amount,
-					vendor: expense.description.split(/\s+/)[0], // Use first word as vendor
-					reason: "user-removed",
-				});
 			}
 
 			// Remove from display
 			const updated = expenses.filter((_, i) => i !== index);
 			setExpenses(updated);
 
-			// Recalculate total
-			const total = updated.reduce((sum, exp) => sum + exp.monthlyAmount, 0);
+			// Recalculate total with absolute values
+			const total = updated.reduce((sum, exp) => sum + Math.abs(exp.monthlyAmount), 0);
 			setTotalMonthlyExpenses(total);
 
 			setDeleteModal({ isOpen: false, index: null });
@@ -235,24 +233,24 @@ export default function ExpensesPage() {
 				lastOccurrence: selected.lastOccurrence,
 			});
 
-			// Add to local state
+			// Add to local state with correct count from undetected
 			const newExpense: RecurringExpense = {
 				description: selected.description,
 				amount: selected.amount,
 				frequency: "monthly",
 				monthlyAmount: selected.amount,
-				count: selected.count,
+				count: selected.count, // Use the actual count from undetected
 				lastOccurrence: selected.lastOccurrence,
 				category: selected.category,
-				isCustom: true,
+				isCustom: false, // This was detected, not truly custom
 			};
 
 			const updated = [...expenses, newExpense];
 			updated.sort((a, b) => b.monthlyAmount - a.monthlyAmount);
 			setExpenses(updated);
 
-			// Recalculate total
-			const total = updated.reduce((sum, exp) => sum + exp.monthlyAmount, 0);
+			// Recalculate total with absolute values
+			const total = updated.reduce((sum, exp) => sum + Math.abs(exp.monthlyAmount), 0);
 			setTotalMonthlyExpenses(total);
 
 			// Remove from undetected list
@@ -391,6 +389,7 @@ export default function ExpensesPage() {
 				setAllCategories(merged);
 
 				// Combine detected and custom expenses
+				// Custom expenses that came from detected now have their original count from when they were detected
 				const allExpenses = [
 					...recurringDebts.map((debt) => {
 						const monthlyAmount = calculateMonthlyAmount(debt.avgAmount, debt.estimatedFrequency);
@@ -407,15 +406,21 @@ export default function ExpensesPage() {
 					}),
 					...customExpenses.map((custom) => {
 						const monthlyAmount = calculateMonthlyAmount(custom.avgAmount, custom.estimatedFrequency);
+						// Check if this custom expense was originally detected (has count > 0)
+						const matchingDetected = recurringDebts.find(
+							(debt) => debt.description.toLowerCase() === custom.description.toLowerCase(),
+						);
+						const originalCount = matchingDetected ? matchingDetected.count : 0;
+
 						return {
 							description: custom.description,
 							amount: custom.avgAmount,
 							frequency: custom.estimatedFrequency || "monthly",
 							monthlyAmount,
-							count: 0,
+							count: originalCount > 0 ? originalCount : 0,
 							lastOccurrence: custom.lastOccurrence,
 							category: custom.category,
-							isCustom: true,
+							isCustom: originalCount === 0, // Only truly custom if it wasn't detected
 						};
 					}),
 				];
@@ -428,7 +433,14 @@ export default function ExpensesPage() {
 
 				setExpenses(allExpenses);
 				setTotalMonthlyExpenses(total);
-				setUndetectedExpenses(undetected);
+
+				// Filter undetected expenses: exclude any already in allExpenses (by description match)
+				const addedDescriptions = new Set(allExpenses.map((exp) => exp.description.toLowerCase()));
+				const filteredUndetected = undetected.filter(
+					(exp) => !addedDescriptions.has(exp.description.toLowerCase()),
+				);
+
+				setUndetectedExpenses(filteredUndetected);
 			} catch (error) {
 				console.error("Failed to load expenses:", error);
 			} finally {

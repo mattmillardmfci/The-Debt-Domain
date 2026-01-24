@@ -4,15 +4,7 @@
  * New features can be added to the export format by extending the UserDataExport interface
  */
 
-import {
-	collection,
-	getDocs,
-	query,
-	where,
-	addDoc,
-	updateDoc,
-	doc,
-} from "firebase/firestore";
+import { collection, getDocs, query, where, addDoc, updateDoc, doc } from "firebase/firestore";
 import { db } from "./firebase";
 import { CustomCategory, Debt, Budget, Income } from "@/types";
 
@@ -42,7 +34,7 @@ export async function exportUserData(userId: string): Promise<UserDataExport> {
 		const [customCats, recurringExpOverrides, ignoredExpenses, incomeEntries, debts, budgets] = await Promise.all([
 			// Get custom categories
 			getDocs(query(collection(db, "users", userId, "categories"))).then((snap) =>
-				snap.docs.map((d) => ({ id: d.id, ...d.data() } as CustomCategory & { id: string })),
+				snap.docs.map((d) => ({ id: d.id, ...d.data() }) as CustomCategory & { id: string }),
 			),
 			// Get recurring expense overrides
 			getDocs(query(collection(db, "users", userId, "recurringExpenseOverrides"))).then((snap) =>
@@ -54,15 +46,15 @@ export async function exportUserData(userId: string): Promise<UserDataExport> {
 			),
 			// Get income entries
 			getDocs(query(collection(db, "users", userId, "income"))).then((snap) =>
-				snap.docs.map((d) => ({ id: d.id, ...d.data() } as Income & { id: string })),
+				snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Income & { id: string }),
 			),
 			// Get debts
 			getDocs(query(collection(db, "users", userId, "debts"))).then((snap) =>
-				snap.docs.map((d) => ({ id: d.id, ...d.data() } as Debt & { id: string })),
+				snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Debt & { id: string }),
 			),
 			// Get budgets
 			getDocs(query(collection(db, "users", userId, "budgets"))).then((snap) =>
-				snap.docs.map((d) => ({ id: d.id, ...d.data() } as Budget & { id: string })),
+				snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Budget & { id: string }),
 			),
 		]);
 
@@ -99,8 +91,10 @@ export async function importUserData(userId: string, data: UserDataExport): Prom
 				const { id, ...categoryData } = category;
 				await addDoc(collection(db, "users", userId, "categories"), {
 					...categoryData,
-					createdAt: categoryData.createdAt instanceof Date ? categoryData.createdAt : new Date(categoryData.createdAt || ""),
-					updatedAt: categoryData.updatedAt instanceof Date ? categoryData.updatedAt : new Date(categoryData.updatedAt || ""),
+					createdAt:
+						categoryData.createdAt instanceof Date ? categoryData.createdAt : new Date(categoryData.createdAt || ""),
+					updatedAt:
+						categoryData.updatedAt instanceof Date ? categoryData.updatedAt : new Date(categoryData.updatedAt || ""),
 				});
 			}
 		}
@@ -196,4 +190,3 @@ export async function parseExportFile(file: File): Promise<UserDataExport> {
 		reader.readAsText(file);
 	});
 }
-

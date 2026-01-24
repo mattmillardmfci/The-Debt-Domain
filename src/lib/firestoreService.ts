@@ -350,16 +350,18 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 
 		// Helper: Normalize vendor description for fuzzy matching
 		const normalizeVendor = (desc: string): string => {
-			return desc
-				.toLowerCase()
-				.trim()
-				// Remove common patterns
-				.replace(/\s*(debit|credit|payment|withdrawal|transfer|purchase|refund)\s*/gi, " ")
-				// Remove trailing account numbers or reference numbers
-				.replace(/\s*[\d]{4,}\s*$/g, "")
-				// Remove extra spaces
-				.replace(/\s+/g, " ")
-				.trim();
+			return (
+				desc
+					.toLowerCase()
+					.trim()
+					// Remove common patterns
+					.replace(/\s*(debit|credit|payment|withdrawal|transfer|purchase|refund)\s*/gi, " ")
+					// Remove trailing account numbers or reference numbers
+					.replace(/\s*[\d]{4,}\s*$/g, "")
+					// Remove extra spaces
+					.replace(/\s+/g, " ")
+					.trim()
+			);
 		};
 
 		// Helper: Calculate Levenshtein distance for fuzzy matching
@@ -396,12 +398,7 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 
 		// Helper: Detect if description is a check
 		const isCheckTransaction = (desc: string): boolean => {
-			const checkPatterns = [
-				/check\s*#/i,
-				/^chk\s*/i,
-				/^check$/i,
-				/^ck\s*/i,
-			];
+			const checkPatterns = [/check\s*#/i, /^chk\s*/i, /^check$/i, /^ck\s*/i];
 			return checkPatterns.some((pattern) => pattern.test(desc));
 		};
 
@@ -444,7 +441,9 @@ export async function detectRecurringDebts(userId: string): Promise<RecurringDeb
 
 			// Try to find existing group with similar vendor
 			let foundGroup = chargeGroups.find(
-				(group) => isVendorSimilar(group.description, description) && Math.abs(group.amount - amount) / Math.max(group.amount, amount) < 0.05,
+				(group) =>
+					isVendorSimilar(group.description, description) &&
+					Math.abs(group.amount - amount) / Math.max(group.amount, amount) < 0.05,
 			);
 
 			if (!foundGroup) {
