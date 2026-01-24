@@ -155,9 +155,7 @@ export default function CategoriesPage() {
 
 	const handleEditAutoCategory = (autoCategoryName: string) => {
 		// Check if already customized (by looking for the override marker in description)
-		const existing = categories.find(
-			(c) => c.description?.includes(`Customized from: ${autoCategoryName}`),
-		);
+		const existing = categories.find((c) => c.description?.includes(`Customized from: ${autoCategoryName}`));
 		if (existing) {
 			handleEditCategory(existing);
 		} else {
@@ -209,7 +207,7 @@ export default function CategoriesPage() {
 			{showForm && (
 				<div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6">
 					<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-						{editingId ? "Edit Category" : "Create Category"}
+						{editingId || editingAutoCategory ? "Edit Category" : "Create Category"}
 					</h2>
 
 					<div className="space-y-4">
@@ -245,7 +243,7 @@ export default function CategoriesPage() {
 							<button
 								onClick={handleSaveCategory}
 								className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-								{editingId ? "Update Category" : "Create Category"}
+								{editingId || editingAutoCategory ? "Update Category" : "Create Category"}
 							</button>
 							<button
 								onClick={handleCancelEdit}
@@ -261,7 +259,8 @@ export default function CategoriesPage() {
 			<div className="mt-8">
 				<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Auto-Categorized Categories</h2>
 				<p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-					Transactions are automatically categorized into these categories based on vendor matching. Click the edit icon to customize the name.
+					Transactions are automatically categorized into these categories based on vendor matching. Click the edit icon
+					to customize the name.
 				</p>
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
 					{COMMON_AUTO_CATEGORIES.filter(
