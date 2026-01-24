@@ -14,6 +14,7 @@ import {
 	updateCustomCategory,
 	getTransactions,
 	updateTransaction,
+	bulkRenameCategoryEverywhere,
 } from "@/lib/firestoreService";
 
 const COLORS = [
@@ -49,7 +50,7 @@ const COMMON_AUTO_CATEGORIES = [
 
 export default function CategoriesPage() {
 	const { user } = useAuth();
-	const { showError } = useAlert();
+	const { showError, showSuccess } = useAlert();
 	const [categories, setCategories] = useState<(Partial<CustomCategory> & { id: string })[]>([]);
 	const [transactionCategories, setTransactionCategories] = useState<string[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -104,39 +105,45 @@ export default function CategoriesPage() {
 		}
 
 		try {
-			const categoryData = {
-				...formData,
-				// Store which auto-category this overrides
-				...(editingAutoCategory && { description: `Customized from: ${editingAutoCategory}` }),
-			};
+			// Check if we're renaming an auto-category
+			if (editingAutoCategory) {
+				// This is a rename of an auto-category (e.g., "Groceries" -> "Grocery")
+				// Apply the rename globally everywhere
+				const oldCategoryName = editingAutoCategory;
+				const newCategoryName = formData.name;
 
-			if (editingId) {
-				// Check if this is updating an auto-category override
+				if (oldCategoryName !== newCategoryName) {
+					// Bulk rename in all places
+					await bulkRenameCategoryEverywhere(user.uid, oldCategoryName, newCategoryName);
+				}
+
+				// Update transaction categories in local state
+				setTransactionCategories(
+					transactionCategories.map((cat) => (cat === oldCategoryName ? newCategoryName : cat)),
+				);
+
+				setEditingAutoCategory(null);
+				showSuccess(`Category "${oldCategoryName}" renamed to "${newCategoryName}" everywhere!`);
+			} else if (editingId) {
+				// This is editing an existing custom category
 				const existingCategory = categories.find((c) => c.id === editingId);
-				const wasAutoCategoryOverride = existingCategory?.description?.includes("Customized from:");
 				const oldCategoryName = existingCategory?.name;
 				const newCategoryName = formData.name;
 
-				// If name changed and this was an auto-category override, update all transactions
-				if (wasAutoCategoryOverride && oldCategoryName && newCategoryName && oldCategoryName !== newCategoryName) {
-					const transactions = await getTransactions(user.uid);
-					const transactionsToUpdate = transactions.filter((t) => t.category === oldCategoryName);
-
-					// Batch update all transactions with the old category name
-					for (const transaction of transactionsToUpdate) {
-						await updateTransaction(user.uid, transaction.id, {
-							category: newCategoryName as any,
-						});
-					}
+				// If name changed, update it globally
+				if (oldCategoryName && newCategoryName && oldCategoryName !== newCategoryName) {
+					await bulkRenameCategoryEverywhere(user.uid, oldCategoryName, newCategoryName);
 				}
 
-				await updateCustomCategory(user.uid, editingId, categoryData);
-				setCategories(categories.map((c) => (c.id === editingId ? { ...c, ...categoryData } : c)));
+				await updateCustomCategory(user.uid, editingId, formData);
+				setCategories(categories.map((c) => (c.id === editingId ? { ...c, ...formData } : c)));
 				setEditingId(null);
-				setEditingAutoCategory(null);
+				showSuccess("Category updated successfully!");
 			} else {
-				const docId = await saveCustomCategory(user.uid, categoryData);
-				setCategories([...categories, { ...categoryData, id: docId }]);
+				// This is creating a new custom category
+				const docId = await saveCustomCategory(user.uid, formData);
+				setCategories([...categories, { ...formData, id: docId }]);
+				showSuccess("Category created successfully!");
 			}
 
 			setFormData({ name: "", color: COLORS[0] });

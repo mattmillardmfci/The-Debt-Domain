@@ -260,6 +260,75 @@ export async function bulkRenameTransactionDescription(
 }
 
 /**
+ * Bulk rename a category everywhere: transactions, recurring expenses, debts, budgets
+ * This is used when renaming auto-categorized categories universally
+ */
+export async function bulkRenameCategoryEverywhere(
+	userId: string,
+	oldCategoryName: string,
+	newCategoryName: string,
+): Promise<{ transactions: number; expenses: number; budgets: number; debts: number }> {
+	try {
+		const batch = writeBatch(db);
+		let transactionCount = 0;
+		let expenseCount = 0;
+		let budgetCount = 0;
+		let debtCount = 0;
+
+		// 1. Rename in transactions
+		const transactionsRef = getTransactionsRef(userId);
+		const transactionsQuery = query(transactionsRef, where("category", "==", oldCategoryName));
+		const transactionsSnapshot = await getDocs(transactionsQuery);
+		transactionsSnapshot.forEach((doc) => {
+			batch.update(doc.ref, {
+				category: newCategoryName,
+				updatedAt: Timestamp.now(),
+			});
+			transactionCount++;
+		});
+
+		// 2. Rename in recurring expense overrides
+		const expensesRef = collection(db, "users", userId, "recurringExpenseOverrides");
+		const expensesQuery = query(expensesRef, where("categoryOverride", "==", oldCategoryName));
+		const expensesSnapshot = await getDocs(expensesQuery);
+		expensesSnapshot.forEach((doc) => {
+			batch.update(doc.ref, { categoryOverride: newCategoryName });
+			expenseCount++;
+		});
+
+		// 3. Rename in budgets
+		const budgetsRef = collection(db, "users", userId, "budgets");
+		const budgetsQuery = query(budgetsRef, where("category", "==", oldCategoryName));
+		const budgetsSnapshot = await getDocs(budgetsQuery);
+		budgetsSnapshot.forEach((doc) => {
+			batch.update(doc.ref, { category: newCategoryName });
+			budgetCount++;
+		});
+
+		// 4. Rename in debts (if they have a category field)
+		const debtsRef = getDebtsRef(userId);
+		const debtsQuery = query(debtsRef, where("category", "==", oldCategoryName));
+		const debtsSnapshot = await getDocs(debtsQuery);
+		debtsSnapshot.forEach((doc) => {
+			batch.update(doc.ref, { category: newCategoryName });
+			debtCount++;
+		});
+
+		await batch.commit();
+
+		return {
+			transactions: transactionCount,
+			expenses: expenseCount,
+			budgets: budgetCount,
+			debts: debtCount,
+		};
+	} catch (error) {
+		console.error("Error bulk renaming category everywhere:", error);
+		throw error;
+	}
+}
+
+/**
  * Get all transactions (for debt detection and other analysis)
  */
 export async function getAllTransactions(userId: string): Promise<(Partial<Transaction> & { id: string })[]> {
