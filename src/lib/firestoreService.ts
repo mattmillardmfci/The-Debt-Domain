@@ -1206,6 +1206,29 @@ export async function updateRecurringExpenseOverride(
 }
 
 /**
+ * Get all recurring expense overrides
+ */
+export async function getRecurringExpenseOverrides(
+	userId: string,
+): Promise<
+	Array<{
+		originalDescription: string;
+		amount: number;
+		categoryOverride?: string;
+		descriptionOverride?: string;
+	}>
+> {
+	try {
+		const ref = collection(db, "users", userId, "recurringExpenseOverrides");
+		const snapshot = await getDocs(ref);
+		return snapshot.docs.map((doc) => doc.data() as any);
+	} catch (error) {
+		console.error("Error getting recurring expense overrides:", error);
+		return [];
+	}
+}
+
+/**
  * Save a custom recurring expense (user-created, not auto-detected)
  */
 export async function saveCustomRecurringExpense(

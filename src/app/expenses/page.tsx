@@ -18,6 +18,7 @@ import {
 	bulkRenameRecurringExpenseDescription,
 	getCustomCategories,
 	deleteCustomRecurringExpense,
+	getRecurringExpenseOverrides,
 } from "@/lib/firestoreService";
 
 interface RecurringExpense {
@@ -378,17 +379,26 @@ export default function ExpensesPage() {
 
 		const loadExpenses = async () => {
 			try {
-				const [recurringDebts, customExpenses, undetected, customCats] = await Promise.all([
+				const [recurringDebts, customExpenses, undetected, customCats, overrides] = await Promise.all([
 					detectRecurringDebts(user.uid),
 					getCustomRecurringExpenses(user.uid),
 					findUndetectedRecurringExpenses(user.uid),
 					getCustomCategories(user.uid),
+					getRecurringExpenseOverrides(user.uid),
 				]);
 
 				// Load custom categories and merge with common categories
 				const customCategoryNames = customCats.map((c) => c.name || "").filter((n) => n);
 				const merged = Array.from(new Set([...COMMON_CATEGORIES, ...customCategoryNames]));
 				setAllCategories(merged);
+
+				// Create a map of overrides by (description, amount) for quick lookup
+				const overrideMap = new Map<string, (typeof overrides)[0]>();
+				overrides.forEach((override) => {
+					const roundedAmount = Math.round(override.amount * 100) / 100;
+					const key = `${override.originalDescription.toLowerCase()}-${roundedAmount}`;
+					overrideMap.set(key, override);
+				});
 
 				// Combine detected and custom expenses, deduplicating by description
 				const allExpenses = [
@@ -436,17 +446,32 @@ export default function ExpensesPage() {
 
 				const dedupExpenses = Array.from(expenseByDesc.values());
 
+				// Apply overrides to the deduplicated expenses
+				const withOverrides = dedupExpenses.map((exp) => {
+					const roundedAmount = Math.round(exp.amount * 100) / 100;
+					const overrideKey = `${exp.description.toLowerCase()}-${roundedAmount}`;
+					const override = overrideMap.get(overrideKey);
+
+					return {
+						...exp,
+						...(override && {
+							descriptionOverride: override.descriptionOverride,
+							categoryOverride: override.categoryOverride,
+						}),
+					};
+				});
+
 				// Sort by monthly amount (highest first)
-				dedupExpenses.sort((a, b) => b.monthlyAmount - a.monthlyAmount);
+				withOverrides.sort((a, b) => b.monthlyAmount - a.monthlyAmount);
 
 				// Calculate total (use absolute values for expenses)
-				const total = dedupExpenses.reduce((sum, expense) => sum + Math.abs(expense.monthlyAmount), 0);
+				const total = withOverrides.reduce((sum, expense) => sum + Math.abs(expense.monthlyAmount), 0);
 
-				setExpenses(dedupExpenses);
+				setExpenses(withOverrides);
 				setTotalMonthlyExpenses(total);
 
-				// Filter undetected expenses: exclude any already in dedupExpenses (by description match)
-				const addedDescriptions = new Set(dedupExpenses.map((exp) => exp.description.toLowerCase()));
+				// Filter undetected expenses: exclude any already in withOverrides (by description match)
+				const addedDescriptions = new Set(withOverrides.map((exp) => exp.description.toLowerCase()));
 				const filteredUndetected = undetected.filter((exp) => !addedDescriptions.has(exp.description.toLowerCase()));
 
 				setUndetectedExpenses(filteredUndetected);
