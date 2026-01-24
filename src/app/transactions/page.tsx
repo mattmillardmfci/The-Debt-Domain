@@ -151,8 +151,10 @@ export default function TransactionsPage() {
 		setLoadingMore(true);
 		try {
 			const result = await getTransactionsPaginated(user.uid, 50, lastDoc);
-			// Clear search when loading more so users see the newly loaded transactions
-			setSearchQuery("");
+			// Only clear search when in list view - in by-month view, keep the search to avoid drastic number changes
+			if (viewMode === "list") {
+				setSearchQuery("");
+			}
 			// Append new transactions to the full list
 			setTransactions((prev) => [...prev, ...result.transactions]);
 			setLastDoc(result.lastDoc);
