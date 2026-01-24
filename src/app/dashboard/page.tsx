@@ -545,7 +545,9 @@ export default function DashboardPage() {
 												</div>
 												<div className="flex justify-between">
 													<span>Average:</span>
-													<span className="font-medium text-gray-700 dark:text-gray-500 text-xs">${cat.average.toFixed(2)}</span>
+													<span className="font-medium text-gray-700 dark:text-gray-500 text-xs">
+														${cat.average.toFixed(2)}
+													</span>
 												</div>
 											</div>
 										</div>

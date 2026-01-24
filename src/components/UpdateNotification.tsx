@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useServiceWorkerUpdate } from '@/hooks/useServiceWorkerUpdate';
-import { RefreshCw, X } from 'lucide-react';
-import { useState } from 'react';
+import { useServiceWorkerUpdate } from "@/hooks/useServiceWorkerUpdate";
+import { RefreshCw, X } from "lucide-react";
+import { useState } from "react";
 
 export default function UpdateNotification() {
 	const { updateAvailable, handleUpdateClick } = useServiceWorkerUpdate();
@@ -23,9 +23,7 @@ export default function UpdateNotification() {
 							<p className="text-xs text-blue-100">A new version is ready to use</p>
 						</div>
 					</div>
-					<button
-						onClick={() => setDismissed(true)}
-						className="text-blue-100 hover:text-white flex-shrink-0">
+					<button onClick={() => setDismissed(true)} className="text-blue-100 hover:text-white flex-shrink-0">
 						<X className="w-4 h-4" />
 					</button>
 				</div>

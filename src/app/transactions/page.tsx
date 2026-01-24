@@ -151,10 +151,8 @@ export default function TransactionsPage() {
 		setLoadingMore(true);
 		try {
 			const result = await getTransactionsPaginated(user.uid, 50, lastDoc);
-			// Only clear search when in list view - in by-month view, keep the search to avoid drastic number changes
-			if (viewMode === "list") {
-				setSearchQuery("");
-			}
+			// Clear search when loading more so users see the newly loaded transactions
+			setSearchQuery("");
 			// Append new transactions to the full list
 			setTransactions((prev) => [...prev, ...result.transactions]);
 			setLastDoc(result.lastDoc);
@@ -421,7 +419,9 @@ export default function TransactionsPage() {
 							return dateB.getTime() - dateA.getTime();
 						})
 						.map(([month, categories]) => (
-							<div key={month} className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
+							<div
+								key={month}
+								className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
 								<button
 									onClick={() => toggleMonth(month)}
 									className="w-full px-6 py-4 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
@@ -431,7 +431,8 @@ export default function TransactionsPage() {
 											Total: ${getMonthTotal(categories).toFixed(2)}
 										</p>
 									</div>
-									<span className={`text-gray-400 transition-transform ${expandedMonths.has(month) ? "rotate-180" : ""}`}>
+									<span
+										className={`text-gray-400 transition-transform ${expandedMonths.has(month) ? "rotate-180" : ""}`}>
 										▼
 									</span>
 								</button>
@@ -454,7 +455,9 @@ export default function TransactionsPage() {
 																<div>
 																	<p className="text-gray-900 dark:text-white">{t.description}</p>
 																	<p className="text-xs text-gray-500 dark:text-gray-400">
-																		{t.date instanceof Date ? t.date.toLocaleDateString() : new Date(t.date as any).toLocaleDateString()}
+																		{t.date instanceof Date
+																			? t.date.toLocaleDateString()
+																			: new Date(t.date as any).toLocaleDateString()}
 																	</p>
 																</div>
 																<span className="font-medium text-gray-900 dark:text-white">
@@ -475,86 +478,185 @@ export default function TransactionsPage() {
 			{/* Transaction Table - Desktop (List View) */}
 			{viewMode === "list" && (
 				<div className="hidden sm:block overflow-x-auto bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
-				<table className="w-full">
-					<thead className="bg-gray-50 dark:bg-slate-700 border-b border-gray-200 dark:border-slate-600">
-						<tr>
-							<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-								Date
-							</th>
-							<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-								Description
-							</th>
-							<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-								Category
-							</th>
-							<th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-								Amount
-							</th>
-							<th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-								Action
-							</th>
-						</tr>
-					</thead>
-					<tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-					{filteredTransactions.map((t) => (
-							<tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-slate-700">
-								<td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
-									{t.date instanceof Date ? t.date.toLocaleDateString() : new Date(t.date as any).toLocaleDateString()}
-								</td>
-								<td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-									<div className="flex items-center justify-between group">
-										<span>{t.description}</span>
-										<button
-											onClick={() => openRenameModal(t.description || "Unknown")}
-											className="p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-all ml-2"
-											title="Rename all transactions with this description">
-											<Edit3 className="w-4 h-4" />
-										</button>
-									</div>
-								</td>
-								<td className="px-6 py-4 text-sm">
-									{editingId === t.id ? (
-										<div className="flex gap-2">
-											<select
-												value={newCategory}
-												onChange={(e) => setNewCategory(e.target.value)}
-												className="px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-xs">
-												<option value="">Select category...</option>
-												{allCategories.map((cat) => (
-													<option key={cat} value={cat}>
-														{cat}
-													</option>
-												))}
-											</select>
+					<table className="w-full">
+						<thead className="bg-gray-50 dark:bg-slate-700 border-b border-gray-200 dark:border-slate-600">
+							<tr>
+								<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+									Date
+								</th>
+								<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+									Description
+								</th>
+								<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+									Category
+								</th>
+								<th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+									Amount
+								</th>
+								<th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+									Action
+								</th>
+							</tr>
+						</thead>
+						<tbody className="divide-y divide-gray-200 dark:divide-slate-700">
+							{filteredTransactions.map((t) => (
+								<tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-slate-700">
+									<td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+										{t.date instanceof Date
+											? t.date.toLocaleDateString()
+											: new Date(t.date as any).toLocaleDateString()}
+									</td>
+									<td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+										<div className="flex items-center justify-between group">
+											<span>{t.description}</span>
 											<button
-												onClick={() => handleSaveCategory(t.id)}
-												disabled={saving}
-												className="px-2 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-xs rounded">
-												Save
-											</button>
-											<button
-												onClick={() => setEditingId(null)}
-												className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded">
-												Cancel
+												onClick={() => openRenameModal(t.description || "Unknown")}
+												className="p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-all ml-2"
+												title="Rename all transactions with this description">
+												<Edit3 className="w-4 h-4" />
 											</button>
 										</div>
-									) : (
-										<button
-											onClick={() => {
-												setEditingId(t.id);
-												setNewCategory(t.category || "Other");
-											}}
-											className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-full text-xs font-medium flex items-center gap-1">
-											<Edit2 className="w-3 h-3" />
-											{t.category || "Other"}
-										</button>
-									)}
-								</td>
-								<td className="px-6 py-4 text-sm text-right font-medium text-gray-900 dark:text-gray-100">
-									${((t.amount || 0) / 100).toFixed(2)}
-								</td>
-								<td className="px-6 py-4 text-sm text-right">
-									<div className="flex items-center justify-end gap-2">
+									</td>
+									<td className="px-6 py-4 text-sm">
+										{editingId === t.id ? (
+											<div className="flex gap-2">
+												<select
+													value={newCategory}
+													onChange={(e) => setNewCategory(e.target.value)}
+													className="px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-xs">
+													<option value="">Select category...</option>
+													{allCategories.map((cat) => (
+														<option key={cat} value={cat}>
+															{cat}
+														</option>
+													))}
+												</select>
+												<button
+													onClick={() => handleSaveCategory(t.id)}
+													disabled={saving}
+													className="px-2 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-xs rounded">
+													Save
+												</button>
+												<button
+													onClick={() => setEditingId(null)}
+													className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded">
+													Cancel
+												</button>
+											</div>
+										) : (
+											<button
+												onClick={() => {
+													setEditingId(t.id);
+													setNewCategory(t.category || "Other");
+												}}
+												className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-full text-xs font-medium flex items-center gap-1">
+												<Edit2 className="w-3 h-3" />
+												{t.category || "Other"}
+											</button>
+										)}
+									</td>
+									<td className="px-6 py-4 text-sm text-right font-medium text-gray-900 dark:text-gray-100">
+										${((t.amount || 0) / 100).toFixed(2)}
+									</td>
+									<td className="px-6 py-4 text-sm text-right">
+										<div className="flex items-center justify-end gap-2">
+											<button
+												onClick={() => handleAddToMonthlyExpenses(t)}
+												disabled={addingToExpenses === t.id}
+												title="Add to monthly recurring expenses"
+												className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors min-h-10 min-w-10 flex items-center justify-center disabled:opacity-50">
+												{addingToExpenses === t.id ? (
+													<span className="text-xs font-medium">...</span>
+												) : (
+													<Plus className="w-4 h-4" />
+												)}
+											</button>
+											<button
+												onClick={() => handleDeleteTransaction(t.id)}
+												className="px-3 py-1 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-800 dark:text-red-300 rounded-full text-xs font-medium">
+												Delete
+											</button>
+										</div>
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+			)}
+
+			{/* Transaction Cards - Mobile (List View) */}
+			{viewMode === "list" && (
+				<div className="sm:hidden space-y-3">
+					{filteredTransactions.map((t) => (
+						<div
+							key={t.id}
+							className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
+							<div className="space-y-3">
+								{/* Header with date and amount */}
+								<div className="flex justify-between items-start">
+									<span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+										{t.date instanceof Date
+											? t.date.toLocaleDateString()
+											: new Date(t.date as any).toLocaleDateString()}
+									</span>
+									<span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+										${((t.amount || 0) / 100).toFixed(2)}
+									</span>
+								</div>
+
+								{/* Description */}
+								<div>
+									<p className="text-sm text-gray-700 dark:text-gray-300 break-words">{t.description}</p>
+									<button
+										onClick={() => openRenameModal(t.description || "Unknown")}
+										className="mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+										<Edit3 className="w-3 h-3" />
+										Rename all
+									</button>
+								</div>
+
+								{/* Category and Action */}
+								<div className="flex gap-2 flex-wrap items-center justify-between pt-2 border-t border-gray-200 dark:border-slate-700">
+									<div className="flex-1">
+										{editingId === t.id ? (
+											<div className="flex gap-2 flex-wrap">
+												<select
+													value={newCategory}
+													onChange={(e) => setNewCategory(e.target.value)}
+													className="px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-xs flex-1 min-w-28">
+													<option value="">Select category...</option>
+													{allCategories.map((cat) => (
+														<option key={cat} value={cat}>
+															{cat}
+														</option>
+													))}
+												</select>
+												<button
+													onClick={() => handleSaveCategory(t.id)}
+													disabled={saving}
+													className="px-2 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-xs rounded">
+													Save
+												</button>
+												<button
+													onClick={() => setEditingId(null)}
+													className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded">
+													Cancel
+												</button>
+											</div>
+										) : (
+											<button
+												onClick={() => {
+													setEditingId(t.id);
+													setNewCategory(t.category || "Other");
+												}}
+												className="w-full px-3 py-2 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded text-xs font-medium flex items-center justify-center gap-1 min-h-10">
+												<Edit2 className="w-3 h-3" />
+												{t.category || "Other"}
+											</button>
+										)}
+									</div>
+									<div className="flex gap-2">
 										<button
 											onClick={() => handleAddToMonthlyExpenses(t)}
 											disabled={addingToExpenses === t.id}
@@ -568,128 +670,37 @@ export default function TransactionsPage() {
 										</button>
 										<button
 											onClick={() => handleDeleteTransaction(t.id)}
-											className="px-3 py-1 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-800 dark:text-red-300 rounded-full text-xs font-medium">
+											className="px-3 py-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-800 dark:text-red-300 rounded text-xs font-medium min-h-10 flex-1">
 											Delete
 										</button>
 									</div>
-								</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-				</div>
-			)}
-
-			{/* Transaction Cards - Mobile (List View) */}
-			{viewMode === "list" && (
-				<div className="sm:hidden space-y-3">
-				{filteredTransactions.map((t) => (
-					<div
-						key={t.id}
-						className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
-						<div className="space-y-3">
-							{/* Header with date and amount */}
-							<div className="flex justify-between items-start">
-								<span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-									{t.date instanceof Date ? t.date.toLocaleDateString() : new Date(t.date as any).toLocaleDateString()}
-								</span>
-								<span className="text-sm font-bold text-gray-900 dark:text-gray-100">
-									${((t.amount || 0) / 100).toFixed(2)}
-								</span>
-							</div>
-
-							{/* Description */}
-							<div>
-								<p className="text-sm text-gray-700 dark:text-gray-300 break-words">{t.description}</p>
-								<button
-									onClick={() => openRenameModal(t.description || "Unknown")}
-									className="mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
-									<Edit3 className="w-3 h-3" />
-									Rename all
-								</button>
-							</div>
-
-							{/* Category and Action */}
-							<div className="flex gap-2 flex-wrap items-center justify-between pt-2 border-t border-gray-200 dark:border-slate-700">
-								<div className="flex-1">
-									{editingId === t.id ? (
-										<div className="flex gap-2 flex-wrap">
-											<select
-												value={newCategory}
-												onChange={(e) => setNewCategory(e.target.value)}
-												className="px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-xs flex-1 min-w-28">
-												<option value="">Select category...</option>
-												{allCategories.map((cat) => (
-													<option key={cat} value={cat}>
-														{cat}
-													</option>
-												))}
-											</select>
-											<button
-												onClick={() => handleSaveCategory(t.id)}
-												disabled={saving}
-												className="px-2 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-xs rounded">
-												Save
-											</button>
-											<button
-												onClick={() => setEditingId(null)}
-												className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded">
-												Cancel
-											</button>
-										</div>
-									) : (
-										<button
-											onClick={() => {
-												setEditingId(t.id);
-												setNewCategory(t.category || "Other");
-											}}
-											className="w-full px-3 py-2 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded text-xs font-medium flex items-center justify-center gap-1 min-h-10">
-											<Edit2 className="w-3 h-3" />
-											{t.category || "Other"}
-										</button>
-									)}
-								</div>
-								<div className="flex gap-2">
-									<button
-										onClick={() => handleAddToMonthlyExpenses(t)}
-										disabled={addingToExpenses === t.id}
-										title="Add to monthly recurring expenses"
-										className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors min-h-10 min-w-10 flex items-center justify-center disabled:opacity-50">
-										{addingToExpenses === t.id ? (
-											<span className="text-xs font-medium">...</span>
-										) : (
-											<Plus className="w-4 h-4" />
-										)}
-									</button>
-									<button
-										onClick={() => handleDeleteTransaction(t.id)}
-										className="px-3 py-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-800 dark:text-red-300 rounded text-xs font-medium min-h-10 flex-1">
-										Delete
-									</button>
 								</div>
 							</div>
 						</div>
-					</div>
-				))}
-			</div>
-			)}
-
-			{/* Load More Button */}
-			{hasMore && (
-				<div className="flex justify-center">
-					<button
-						onClick={handleLoadMore}
-						disabled={loadingMore}
-						className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors min-h-11">
-						{loadingMore ? "Loading more..." : "Load More Transactions"}
-					</button>
+					))}
 				</div>
 			)}
 
-			{!hasMore && transactions.length > 0 && (
-				<p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-					You've loaded all {transactions.length} transactions
-				</p>
+			{/* Load More Button - Only in List View */}
+			{viewMode === "list" && (
+				<>
+					{hasMore && (
+						<div className="flex justify-center">
+							<button
+								onClick={handleLoadMore}
+								disabled={loadingMore}
+								className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors min-h-11">
+								{loadingMore ? "Loading more..." : "Load More Transactions"}
+							</button>
+						</div>
+					)}
+
+					{!hasMore && transactions.length > 0 && (
+						<p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+							You've loaded all {transactions.length} transactions
+						</p>
+					)}
+				</>
 			)}
 
 			{/* Rename Modal */}

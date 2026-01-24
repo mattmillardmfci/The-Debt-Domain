@@ -270,10 +270,10 @@ export default function ExpensesPage() {
 				const filteredUndetected = undetected.filter((exp) => !addedDescriptions.has(exp.description.toLowerCase()));
 
 				setUndetectedExpenses(filteredUndetected);
-				
+
 				// Auto-expand the detected expenses section to show restored item
 				setShowDetectedExpenses(true);
-				
+
 				showSuccess("Expense removed successfully");
 			} catch (err) {
 				console.error("Failed to reload expenses after delete:", err);
