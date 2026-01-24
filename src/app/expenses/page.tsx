@@ -179,19 +179,33 @@ export default function ExpensesPage() {
 			const updated = expenses.filter((_, i) => i !== index);
 			setExpenses(updated);
 
-			// If this was a detected expense that was added, re-add it to undetected list
+			// If this was a detected expense that was added, reload the undetected list from database
+			// to ensure it reappears (it might come from detectRecurringDebts or findUndetectedRecurringExpenses)
 			if (!expense.isCustom) {
-				const undetected = {
-					description: expense.description,
-					amount: expense.amount,
-					count: expense.count,
-					lastOccurrence: expense.lastOccurrence,
-					category: expense.category,
-					transactions: [], // Include empty transactions array for consistency
-				};
-				setUndetectedExpenses((prev) => [...prev, undetected]);
-				// Auto-expand the detected expenses section to show the restored item
-				setShowDetectedExpenses(true);
+				try {
+					const reloadedUndetected = await findUndetectedRecurringExpenses(user.uid);
+					// Filter out any already in the updated expenses list
+					const addedDescriptions = new Set(updated.map((exp) => exp.description.toLowerCase()));
+					const filteredUndetected = reloadedUndetected.filter(
+						(exp) => !addedDescriptions.has(exp.description.toLowerCase()),
+					);
+					setUndetectedExpenses(filteredUndetected);
+					// Auto-expand the detected expenses section to show the restored item
+					setShowDetectedExpenses(true);
+				} catch (err) {
+					console.error("Failed to reload undetected expenses:", err);
+					// Fallback: just add to local state as before
+					const undetected = {
+						description: expense.description,
+						amount: expense.amount,
+						count: expense.count,
+						lastOccurrence: expense.lastOccurrence,
+						category: expense.category,
+						transactions: [],
+					};
+					setUndetectedExpenses((prev) => [...prev, undetected]);
+					setShowDetectedExpenses(true);
+				}
 			}
 
 			// Recalculate total with absolute values

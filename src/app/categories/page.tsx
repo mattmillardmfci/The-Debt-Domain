@@ -118,9 +118,7 @@ export default function CategoriesPage() {
 				}
 
 				// Update transaction categories in local state
-				setTransactionCategories(
-					transactionCategories.map((cat) => (cat === oldCategoryName ? newCategoryName : cat)),
-				);
+				setTransactionCategories(transactionCategories.map((cat) => (cat === oldCategoryName ? newCategoryName : cat)));
 
 				setEditingAutoCategory(null);
 				showSuccess(`Category "${oldCategoryName}" renamed to "${newCategoryName}" everywhere!`);

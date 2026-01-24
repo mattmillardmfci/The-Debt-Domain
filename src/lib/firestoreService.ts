@@ -1208,9 +1208,7 @@ export async function updateRecurringExpenseOverride(
 /**
  * Get all recurring expense overrides
  */
-export async function getRecurringExpenseOverrides(
-	userId: string,
-): Promise<
+export async function getRecurringExpenseOverrides(userId: string): Promise<
 	Array<{
 		originalDescription: string;
 		amount: number;
@@ -1294,15 +1292,11 @@ export async function deleteCustomRecurringExpense(userId: string, description: 
 		const ref = collection(db, "users", userId, "customRecurringExpenses");
 		// Round to 2 decimal places to handle floating point issues
 		const roundedAmount = Math.round(amount * 100) / 100;
-		
+
 		// First try to find by description and amount (handles renamed expenses)
-		const q = query(
-			ref,
-			where("description", "==", description),
-			where("amount", "==", roundedAmount)
-		);
+		const q = query(ref, where("description", "==", description), where("amount", "==", roundedAmount));
 		const snapshot = await getDocs(q);
-		
+
 		if (snapshot.empty) {
 			// If not found, try the old docId format (for backwards compatibility)
 			const docId = `${description}-${roundedAmount}`.replace(/\s+/g, "-");
