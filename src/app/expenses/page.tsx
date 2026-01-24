@@ -174,6 +174,10 @@ export default function ExpensesPage() {
 			// The amount in the database is stored with its original sign (negative for expenses)
 			await deleteCustomRecurringExpense(user.uid, expense.description, expense.amount);
 
+			// Update UI state immediately (batched together for performance)
+			const updated = expenses.filter((_, i) => i !== index);
+			setExpenses(updated);
+
 			// If this was a detected expense that was added, re-add it to undetected list
 			if (!expense.isCustom) {
 				const undetected = {
@@ -182,13 +186,12 @@ export default function ExpensesPage() {
 					count: expense.count,
 					lastOccurrence: expense.lastOccurrence,
 					category: expense.category,
+					transactions: [], // Include empty transactions array for consistency
 				};
-				setUndetectedExpenses([...undetectedExpenses, undetected]);
+				setUndetectedExpenses((prev) => [...prev, undetected]);
+				// Auto-expand the detected expenses section to show the restored item
+				setShowDetectedExpenses(true);
 			}
-
-			// Remove from display
-			const updated = expenses.filter((_, i) => i !== index);
-			setExpenses(updated);
 
 			// Recalculate total with absolute values
 			const total = updated.reduce((sum, exp) => sum + Math.abs(exp.monthlyAmount), 0);
@@ -434,9 +437,7 @@ export default function ExpensesPage() {
 
 				// Filter undetected expenses: exclude any already in allExpenses (by description match)
 				const addedDescriptions = new Set(allExpenses.map((exp) => exp.description.toLowerCase()));
-				const filteredUndetected = undetected.filter(
-					(exp) => !addedDescriptions.has(exp.description.toLowerCase()),
-				);
+				const filteredUndetected = undetected.filter((exp) => !addedDescriptions.has(exp.description.toLowerCase()));
 
 				setUndetectedExpenses(filteredUndetected);
 			} catch (error) {
