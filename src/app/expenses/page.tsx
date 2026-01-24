@@ -423,8 +423,8 @@ export default function ExpensesPage() {
 				// Sort by monthly amount (highest first)
 				allExpenses.sort((a, b) => b.monthlyAmount - a.monthlyAmount);
 
-				// Calculate total
-				const total = allExpenses.reduce((sum, expense) => sum + expense.monthlyAmount, 0);
+				// Calculate total (use absolute values for expenses)
+				const total = allExpenses.reduce((sum, expense) => sum + Math.abs(expense.monthlyAmount), 0);
 
 				setExpenses(allExpenses);
 				setTotalMonthlyExpenses(total);
@@ -538,7 +538,7 @@ export default function ExpensesPage() {
 									<div className="flex items-center gap-2 flex-shrink-0">
 										<div className="text-right">
 											<p className="text-sm font-semibold text-gray-900 dark:text-white">
-												{formatCurrency(expense.amount)}
+												{formatCurrency(Math.abs(expense.amount))}
 											</p>
 										</div>
 										<button
@@ -682,12 +682,12 @@ export default function ExpensesPage() {
 												</td>
 												<td className="px-6 py-4 text-right">
 													<p className="text-sm font-medium text-gray-900 dark:text-white">
-														{formatCurrency(expense.amount)}
+														{formatCurrency(Math.abs(expense.amount))}
 													</p>
 												</td>
 												<td className="px-6 py-4 text-right">
 													<p className="text-sm font-bold text-red-600 dark:text-red-400">
-														{formatCurrency(expense.monthlyAmount)}
+														{formatCurrency(Math.abs(expense.monthlyAmount))}
 													</p>
 												</td>
 												<td className="px-6 py-4">
@@ -736,7 +736,7 @@ export default function ExpensesPage() {
 													<td colSpan={8} className="px-6 py-4">
 														<div className="text-xs text-gray-600 dark:text-gray-400">
 															<p className="font-semibold mb-2">Grouped with similar charges:</p>
-															<p>Charge amount: {formatCurrency(expense.amount)} (±1%)</p>
+															<p>Charge amount: {formatCurrency(Math.abs(expense.amount))} (±1%)</p>
 															<p>Vendor: {expense.description}</p>
 															<p className="mt-2 text-gray-500">
 																Click to expand more details about all grouped transactions
@@ -831,7 +831,7 @@ export default function ExpensesPage() {
 												<div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-3">
 													<p className="text-xs text-red-600 dark:text-red-400">Monthly Impact</p>
 													<p className="text-lg font-bold text-red-700 dark:text-red-300">
-														{formatCurrency(expense.monthlyAmount)}
+														{formatCurrency(Math.abs(expense.monthlyAmount))}
 													</p>
 												</div>
 
@@ -840,7 +840,7 @@ export default function ExpensesPage() {
 													<div>
 														<p className="text-gray-600 dark:text-gray-400">Per Occurrence</p>
 														<p className="font-medium text-gray-900 dark:text-white">
-															{formatCurrency(expense.amount)}
+															{formatCurrency(Math.abs(expense.amount))}
 														</p>
 													</div>
 													<div>
