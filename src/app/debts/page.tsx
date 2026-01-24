@@ -227,12 +227,12 @@ export default function DebtsPage() {
 				<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 					<div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-gray-200 dark:border-slate-700">
 						<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Debt</p>
-						<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">${(totalDebt / 100).toFixed(2)}</p>
-					</div>
-					<div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-gray-200 dark:border-slate-700">
-						<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Minimum Payment</p>
-						<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-							${(totalMinimumPayment / 100).toFixed(2)}/mo
+					<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{formatCurrency(totalDebt / 100)}</p>
+				</div>
+				<div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-gray-200 dark:border-slate-700">
+					<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Minimum Payment</p>
+					<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+						{formatCurrency(totalMinimumPayment / 100)}/mo
 						</p>
 					</div>
 					<div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-gray-200 dark:border-slate-700">

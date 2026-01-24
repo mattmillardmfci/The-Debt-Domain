@@ -481,27 +481,29 @@ export default function DashboardPage() {
 						<div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
 							<h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Spending by Category</h3>
 							{categorySpending.length > 0 ? (
-								<ResponsiveContainer width="100%" height={300}>
-									<PieChart>
-										<Pie
-											data={categorySpending.slice(0, 6).map((cat) => ({
-												name: cat.category,
-												value: parseFloat(Math.abs(cat.currentMonth).toFixed(2)),
-											}))}
-											cx="50%"
-											cy="50%"
-											labelLine={false}
-											label={({ name, value }) => `${name}: $${value}`}
-											outerRadius={80}
-											fill="#8884d8"
-											dataKey="value">
-											{categorySpending.slice(0, 6).map((entry, index) => (
-												<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-											))}
-										</Pie>
-										<Tooltip formatter={(value) => `$${typeof value === "number" ? value.toFixed(2) : "0.00"}`} />
-									</PieChart>
-								</ResponsiveContainer>
+								<div className="w-full overflow-x-auto">
+									<ResponsiveContainer width="100%" height={350}>
+										<PieChart margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
+											<Pie
+												data={categorySpending.slice(0, 6).map((cat) => ({
+													name: cat.category,
+													value: parseFloat(Math.abs(cat.currentMonth).toFixed(2)),
+												}))}
+												cx="45%"
+												cy="50%"
+												labelLine={true}
+												label={({ name, value }) => `${name}: $${value}`}
+												outerRadius={70}
+												fill="#8884d8"
+												dataKey="value">
+												{categorySpending.slice(0, 6).map((entry, index) => (
+													<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+												))}
+											</Pie>
+											<Tooltip formatter={(value) => `$${typeof value === "number" ? value.toFixed(2) : "0.00"}`} />
+										</PieChart>
+									</ResponsiveContainer>
+								</div>
 							) : (
 								<div className="flex items-center justify-center h-64 text-gray-400">No spending data</div>
 							)}
@@ -533,23 +535,17 @@ export default function DashboardPage() {
 												)}
 											</div>
 
-											<p className="text-3xl font-bold text-gray-900 dark:text-white">${cat.average.toFixed(2)}</p>
-											<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Average</p>
+											<p className="text-3xl font-bold text-gray-900 dark:text-white">${cat.currentMonth.toFixed(2)}</p>
+											<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">This month</p>
 
 											<div className="mt-3 space-y-2 text-xs text-gray-600 dark:text-gray-400">
-												<div className="flex justify-between">
-													<span>This month:</span>
-													<span className="font-medium text-gray-900 dark:text-white">
-														${cat.currentMonth.toFixed(2)}
-													</span>
-												</div>
 												<div className="flex justify-between">
 													<span>Last month:</span>
 													<span className="font-medium text-gray-900 dark:text-white">${cat.lastMonth.toFixed(2)}</span>
 												</div>
 												<div className="flex justify-between">
 													<span>Average:</span>
-													<span className="font-medium text-gray-900 dark:text-white">${cat.average.toFixed(2)}</span>
+													<span className="font-medium text-gray-700 dark:text-gray-500 text-xs">${cat.average.toFixed(2)}</span>
 												</div>
 											</div>
 										</div>

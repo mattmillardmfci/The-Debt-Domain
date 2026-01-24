@@ -58,6 +58,49 @@ export default function TransactionsPage() {
 	});
 	const [savingTransaction, setSavingTransaction] = useState(false);
 	const [addingToExpenses, setAddingToExpenses] = useState<string | null>(null);
+	const [viewMode, setViewMode] = useState<"list" | "by-month">("list");
+	const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
+
+	// Group transactions by month and category
+	const getGroupedTransactions = () => {
+		const grouped: { [month: string]: { [category: string]: (Partial<Transaction> & { id: string })[] } } = {};
+
+		transactions.forEach((t) => {
+			const date = t.date instanceof Date ? t.date : new Date(t.date as any);
+			const monthKey = date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
+
+			if (!grouped[monthKey]) {
+				grouped[monthKey] = {};
+			}
+
+			const category = (t.category || "Uncategorized") as string;
+			if (!grouped[monthKey][category]) {
+				grouped[monthKey][category] = [];
+			}
+
+			grouped[monthKey][category].push(t);
+		});
+
+		return grouped;
+	};
+
+	const getCategoryTotal = (transactions: (Partial<Transaction> & { id: string })[]) => {
+		return transactions.reduce((sum, t) => sum + (t.amount || 0), 0) / 100;
+	};
+
+	const getMonthTotal = (categoryTransactions: { [category: string]: (Partial<Transaction> & { id: string })[] }) => {
+		return Object.values(categoryTransactions).reduce((sum, transactions) => sum + getCategoryTotal(transactions), 0);
+	};
+
+	const toggleMonth = (month: string) => {
+		const newExpanded = new Set(expandedMonths);
+		if (newExpanded.has(month)) {
+			newExpanded.delete(month);
+		} else {
+			newExpanded.add(month);
+		}
+		setExpandedMonths(newExpanded);
+	};
 
 	// Initial load - get first page of transactions (50 most recent)
 	useEffect(() => {
@@ -313,8 +356,92 @@ export default function TransactionsPage() {
 				</div>
 			</div>
 
-			{/* Transaction Table - Desktop */}
-			<div className="hidden sm:block overflow-x-auto bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+			{/* View Mode Toggle */}
+			<div className="flex gap-2 border-b border-gray-200 dark:border-slate-700">
+				<button
+					onClick={() => setViewMode("list")}
+					className={`px-4 py-2 text-sm font-medium transition-colors ${
+						viewMode === "list"
+							? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+							: "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300"
+					}`}>
+					List View
+				</button>
+				<button
+					onClick={() => setViewMode("by-month")}
+					className={`px-4 py-2 text-sm font-medium transition-colors ${
+						viewMode === "by-month"
+							? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+							: "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300"
+					}`}>
+					By Month
+				</button>
+			</div>
+
+			{/* Grouped by Month View */}
+			{viewMode === "by-month" && (
+				<div className="space-y-4">
+					{Object.entries(getGroupedTransactions())
+						.sort(([monthA], [monthB]) => {
+							const dateA = new Date(monthA);
+							const dateB = new Date(monthB);
+							return dateB.getTime() - dateA.getTime();
+						})
+						.map(([month, categories]) => (
+							<div key={month} className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
+								<button
+									onClick={() => toggleMonth(month)}
+									className="w-full px-6 py-4 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+									<div className="text-left">
+										<h3 className="font-semibold text-gray-900 dark:text-white">{month}</h3>
+										<p className="text-sm text-gray-600 dark:text-gray-400">
+											Total: ${getMonthTotal(categories).toFixed(2)}
+										</p>
+									</div>
+									<span className={`text-gray-400 transition-transform ${expandedMonths.has(month) ? "rotate-180" : ""}`}>
+										▼
+									</span>
+								</button>
+
+								{expandedMonths.has(month) && (
+									<div className="border-t border-gray-200 dark:border-slate-700">
+										{Object.entries(categories)
+											.sort(([catA], [catB]) => catA.localeCompare(catB))
+											.map(([category, categoryTransactions]) => (
+												<div key={category} className="border-b border-gray-200 dark:border-slate-700 last:border-b-0">
+													<div className="px-6 py-3 bg-gray-50 dark:bg-slate-900/50 flex justify-between items-center">
+														<h4 className="font-medium text-gray-900 dark:text-white text-sm">{category}</h4>
+														<span className="text-sm font-semibold text-gray-900 dark:text-white">
+															${getCategoryTotal(categoryTransactions).toFixed(2)}
+														</span>
+													</div>
+													<div className="divide-y divide-gray-200 dark:divide-slate-700">
+														{categoryTransactions.map((t) => (
+															<div key={t.id} className="px-6 py-3 flex justify-between items-center text-sm">
+																<div>
+																	<p className="text-gray-900 dark:text-white">{t.description}</p>
+																	<p className="text-xs text-gray-500 dark:text-gray-400">
+																		{t.date instanceof Date ? t.date.toLocaleDateString() : new Date(t.date as any).toLocaleDateString()}
+																	</p>
+																</div>
+																<span className="font-medium text-gray-900 dark:text-white">
+																	${((t.amount || 0) / 100).toFixed(2)}
+																</span>
+															</div>
+														))}
+													</div>
+												</div>
+											))}
+									</div>
+								)}
+							</div>
+						))}
+				</div>
+			)}
+
+			{/* Transaction Table - Desktop (List View) */}
+			{viewMode === "list" && (
+				<div className="hidden sm:block overflow-x-auto bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
 				<table className="w-full">
 					<thead className="bg-gray-50 dark:bg-slate-700 border-b border-gray-200 dark:border-slate-600">
 						<tr>
@@ -417,10 +544,12 @@ export default function TransactionsPage() {
 						))}
 					</tbody>
 				</table>
-			</div>
+				</div>
+			)}
 
-			{/* Transaction Cards - Mobile */}
-			<div className="sm:hidden space-y-3">
+			{/* Transaction Cards - Mobile (List View) */}
+			{viewMode === "list" && (
+				<div className="sm:hidden space-y-3">
 				{transactions.map((t) => (
 					<div
 						key={t.id}
@@ -510,6 +639,7 @@ export default function TransactionsPage() {
 					</div>
 				))}
 			</div>
+			)}
 
 			{/* Load More Button */}
 			{hasMore && (

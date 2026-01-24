@@ -297,7 +297,7 @@ export default function CategoriesPage() {
 							<span className="font-medium text-gray-900 dark:text-white text-sm flex-1">{category}</span>
 							<button
 								onClick={() => handleEditAutoCategory(category)}
-								className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded opacity-0 group-hover:opacity-100 transition-all"
+							className="p-1 text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded transition-all"
 								title="Customize this category name">
 								<Edit2 className="w-4 h-4" />
 							</button>

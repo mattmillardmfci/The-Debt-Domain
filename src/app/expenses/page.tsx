@@ -77,9 +77,6 @@ export default function ExpensesPage() {
 	const [mobileEditingIndex, setMobileEditingIndex] = useState<number | null>(null);
 	const [mobileEditDescription, setMobileEditDescription] = useState("");
 	const [mobileEditCategory, setMobileEditCategory] = useState("");
-	const [swipedIndex, setSwipedIndex] = useState<number | null>(null);
-	const [touchStart, setTouchStart] = useState(0);
-	const [touchEnd, setTouchEnd] = useState(0);
 	const [showInstructions, setShowInstructions] = useState(false);
 	const [allCategories, setAllCategories] = useState<string[]>(COMMON_CATEGORIES);
 	const [editingCategoryIndex, setEditingCategoryIndex] = useState<number | null>(null);
@@ -320,36 +317,16 @@ export default function ExpensesPage() {
 		}
 	};
 
-	const handleMobileTouchStart = (e: React.TouchEvent) => {
-		setTouchStart(e.targetTouches[0].clientX);
-	};
-
-	const handleMobileTouchEnd = (e: React.TouchEvent, index: number) => {
-		setTouchEnd(e.changedTouches[0].clientX);
-		const distance = touchStart - e.changedTouches[0].clientX;
-
-		// Swipe left (distance > 50px)
-		if (distance > 50) {
-			setSwipedIndex(index);
-		}
-		// Swipe right (distance < -50px) or close if already swiped
-		else if (distance < -50 || swipedIndex === index) {
-			setSwipedIndex(null);
-		}
-	};
-
 	const handleMobileEdit = (index: number, expense: RecurringExpense) => {
 		setMobileEditingIndex(index);
 		setMobileEditDescription(expense.descriptionOverride || expense.description);
 		setMobileEditCategory(expense.categoryOverride || expense.category || "Other");
-		setSwipedIndex(null);
 	};
 
 	const handleMobileSaveEdit = async (index: number, expense: RecurringExpense) => {
 		if (!user?.uid || !mobileEditDescription.trim()) return;
 
 		setMobileEditingIndex(null);
-		setSwipedIndex(null);
 
 		try {
 			await updateRecurringExpenseOverride(user.uid, {
@@ -872,10 +849,7 @@ export default function ExpensesPage() {
 									</div>
 								) : (
 									<>
-										<div
-											onTouchStart={handleMobileTouchStart}
-											onTouchEnd={(e) => handleMobileTouchEnd(e, index)}
-											className={`p-4 transition-all duration-300 ${swipedIndex === index ? "-translate-x-24" : ""}`}>
+										<div className="p-4">
 											<div className="space-y-3">
 												{/* Description and category */}
 												<div>
@@ -920,21 +894,20 @@ export default function ExpensesPage() {
 												</div>
 											</div>
 										</div>
-										{/* Swipe action buttons */}
-										{swipedIndex === index && (
-											<div className="absolute right-0 top-0 h-full flex items-center gap-2 bg-white dark:bg-slate-800 pr-4">
-												<button
-													onClick={() => handleMobileEdit(index, expense)}
-													className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors">
-													<Edit2 className="w-5 h-5" />
-												</button>
-												<button
-													onClick={() => handleDelete(index)}
-													className="px-3 py-1 text-xs bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-800 dark:text-red-300 rounded font-medium">
-													Delete
-												</button>
-											</div>
-										)}
+										{/* Action buttons - always visible on mobile */}
+										<div className="flex gap-2 p-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50">
+											<button
+												onClick={() => handleMobileEdit(index, expense)}
+												className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded font-medium transition-colors">
+												<Edit2 className="w-4 h-4" />
+												Edit
+											</button>
+											<button
+												onClick={() => handleDelete(index)}
+												className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded font-medium transition-colors">
+												Delete
+											</button>
+										</div>
 									</>
 								)}
 							</div>
