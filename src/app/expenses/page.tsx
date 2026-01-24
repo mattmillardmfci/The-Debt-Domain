@@ -168,49 +168,117 @@ export default function ExpensesPage() {
 		try {
 			const expense = expenses[index];
 
-			// Delete from custom recurring expenses collection (for both detected and truly custom)
-			// The amount in the database is stored with its original sign (negative for expenses)
+			// Delete from custom recurring expenses collection
 			await deleteCustomRecurringExpense(user.uid, expense.description, expense.amount);
 
-			// Update UI state immediately (batched together for performance)
-			const updated = expenses.filter((_, i) => i !== index);
-			setExpenses(updated);
-
-			// If this was a detected expense that was added, reload the undetected list from database
-			// to ensure it reappears (it might come from detectRecurringDebts or findUndetectedRecurringExpenses)
-			if (!expense.isCustom) {
-				try {
-					const reloadedUndetected = await findUndetectedRecurringExpenses(user.uid);
-					// Filter out any already in the updated expenses list
-					const addedDescriptions = new Set(updated.map((exp) => exp.description.toLowerCase()));
-					const filteredUndetected = reloadedUndetected.filter(
-						(exp) => !addedDescriptions.has(exp.description.toLowerCase()),
-					);
-					setUndetectedExpenses(filteredUndetected);
-					// Auto-expand the detected expenses section to show the restored item
-					setShowDetectedExpenses(true);
-				} catch (err) {
-					console.error("Failed to reload undetected expenses:", err);
-					// Fallback: just add to local state as before
-					const undetected = {
-						description: expense.description,
-						amount: expense.amount,
-						count: expense.count,
-						lastOccurrence: expense.lastOccurrence,
-						category: expense.category,
-						transactions: [],
-					};
-					setUndetectedExpenses((prev) => [...prev, undetected]);
-					setShowDetectedExpenses(true);
-				}
-			}
-
-			// Recalculate total with absolute values
-			const total = updated.reduce((sum, exp) => sum + Math.abs(exp.monthlyAmount), 0);
-			setTotalMonthlyExpenses(total);
-
 			setDeleteModal({ isOpen: false, index: null });
-			showSuccess("Expense removed successfully");
+
+			// Reload all expenses from scratch to ensure consistency
+			// This re-fetches detected and custom expenses and properly deduplicates
+			try {
+				const [recurringDebts, customExpenses, undetected, customCats, overrides] = await Promise.all([
+					detectRecurringDebts(user.uid),
+					getCustomRecurringExpenses(user.uid),
+					findUndetectedRecurringExpenses(user.uid),
+					getCustomCategories(user.uid),
+					getRecurringExpenseOverrides(user.uid),
+				]);
+
+				// Load custom categories and merge with common categories
+				const customCategoryNames = customCats.map((c) => c.name || "").filter((n) => n);
+				const merged = Array.from(new Set([...COMMON_CATEGORIES, ...customCategoryNames]));
+				setAllCategories(merged);
+
+				// Create a map of overrides by (description, amount) for quick lookup
+				const overrideMap = new Map<string, (typeof overrides)[0]>();
+				overrides.forEach((override) => {
+					const roundedAmount = Math.round(override.amount * 100) / 100;
+					const key = `${override.originalDescription.toLowerCase()}-${roundedAmount}`;
+					overrideMap.set(key, override);
+				});
+
+				// Combine detected and custom expenses, deduplicating by description
+				const allExpenses = [
+					...recurringDebts.map((debt) => {
+						const monthlyAmount = calculateMonthlyAmount(debt.avgAmount, debt.estimatedFrequency);
+						return {
+							description: debt.description,
+							amount: debt.avgAmount,
+							frequency: debt.estimatedFrequency || "monthly",
+							monthlyAmount,
+							count: debt.count,
+							lastOccurrence: debt.lastOccurrence,
+							category: debt.category,
+							isCustom: false,
+						};
+					}),
+					...customExpenses.map((custom) => {
+						const monthlyAmount = calculateMonthlyAmount(custom.avgAmount, custom.estimatedFrequency);
+						const isDetected = custom.count > 0;
+
+						return {
+							description: custom.description,
+							amount: custom.avgAmount,
+							frequency: custom.estimatedFrequency || "monthly",
+							monthlyAmount,
+							count: custom.count,
+							lastOccurrence: custom.lastOccurrence,
+							category: custom.category,
+							isCustom: !isDetected,
+						};
+					}),
+				];
+
+				// Deduplicate by description
+				const expenseByDesc = new Map<string, RecurringExpense>();
+				allExpenses.forEach((exp) => {
+					const key = exp.description.toLowerCase();
+					const existing = expenseByDesc.get(key);
+					if (!existing || (!existing.isCustom && exp.count > existing.count)) {
+						expenseByDesc.set(key, exp);
+					}
+				});
+
+				const dedupExpenses = Array.from(expenseByDesc.values());
+
+				// Apply overrides
+				const withOverrides = dedupExpenses.map((exp) => {
+					const roundedAmount = Math.round(exp.amount * 100) / 100;
+					const overrideKey = `${exp.description.toLowerCase()}-${roundedAmount}`;
+					const override = overrideMap.get(overrideKey);
+
+					return {
+						...exp,
+						...(override && {
+							descriptionOverride: override.descriptionOverride,
+							categoryOverride: override.categoryOverride,
+						}),
+					};
+				});
+
+				// Sort by monthly amount (highest first)
+				withOverrides.sort((a, b) => b.monthlyAmount - a.monthlyAmount);
+
+				// Calculate total
+				const total = withOverrides.reduce((sum, exp) => sum + Math.abs(exp.monthlyAmount), 0);
+
+				setExpenses(withOverrides);
+				setTotalMonthlyExpenses(total);
+
+				// Filter undetected expenses
+				const addedDescriptions = new Set(withOverrides.map((exp) => exp.description.toLowerCase()));
+				const filteredUndetected = undetected.filter((exp) => !addedDescriptions.has(exp.description.toLowerCase()));
+
+				setUndetectedExpenses(filteredUndetected);
+				
+				// Auto-expand the detected expenses section to show restored item
+				setShowDetectedExpenses(true);
+				
+				showSuccess("Expense removed successfully");
+			} catch (err) {
+				console.error("Failed to reload expenses after delete:", err);
+				showError("Expense removed but failed to refresh list. Please refresh the page.");
+			}
 		} catch (error) {
 			console.error("Failed to delete expense:", error);
 			showError("Failed to remove expense");
